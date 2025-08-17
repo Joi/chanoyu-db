@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Node (future UI)
+node_modules/
+
+# Environment files
+.env
+*.env
+.env.*
+
+# Local data and private assets
+/private/
+/data/
+*.sqlite
+*.db
+
+# Credentials / tokens (safety)
+service_account.json
+*.json
+!data/*.json
+
+# VSCode/Cursor
+.vscode/
+.idea/

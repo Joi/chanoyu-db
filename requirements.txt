@@ -1,0 +1,6 @@
+notion-client==2.2.1
+python-dotenv==1.0.1
+gspread==6.0.2
+google-auth==2.33.0
+requests==2.32.3
+rapidfuzz==3.9.6
