@@ -76,9 +76,9 @@ export async function GET(req: NextRequest) {
   const q = qRaw;
   if (!q) return NextResponse.json([]);
 
-  const urlMatch = q.match(/vocab\.getty\.edu\/aat\/(\d+)/i);
-  const idMatch = !urlMatch && q.match(/^\s*(\d{6,})\s*$/);
-  const aatId = urlMatch?.[1] || idMatch?.[1];
+  const urlMatch = q.match(/vocab\.getty\.edu\/aat\/(\d+)/i) as RegExpMatchArray | null;
+  const idMatch = urlMatch ? null : (q.match(/^\s*(\d{6,})\s*$/) as RegExpMatchArray | null);
+  const aatId = (urlMatch && urlMatch[1]) || (idMatch && idMatch[1]);
   if (aatId) {
     const uri = `http://vocab.getty.edu/aat/${aatId}`;
     let label_en = '', label_ja = '';
