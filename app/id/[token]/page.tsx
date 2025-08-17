@@ -11,18 +11,12 @@ export default async function ObjectPage({ params }: Props) {
   const { token } = params;
 
   const db = supabaseAdmin();
+  // Fetch object core fields first (avoid ambiguous media join)
   const { data, error } = await db
     .from('objects')
     .select(
-      `
-      id, token, local_number, title, title_ja, summary, summary_ja, visibility,
-      price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url,
-      media ( id, kind, uri, sort_order ),
-      object_classifications (
-        role,
-        classification:classifications ( label, label_ja, scheme, uri )
-      )
-    `
+      `id, token, local_number, title, title_ja, summary, summary_ja, visibility,
+       price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url`
     )
     .eq('token', token)
     .single();
@@ -31,7 +25,12 @@ export default async function ObjectPage({ params }: Props) {
 
   const [isOwner, isAdmin] = await Promise.all([requireOwner(), requireAdmin()]);
 
-  const media = (data.media ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  // Fetch media separately to avoid relationship ambiguity
+  const { data: mediaRows } = await db
+    .from('media')
+    .select('id, kind, uri, sort_order, object_id')
+    .eq('object_id', data.id);
+  const media = (mediaRows ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const img = media[0]?.uri as string | undefined;
   const classifications = (data.object_classifications ?? [])
     .map((oc: any) => oc.classification)
