@@ -22,7 +22,7 @@ export default async function MediaPage({ params }: { params: { id: string } }) 
       <h1 className="text-xl font-semibold mb-2">Media</h1>
       {data.uri ? (
         <div style={{ position: 'relative', width: '100%', paddingTop: '66%', background: '#f5f5f5' }}>
-          <Image src={data.uri} alt={data.object?.title || 'Image'} fill sizes="(max-width: 768px) 100vw, 640px" />
+          <Image src={data.uri} alt={(data as any).object?.title || 'Image'} fill sizes="(max-width: 768px) 100vw, 640px" />
         </div>
       ) : null}
       <div className="card" style={{ marginTop: 12 }}>
