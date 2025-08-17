@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
+// import { makeSupabaseThumbUrl } from '@/lib/storage';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 
 type Props = { params: { token: string } };
@@ -51,7 +52,9 @@ export default async function ObjectPage({ params }: Props) {
 
       {img ? (
         <div className="relative w-full" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
-          <Image src={img} alt={data.title} fill sizes="(max-width: 768px) 100vw, 768px" style={{ objectFit: 'cover' }} />
+          <a href={img} target="_blank" rel="noreferrer">
+            <Image src={img} alt={data.title} fill sizes="(max-width: 768px) 100vw, 768px" style={{ objectFit: 'cover' }} />
+          </a>
         </div>
       ) : null}
 
