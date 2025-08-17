@@ -315,23 +315,13 @@ export default async function AdminObjectPage({ params, searchParams }: { params
             {media.map((m: any) => (
               <div key={m.id} className="card">
                 <div className="relative w-full" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
-                  <Image src={m.uri} alt={object.title} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+                  <a href={`/media/${m.id}`}>
+                    <Image src={m.uri} alt={object.title} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+                  </a>
                 </div>
-                <form action={updateMediaAction} className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-                  <input type="hidden" name="media_id" value={m.id} />
-                  <input type="hidden" name="object_token" value={token} />
-                  <input name="copyright_owner" className="input" placeholder="Copyright owner" defaultValue={m.copyright_owner || ''} />
-                  <select name="license_id" className="input" defaultValue={m.license_id || ''}>
-                    <option value="">Select license</option>
-                    {(licenses ?? []).map((lic: any) => (
-                      <option key={lic.id} value={lic.id}>{lic.code} — {lic.name}</option>
-                    ))}
-                  </select>
-                  <textarea name="rights_note" className="textarea" placeholder="Rights/metadata note" defaultValue={m.rights_note || ''} />
-                  <div>
-                    <button className="button" type="submit">Save</button>
-                  </div>
-                </form>
+                <div className="mt-2 text-sm">
+                  <a className="underline" href={`/media/${m.id}`}>Open media page</a> to edit license and copyright.
+                </div>
                 <form action={deleteMediaAction} className="mt-2">
                   <input type="hidden" name="media_id" value={m.id} />
                   <input type="hidden" name="object_token" value={token} />
