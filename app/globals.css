@@ -13,6 +13,14 @@ img{max-width:100%;height:auto}
 .header .brand{font-weight:800;font-size:20px}
 .nav{display:flex;gap:16px;align-items:center}
 
+/* Nav groups */
+.nav-group{position:relative}
+.nav-parent{font-weight:500;cursor:pointer;list-style:none}
+summary.nav-parent::-webkit-details-marker{display:none}
+.nav-sub{display:block;position:absolute;top:140%;left:0;background:#fff;border:1px solid var(--border-gray);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.08);padding:8px 10px;min-width:180px;z-index:10}
+.nav-sub a{display:block;padding:6px 8px;color:#111;text-decoration:none}
+.nav-sub a:hover{background:#f7f7f7}
+
 h1{font-size:32px;line-height:1.2;margin:16px 0 8px}
 h2{font-size:22px;line-height:1.3;margin:14px 0 8px}
 .prose p{margin:12px 0}

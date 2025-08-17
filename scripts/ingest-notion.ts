@@ -15,6 +15,7 @@ Env required:
 Optional:
 - NOTION_TOKEN_PROP (plain token field; rich_text/title recommended) e.g., 'Collection Token'
 - NOTION_URL_PROP (canonical URL field; url recommended) e.g., 'Collection URL'
+- NOTION_IN_COLLECTION_PROP (checkbox to include item) e.g., 'In Collection' (default)
 - NOTION_TITLE_JA_PROP (if JA title is a separate prop)
 - NOTION_SUMMARY_EN_PROP / NOTION_SUMMARY_JA_PROP (if summaries are separate)
 - NOTION_LIMIT (number of items to import, default 3)
@@ -27,6 +28,8 @@ const NOTION_DB_ID = NOTION_DB_ID_RAW.replace(/\?.*$/, '');
 const BASE_URL = (process.env.COLLECTION_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const TOKEN_PROP = process.env.NOTION_TOKEN_PROP || 'Collection Token';
 const URL_PROP = process.env.NOTION_URL_PROP || 'Collection URL';
+const COLLECTION_ID_PROP = process.env.NOTION_COLLECTION_ID_PROP || 'Collection ID';
+const IN_COLLECTION_PROP = process.env.NOTION_IN_COLLECTION_PROP || 'In Collection';
 const TITLE_JA_PROP = process.env.NOTION_TITLE_JA_PROP || 'Title JA';
 const SUMMARY_EN_PROP = process.env.NOTION_SUMMARY_EN_PROP || 'Summary';
 const SUMMARY_JA_PROP = process.env.NOTION_SUMMARY_JA_PROP || 'Summary JA';
@@ -45,7 +48,7 @@ function propText(p: any): string {
   return '';
 }
 
-async function writeTokenAndUrlToNotion(pageId: string, token: string, props: any) {
+async function writeTokenAndUrlToNotion(pageId: string, token: string, collectionId: string | null, props: any) {
   try {
     const link = `${BASE_URL}/id/${token}`;
     const patch: any = {};
@@ -78,6 +81,22 @@ async function writeTokenAndUrlToNotion(pageId: string, token: string, props: an
       }
     }
 
+    // Write Collection ID if provided
+    if (collectionId) {
+      const idProp = props[COLLECTION_ID_PROP];
+      if (idProp) {
+        if (idProp.type === 'rich_text') {
+          patch[COLLECTION_ID_PROP] = { rich_text: [{ type: 'text', text: { content: collectionId } }] };
+        } else if (idProp.type === 'title') {
+          patch[COLLECTION_ID_PROP] = { title: [{ type: 'text', text: { content: collectionId } }] } as any;
+        } else if (idProp.type === 'url') {
+          patch[COLLECTION_ID_PROP] = { url: collectionId };
+        } else {
+          patch[COLLECTION_ID_PROP] = { rich_text: [{ type: 'text', text: { content: collectionId } }] };
+        }
+      }
+    }
+
     if (Object.keys(patch).length) {
       await notion.pages.update({ page_id: pageId, properties: patch });
     }
@@ -91,6 +110,33 @@ function getProp(props: Record<string, any>, names: string[]): any | undefined {
     if (Object.prototype.hasOwnProperty.call(props, n)) return props[n];
   }
   return undefined;
+}
+
+function propBool(p: any): boolean {
+  try {
+    if (!p) return false;
+    if (p.type === 'checkbox') return !!p.checkbox;
+    if (p.type === 'status') return String(p.status?.name || '').toLowerCase() === 'in collection';
+    if (p.type === 'rich_text') return (p.rich_text || []).map((t: any) => String(t.plain_text || '').toLowerCase()).join('').includes('true');
+    if (p.type === 'url') return /true|yes|1/i.test(String(p.url || ''));
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+async function nextCollectionId(db: ReturnType<typeof supabaseAdmin>, kind: 'I'|'M', year?: number): Promise<string> {
+  const y = year || new Date().getFullYear();
+  const prefix = `ITO-${y}-${kind}-`;
+  const table = kind === 'I' ? 'objects' : 'media';
+  const { data } = await db.from(table).select('local_number').ilike('local_number', `${prefix}%`).order('local_number', { ascending: false }).limit(2000);
+  let max = 0;
+  for (const row of data || []) {
+    const m = String((row as any).local_number || '').match(/(\d{5})$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  const next = String(max + 1).padStart(5, '0');
+  return `${prefix}${next}`;
 }
 
 function guessLanguage(text: string): 'ja' | 'en' {
@@ -193,6 +239,11 @@ async function run() {
       database_id: NOTION_DB_ID,
       start_cursor: cursor,
       page_size: Math.min(IMPORT_LIMIT - pages.length, 100),
+      filter: {
+        property: IN_COLLECTION_PROP,
+        checkbox: { equals: true },
+      } as any,
+      sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
     } as any);
     pages.push(...resp.results);
     if (!resp.has_more) break;
@@ -205,6 +256,9 @@ async function run() {
   for (const page of slice) {
     const id = page.id as string;
     const props = page.properties || {};
+
+    // Already filtered by checkbox at query level; extra guard:
+    if (!propBool(props[IN_COLLECTION_PROP])) continue;
 
     const titlePropName = Object.keys(props).find((k) => props[k]?.type === 'title');
     const titleRaw = titlePropName ? propText(props[titlePropName]) : '';
@@ -219,7 +273,9 @@ async function run() {
       if (lang === 'ja') title_ja = titleRaw; else title = titleRaw;
     }
 
-    const local_number = propText(getProp(props, ['Local Number', 'Local number', '番号', 'No.', 'ID']) || {});
+    // Prefer Collection ID field for local number
+    let local_number = propText(props[COLLECTION_ID_PROP]);
+    if (!local_number) local_number = propText(getProp(props, ['Local Number', 'Local number', '番号', 'No.', 'ID']) || {});
     const summaryEnExplicit = propText(props[SUMMARY_EN_PROP]);
     const summaryJaExplicit = propText(props[SUMMARY_JA_PROP]);
     let summary = '';
@@ -265,26 +321,32 @@ async function run() {
       return m2 ? s : '';
     };
     let token = extractToken(existingTokenRaw);
-    if (!token) {
-      // Try to reuse an existing object by local_number to avoid duplicates
-      if (local_number) {
-        const { data: byLocal } = await db
-          .from('objects')
-          .select('id, token')
-          .eq('local_number', local_number)
-          .maybeSingle();
-        if (byLocal?.token) token = byLocal.token;
-      }
+    if (!token && local_number) {
+      const { data: byLocal } = await db
+        .from('objects')
+        .select('id, token')
+        .eq('local_number', local_number)
+        .maybeSingle();
+      if (byLocal?.token) token = byLocal.token;
     }
     if (!token) token = mintToken(12);
 
-    // Upsert object by token or local_number
+    // Upsert/update object by token/local_number
     const upsert = {
       token,
-      title: title || '(untitled)'
+      title: '' as string
     } as any;
     if (title_ja) upsert.title_ja = title_ja;
+    // Assign Collection ID if missing
+    if (!local_number) {
+      const year = (typeof (page.properties?.['Date']?.date?.start) === 'string' && page.properties['Date'].date.start)
+        ? new Date(page.properties['Date'].date.start).getFullYear()
+        : new Date().getFullYear();
+      local_number = await nextCollectionId(db, 'I', year);
+    }
     if (local_number) upsert.local_number = local_number;
+    // Resolve title last so it can fall back to Collection ID if needed
+    upsert.title = title || local_number || '(untitled)';
     if (summary) upsert.summary = summary;
     if (summary_ja) upsert.summary_ja = summary_ja;
     if (craftsman) upsert.craftsman = craftsman;
@@ -298,12 +360,23 @@ async function run() {
     if (url) upsert.url = url;
     if (tags && tags.length) upsert.tags = tags;
 
-    const { data: objRows, error } = await db
-      .from('objects')
-      .upsert(upsert, { onConflict: 'token' })
-      .select('id, token');
-    const objRow = Array.isArray(objRows) ? objRows.find((r: any) => r.token === token) : objRows as any;
-    if (error) throw error;
+    // If an object exists by token or local_number, update it; else insert
+    let objRow: any = null;
+    const { data: existingByToken } = await db.from('objects').select('id, token').eq('token', token).maybeSingle();
+    if (existingByToken?.id) {
+      const { data: upd, error: eUp } = await db.from('objects').update(upsert).eq('id', existingByToken.id).select('id, token').single();
+      if (eUp) throw eUp; objRow = upd;
+    } else if (local_number) {
+      const { data: existingByLocal } = await db.from('objects').select('id, token').eq('local_number', local_number).maybeSingle();
+      if (existingByLocal?.id) {
+        const { data: upd, error: eUp2 } = await db.from('objects').update({ ...upsert, token: existingByLocal.token }).eq('id', existingByLocal.id).select('id, token').single();
+        if (eUp2) throw eUp2; objRow = upd;
+      }
+    }
+    if (!objRow) {
+      const { data: ins, error: eIns } = await db.from('objects').insert(upsert).select('id, token').single();
+      if (eIns) throw eIns; objRow = ins;
+    }
 
     // Decide whether to write back link to Notion
     const link = `${BASE_URL}/id/${token}`;
@@ -314,7 +387,7 @@ async function run() {
       || !existingTokenRaw
       || (isUrlProp && currentUrlVal !== link)
       || (!isUrlProp && extractToken(existingTokenRaw) === token); // bare token present, upgrade
-    if (shouldWriteBack) await writeTokenAndUrlToNotion(id, token, props);
+    if (shouldWriteBack) await writeTokenAndUrlToNotion(id, token, local_number || null, props);
 
     // Mirror images
     try {
@@ -335,9 +408,18 @@ async function run() {
           ]);
           const exists = Boolean(byPath?.data?.id || byUri?.data?.id);
           if (exists) continue;
-          await db
+          const storagePathRel = storagePath ? storagePath.replace(/^media\//, '') : null;
+          // Assign media local_number if missing later
+          const { data: ins, error: eIns } = await db
             .from('media')
-            .insert({ object_id: objRow.id, uri: finalUri, kind: 'image', sort_order: 999, bucket: publicUrl ? 'media' : null, storage_path: storagePath || null, visibility: 'public' });
+            .insert({ object_id: objRow.id, uri: finalUri, kind: 'image', sort_order: 999, bucket: publicUrl ? 'media' : null, storage_path: storagePathRel, visibility: 'public' })
+            .select('id, local_number')
+            .single();
+          if (eIns) throw eIns;
+          if (ins && !ins.local_number) {
+            const mId = await nextCollectionId(db, 'M');
+            await db.from('media').update({ local_number: mId }).eq('id', ins.id);
+          }
         }
       }
     } catch (e) {

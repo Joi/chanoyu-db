@@ -264,13 +264,11 @@ async function updateObjectAction(formData: FormData) {
 export default async function AdminObjectPage({ params, searchParams }: { params: { token: string }, searchParams?: { [key: string]: string | string[] | undefined } }) {
   const token = params.token;
   const db = supabaseAdmin();
-  const [{ data: object }, { data: licenses }, isOwner, isAdmin] = await Promise.all([
+  const [objectCore, licensesRes, isOwner, isAdmin] = await Promise.all([
     db
       .from('objects')
       .select(
-        `id, token, local_number, title, title_ja, summary, summary_ja, price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility,
-         media ( id, kind, uri, sort_order, copyright_owner, rights_note, license_id ),
-         object_classifications ( role, classification:classifications ( id, label, label_ja, scheme, uri ) )`
+        `id, token, local_number, title, title_ja, summary, summary_ja, price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility`
       )
       .eq('token', token)
       .single(),
@@ -278,9 +276,26 @@ export default async function AdminObjectPage({ params, searchParams }: { params
     requireOwner(),
     requireAdmin(),
   ]);
+  const object = objectCore?.data || null;
+  const licenses = (licensesRes as any)?.data || [];
+  let media: any[] = [];
+  if (object?.id) {
+    const [direct, links] = await Promise.all([
+      db.from('media').select('id, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id').eq('object_id', object.id),
+      db.from('object_media_links').select('media_id').eq('object_id', object.id),
+    ]);
+    const ids = new Set<string>();
+    for (const m of direct.data || []) ids.add((m as any).id);
+    const linkIds = (links.data || []).map((r: any) => r.media_id).filter((id: string) => !ids.has(id));
+    let linked: any[] = [];
+    if (linkIds.length) {
+      const { data: lm } = await db.from('media').select('id, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id').in('id', linkIds);
+      linked = lm || [];
+    }
+    media = ([...(direct.data || []), ...linked]).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }
 
   if (!object) return notFound();
-  const media = (object.media ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const saved = typeof searchParams?.saved === 'string' ? searchParams!.saved : undefined;
   const error = typeof searchParams?.error === 'string' ? searchParams!.error : undefined;
 

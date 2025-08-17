@@ -41,7 +41,7 @@ create table if not exists licenses (
 
 create table if not exists media (
   id uuid primary key default gen_random_uuid(),
-  object_id uuid references objects(id) on delete cascade,
+  object_id uuid references objects(id) on delete set null,
   kind text,
   uri text not null,
   copyright_owner text,
@@ -105,3 +105,19 @@ alter table objects add column if not exists url text;
 alter table media add column if not exists bucket text default 'media';
 alter table media add column if not exists storage_path text; -- e.g., media/<object_id>/<filename>
 alter table media add column if not exists visibility text default 'public' check (visibility in ('public','private'));
+alter table media add column if not exists local_number text; -- e.g., ITO-YYYY-M-NNNNN
+alter table media add column if not exists created_at timestamptz not null default now();
+
+-- Uniqueness for human IDs (case-insensitive) when present
+create unique index if not exists objects_local_number_ci on objects (lower(local_number)) where local_number is not null;
+create unique index if not exists media_local_number_ci on media (lower(local_number)) where local_number is not null;
+
+-- Many-to-many linkage between objects and media (optional; supports multi-item media)
+create table if not exists object_media_links (
+  object_id uuid references objects(id) on delete cascade,
+  media_id uuid references media(id) on delete cascade,
+  role text default 'related',
+  created_at timestamptz not null default now(),
+  primary key (object_id, media_id)
+);
+create index if not exists oml_media_idx on object_media_links(media_id);
