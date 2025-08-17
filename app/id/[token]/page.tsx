@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
+import { requireAdmin, requireOwner } from '@/lib/auth';
 
 type Props = { params: { token: string } };
 
@@ -14,6 +15,7 @@ export default async function ObjectPage({ params }: Props) {
     .select(
       `
       id, token, local_number, title, title_ja, summary, summary_ja, visibility,
+      price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url,
       media ( id, kind, uri, sort_order ),
       object_classifications (
         role,
@@ -26,6 +28,8 @@ export default async function ObjectPage({ params }: Props) {
 
   if (error || !data || data.visibility !== 'public') return notFound();
 
+  const [isOwner, isAdmin] = await Promise.all([requireOwner(), requireAdmin()]);
+
   const media = (data.media ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const img = media[0]?.uri as string | undefined;
   const classifications = (data.object_classifications ?? [])
@@ -36,24 +40,109 @@ export default async function ObjectPage({ params }: Props) {
   const jsonld = buildLinkedArtJSONLD(data, media, classifications, baseId);
 
   return (
-    <main className="prose max-w-3xl mx-auto p-6">
-      <h1>{data.title}</h1>
-      {data.title_ja ? <h2 lang="ja">{data.title_ja}</h2> : null}
+    <main className="max-w-4xl mx-auto p-6">
+      <header className="mb-4">
+        <h1 className="text-xl font-semibold">{data.title}</h1>
+        {data.title_ja ? <p className="text-sm" lang="ja">{data.title_ja}</p> : null}
+        {isAdmin || isOwner ? (
+          <p className="text-xs mt-1"><a className="underline" href={`/admin/${token}`}>Edit</a></p>
+        ) : null}
+      </header>
 
       {img ? (
-        <div style={{ width: 640, height: 480, position: 'relative' }}>
-          <Image src={img} alt={data.title} fill sizes="(max-width: 640px) 100vw, 640px" />
+        <div className="relative w-full" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
+          <Image src={img} alt={data.title} fill sizes="(max-width: 768px) 100vw, 768px" style={{ objectFit: 'cover' }} />
         </div>
       ) : null}
 
-      {data.local_number ? (
-        <p>
-          <strong>No.</strong> {data.local_number}
-        </p>
-      ) : null}
+      <div className="grid mt-6" style={{ gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <section>
+          <h2 className="text-lg font-semibold mb-2">Details</h2>
+          <dl className="space-y-2">
+            {data.local_number ? (
+              <div>
+                <dt className="text-sm text-gray-600">Number</dt>
+                <dd>{data.local_number}</dd>
+              </div>
+            ) : null}
+            {(data.craftsman || data.craftsman_ja) ? (
+              <div>
+                <dt className="text-sm text-gray-600">Craftsman</dt>
+                <dd>
+                  {data.craftsman || ''} {data.craftsman_ja ? <span lang="ja">/ {data.craftsman_ja}</span> : null}
+                </dd>
+              </div>
+            ) : null}
+            {data.event_date ? (
+              <div>
+                <dt className="text-sm text-gray-600">Date</dt>
+                <dd>{String(data.event_date)}</dd>
+              </div>
+            ) : null}
+            {data.url ? (
+              <div>
+                <dt className="text-sm text-gray-600">URL</dt>
+                <dd><a className="underline" href={data.url} target="_blank" rel="noreferrer">{data.url}</a></dd>
+              </div>
+            ) : null}
+            {Array.isArray(data.tags) && data.tags.length ? (
+              <div>
+                <dt className="text-sm text-gray-600">Tags</dt>
+                <dd>{data.tags.join(', ')}</dd>
+              </div>
+            ) : null}
+            {(isAdmin || isOwner) && (data.store || data.store_ja) ? (
+              <div>
+                <dt className="text-sm text-gray-600">Store</dt>
+                <dd>
+                  {data.store || ''} {data.store_ja ? <span lang="ja">/ {data.store_ja}</span> : null}
+                </dd>
+              </div>
+            ) : null}
+            {(isAdmin || isOwner) && (data.location || data.location_ja) ? (
+              <div>
+                <dt className="text-sm text-gray-600">Location</dt>
+                <dd>
+                  {data.location || ''} {data.location_ja ? <span lang="ja">/ {data.location_ja}</span> : null}
+                </dd>
+              </div>
+            ) : null}
+            {isOwner && (data.price != null) ? (
+              <div>
+                <dt className="text-sm text-gray-600">Price</dt>
+                <dd>{String(data.price)}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
 
-      {data.summary ? <p>{data.summary}</p> : null}
-      {data.summary_ja ? <p lang="ja">{data.summary_ja}</p> : null}
+        <section>
+          <h2 className="text-lg font-semibold mb-2">Description</h2>
+          {data.summary ? <p className="mb-2">{data.summary}</p> : null}
+          {data.summary_ja ? <p className="mb-2" lang="ja">{data.summary_ja}</p> : null}
+          {(isAdmin || isOwner) && (data.notes || data.notes_ja) ? (
+            <div className="mt-2">
+              <h3 className="text-md font-semibold mb-1">Notes</h3>
+              {data.notes ? <p className="mb-1">{data.notes}</p> : null}
+              {data.notes_ja ? <p className="mb-1" lang="ja">{data.notes_ja}</p> : null}
+            </div>
+          ) : null}
+        </section>
+      </div>
+
+      <section className="mt-6">
+        <h2 className="text-lg font-semibold mb-2">Classifications</h2>
+        <ul className="list-disc pl-6 space-y-1">
+          {classifications.map((c: any, i: number) => (
+            <li key={i}>
+              <strong>{c?.label || c?.uri}</strong>
+              {c?.label_ja ? <span lang="ja"> / {c.label_ja}</span> : null}
+              {c?.scheme ? <span className="text-xs text-gray-600"> · {c.scheme}</span> : null}
+            </li>
+          ))}
+          {classifications.length === 0 ? <li className="text-sm text-gray-600">None</li> : null}
+        </ul>
+      </section>
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonld) }} />
     </main>
