@@ -8,7 +8,7 @@ import LookupPanel from './lookup-panel';
 import { requireOwner, requireAdmin } from '@/lib/auth';
 
 // Server action to save a classification for the current object token
-export async function saveClassificationAction(formData: FormData) {
+async function saveClassificationAction(formData: FormData) {
   'use server';
   const token = String(formData.get('object_token') || '');
   const scheme = String(formData.get('scheme') || '');
