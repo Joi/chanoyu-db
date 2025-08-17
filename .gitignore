@@ -1,12 +1,36 @@
-.next
-node_modules
-.env.local
-.env
-.DS_Store
+# Node/Next
+node_modules/
+.next/
+out/
+.vercel/
+coverage/
+.cache/
 *.log
-.cache
-coverage
-.vercel
-.vscode
-*.sqlite
 *.tsbuildinfo
+*.map
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Env/secrets
+.env
+.env.local
+.env.*.local
+private/
+.secrets/
+
+# Images/artifacts
+public/generated/
+app/**/*.generated.*
+
+# Python virtualenv
+.venv/
+__pycache__/
+*.pyc
+
+# Supabase local artifacts
+supabase/.branches/
+supabase/.temp/
+
