@@ -63,8 +63,12 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
       <div className="grid" style={{ gap: 12 }}>
         {(data ?? []).map((m: any) => (
           <div key={m.id} className="card" style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12 }}>
-            <div style={{ position: 'relative', width: 120, height: 90, background: '#f5f5f5' }}>
-              {m.uri ? <Image src={m.uri} alt={m.object?.title || 'Image'} fill sizes="120px" /> : null}
+            <div style={{ position: 'relative', width: 120, height: 90, background: '#f5f5f5', borderRadius: 4, overflow: 'hidden' }}>
+              {m.uri ? (
+                <a href={m.uri} target="_blank" rel="noreferrer">
+                  <Image src={m.uri} alt={m.object?.title || 'Image'} fill sizes="120px" style={{ objectFit: 'cover' }} />
+                </a>
+              ) : null}
             </div>
             <div>
               <p className="text-sm">{m.object ? <a className="underline" href={`/admin/${m.object.token}`}>{m.object.title}</a> : '—'} · <a className="underline" href={`/media/${m.id}`}>/media/{m.id}</a></p>

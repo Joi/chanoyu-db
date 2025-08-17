@@ -25,7 +25,7 @@ export default async function AdminHome() {
         <li><Link href="/admin/media" className="underline">Media</Link></li>
         <li><Link href="/admin/new" className="underline">Create object</Link></li>
         <li><Link href="/lookup" className="underline">Category Lookup (AAT + Wikidata)</Link></li>
-        {isOwner ? <li><Link href="/admin/accounts" className="underline">Accounts</Link></li> : null}
+        {/* Accounts merged into Members */}
         <li><Link href="/admin/members" className="underline">Members</Link></li>
       </ul>
       <form action={signOut} className="mt-6">

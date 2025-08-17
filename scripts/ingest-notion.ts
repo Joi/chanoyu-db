@@ -4,6 +4,7 @@ dotenvConfig({ path: '.env.local' });
 dotenvConfig();
 import { Client } from '@notionhq/client';
 import crypto from 'node:crypto';
+import sharp from 'sharp';
 import { supabaseAdmin } from '../lib/supabase/server';
 import { mintToken } from '../lib/id';
 
@@ -123,10 +124,23 @@ async function uploadImageFromUrl(db: ReturnType<typeof supabaseAdmin>, objectId
     const extFromType = contentType.split('/')[1]?.split(';')[0] || (url.split('?')[0].split('.').pop() || 'bin');
     const fileName = `${objectId}-${hash}.${extFromType}`;
     const path = `media/${objectId}/${fileName}`;
+    // Upload original
     // @ts-ignore
     const up = await (db as any).storage.from('media').upload(path, Buffer.from(ab), { contentType, upsert: false });
     if (up.error && !String(up.error?.message || '').toLowerCase().includes('already exists')) {
       throw up.error;
+    }
+    // Generate 400px longest-edge variant
+    try {
+      const resized = await sharp(Buffer.from(ab)).resize({ width: 400, height: 400, fit: 'inside', withoutEnlargement: true }).toBuffer();
+      const thumbPath = `media/${objectId}/thumb_${fileName}`;
+      // @ts-ignore
+      const up2 = await (db as any).storage.from('media').upload(thumbPath, resized, { contentType, upsert: true });
+      if (up2.error && !String(up2.error?.message || '').toLowerCase().includes('already exists')) {
+        console.warn('thumb upload error', up2.error);
+      }
+    } catch (e) {
+      console.warn('thumb resize error', e);
     }
     // @ts-ignore
     const pub = (db as any).storage.from('media').getPublicUrl(path);
