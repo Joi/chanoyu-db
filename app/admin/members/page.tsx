@@ -36,15 +36,11 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
     .select('id,email,full_name_en,full_name_ja,role,created_at')
     .order('created_at', { ascending: false });
 
-  const saved = typeof searchParams?.saved === 'string' ? searchParams!.saved : undefined;
   const deleted = typeof searchParams?.deleted === 'string' ? searchParams!.deleted : undefined;
   return (
     <main className="max-w-3xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Members</h1>
       <p className="text-sm mb-4"><a className="underline" href="/admin/members/new">Add member</a></p>
-      {saved ? (
-        <div className="card" style={{ background: '#f0fff4', borderColor: '#bbf7d0', marginBottom: 12 }}>Saved member</div>
-      ) : null}
       {deleted ? (
         <div className="card" style={{ background: '#fff7ed', borderColor: '#fed7aa', marginBottom: 12 }}>Deleted {deleted}</div>
       ) : null}

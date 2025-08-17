@@ -30,8 +30,8 @@ async function updateAction(formData: FormData) {
   const patch: any = { email, full_name_en, full_name_ja, role };
   if (password) patch.password_hash = hashPassword(password);
   await db.from('accounts').update(patch).eq('id', id);
-  revalidatePath('/admin/members');
-  redirect('/admin/members?saved=1');
+  revalidatePath(`/admin/members/${id}`);
+  redirect(`/admin/members/${id}?saved=1`);
 }
 
 export default async function MemberDetail({ params, searchParams }: { params: { id: string }, searchParams?: { [key: string]: string | string[] | undefined } }) {
