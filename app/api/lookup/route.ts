@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Simple in-memory cache to speed up repeated lookups during a session
+const memoryCache = new Map<string, { expires: number; data: any }>();
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 type Normalized = {
   scheme: 'aat' | 'wikidata';
   uri: string;
@@ -9,7 +13,7 @@ type Normalized = {
   note?: string;
 };
 
-async function fetchJSON(url: string, timeoutMs = 5000) {
+async function fetchJSON(url: string, timeoutMs = 4000) {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -76,6 +80,11 @@ export async function GET(req: NextRequest) {
   const q = qRaw;
   if (!q) return NextResponse.json([]);
 
+  const cached = memoryCache.get(q);
+  if (cached && cached.expires > Date.now()) {
+    return NextResponse.json(cached.data);
+  }
+
   const urlMatch = q.match(/vocab\.getty\.edu\/aat\/(\d+)/i) as RegExpMatchArray | null;
   const idMatch = urlMatch ? null : (q.match(/^\s*(\d{6,})\s*$/) as RegExpMatchArray | null);
   const aatId = (urlMatch && urlMatch[1]) || (idMatch && idMatch[1]);
@@ -92,11 +101,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json([one]);
   }
 
-  const envAat = process.env.AAT_RECONCILE_URL || '';
-  // Prefer AAT-specific endpoints and ignore generic multi-schema reconcile to avoid cross-scheme noise
-  const bases = [envAat, 'https://refine.getty.edu/reconcile/aat', 'https://vocab.getty.edu/reconcile/aat']
-    .filter(Boolean)
-    .map((s) => s.replace(/\/$/, ''));
+  // Use the official Getty AAT reconciliation endpoint. The "refine.getty.edu" host
+  // is unreliable and frequently down or blocked by CORS, so we avoid it.
+  const envAat = (process.env.AAT_RECONCILE_URL || 'https://vocab.getty.edu/reconcile/aat').replace(/\/$/, '');
+  const bases = [envAat];
 
   const variants = makeVariants(q);
   const seenUris = new Set<string>();
@@ -171,5 +179,7 @@ export async function GET(req: NextRequest) {
     note: r.description || '',
   }));
 
-  return NextResponse.json([...aatMerged, ...wikidata]);
+  const result = [...aatMerged, ...wikidata];
+  memoryCache.set(q, { expires: Date.now() + CACHE_TTL_MS, data: result });
+  return NextResponse.json(result);
 }
