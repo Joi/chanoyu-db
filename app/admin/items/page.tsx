@@ -1,0 +1,140 @@
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import { revalidatePath } from 'next/cache';
+import { supabaseAdmin } from '@/lib/supabase/server';
+import { requireAdmin, requireOwner } from '@/lib/auth';
+import { parseSupabasePublicUrl } from '@/lib/storage';
+
+async function addImage(formData: FormData) {
+  'use server';
+  const token = String(formData.get('token') || '');
+  const url = String(formData.get('image_url') || '').trim();
+  if (!token || !url) return;
+  const db = supabaseAdmin();
+  const { data: obj } = await db.from('objects').select('id').eq('token', token).single();
+  if (!obj) return;
+  await db.from('media').insert({ object_id: obj.id, uri: url, kind: 'image', sort_order: 999 });
+  revalidatePath('/admin/items');
+}
+
+async function deleteImage(formData: FormData) {
+  'use server';
+  const mediaId = String(formData.get('media_id') || '');
+  if (!mediaId) return;
+  const db = supabaseAdmin();
+  const { data } = await db.from('media').select('id, uri').eq('id', mediaId).single();
+  if (data) {
+    const parsed = parseSupabasePublicUrl(data.uri);
+    if (parsed) {
+      try {
+        // @ts-ignore
+        await (db as any).storage.from(parsed.bucket).remove([parsed.path]);
+      } catch {}
+    }
+    await db.from('media').delete().eq('id', mediaId);
+  }
+  revalidatePath('/admin/items');
+}
+
+async function makePrimary(formData: FormData) {
+  'use server';
+  const mediaId = String(formData.get('media_id') || '');
+  const objectId = String(formData.get('object_id') || '');
+  if (!mediaId || !objectId) return;
+  const db = supabaseAdmin();
+  await db.from('media').update({ sort_order: 0 }).eq('id', mediaId);
+  await db.from('media').update({ sort_order: 999 }).neq('id', mediaId).eq('object_id', objectId);
+  revalidatePath('/admin/items');
+}
+
+async function deleteItem(formData: FormData) {
+  'use server';
+  const isOwner = await requireOwner();
+  if (!isOwner) return notFound();
+  const id = String(formData.get('object_id') || '');
+  if (!id) return;
+  const db = supabaseAdmin();
+  await db.from('objects').delete().eq('id', id);
+  revalidatePath('/admin/items');
+}
+
+export default async function ItemsPage() {
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return notFound();
+  const isOwner = await requireOwner();
+  const db = supabaseAdmin();
+  const { data } = await db
+    .from('objects')
+    .select(
+      `id, token, title, title_ja, price, store, location,
+       media ( id, uri, sort_order )`
+    )
+    .order('updated_at', { ascending: false })
+    .limit(200);
+
+  return (
+    <main className="max-w-5xl mx-auto p-6">
+      <h1 className="text-xl font-semibold mb-4">Items</h1>
+      <div className="grid" style={{ gap: 12 }}>
+        {(data ?? []).map((o: any) => {
+          const mediaSorted = (o.media ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+          const thumb = mediaSorted[0]?.uri;
+          return (
+            <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12 }}>
+              <div>
+                <div style={{ position: 'relative', width: 120, height: 120, background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, overflow: 'hidden' }}>
+                  {thumb ? <Image src={thumb} alt={o.title} fill sizes="120px" style={{ objectFit: 'cover' }} /> : null}
+                </div>
+                <form action={addImage} className="mt-2">
+                  <input type="hidden" name="token" value={o.token} />
+                  <input name="image_url" className="input" placeholder="Add image URL" />
+                  <button className="button" type="submit" style={{ marginTop: 6 }}>Add</button>
+                </form>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <a href={`/admin/${o.token}`} className="text-sm font-semibold underline">{o.title}</a>
+                  {o.title_ja ? <span className="text-sm" lang="ja">/ {o.title_ja}</span> : null}
+                  <span className="text-xs text-gray-600">· Token: {o.token}</span>
+                  <a href={`/id/${o.token}`} className="text-xs underline" style={{ marginLeft: 'auto' }}>View</a>
+                  <a href={`/admin/${o.token}`} className="text-xs underline">Edit</a>
+                  {isOwner ? (
+                    <form action={deleteItem}>
+                      <input type="hidden" name="object_id" value={o.id} />
+                      <button className="text-red-600 text-xs" type="submit">Delete</button>
+                    </form>
+                  ) : null}
+                </div>
+                <div className="text-xs text-gray-600" style={{ marginBottom: 8 }}>
+                  {isOwner ? <span>Price: {o.price ?? '—'} · </span> : null}
+                  <span>Store: {o.store ?? '—'} · Location: {o.location ?? '—'}</span>
+                </div>
+
+                <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {mediaSorted.slice(0, 6).map((m: any) => (
+                    <div key={m.id} className="card">
+                      <div style={{ position: 'relative', width: '100%', paddingTop: '66%', background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, overflow: 'hidden' }}>
+                        {m.uri ? <Image src={m.uri} alt={o.title} fill sizes="160px" style={{ objectFit: 'cover' }} /> : null}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                        <form action={makePrimary}>
+                          <input type="hidden" name="media_id" value={m.id} />
+                          <input type="hidden" name="object_id" value={o.id} />
+                          <button className="button secondary" type="submit">Make primary</button>
+                        </form>
+                        <form action={deleteImage}>
+                          <input type="hidden" name="media_id" value={m.id} />
+                          <button className="text-red-600 text-sm" type="submit">Delete</button>
+                        </form>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </main>
+  );
+}

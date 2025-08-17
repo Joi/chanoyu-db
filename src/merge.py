@@ -11,12 +11,18 @@ def normalize_name(name: str) -> str:
 
 def index_rows_by_name(rows: List[Dict[str, Any]], name_key_candidates: List[str]) -> Dict[str, Dict[str, Any]]:
 	index: Dict[str, Dict[str, Any]] = {}
+	lower_candidates = [c.lower() for c in name_key_candidates]
 	for row in rows:
+		# Build a case-insensitive view of the row keys
+		lower_key_to_key: Dict[str, str] = {str(k).lower(): k for k in row.keys()}
 		name_value: Optional[str] = None
-		for key in name_key_candidates:
-			if key in row and row[key]:
-				name_value = str(row[key])
-				break
+		for lower_cand in lower_candidates:
+			if lower_cand in lower_key_to_key:
+				orig_key = lower_key_to_key[lower_cand]
+				val = row.get(orig_key)
+				if val:
+					name_value = str(val)
+					break
 		if not name_value:
 			continue
 		index[normalize_name(name_value)] = row
@@ -26,7 +32,7 @@ def index_rows_by_name(rows: List[Dict[str, Any]], name_key_candidates: List[str
 def merge_by_name(
 	notion_items: List[Dict[str, Any]],
 	sheet_rows: List[Dict[str, Any]],
-	row_name_keys: List[str] = ["name", "item", "title"],
+	row_name_keys: List[str] = ["Name", "name", "item", "title"],
 	fuzzy_threshold: int = 92,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
 	index = index_rows_by_name(sheet_rows, row_name_keys)

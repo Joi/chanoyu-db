@@ -23,7 +23,8 @@ def write_json(path: str, data: Any) -> None:
 
 
 def main() -> None:
-	load_dotenv()
+	# Prefer values from .env even if environment already has variables set
+	load_dotenv(override=True)
 
 	parser = argparse.ArgumentParser(description="Merge Notion DB items with Google Sheets rows")
 	parser.add_argument("--dump", action="store_true", help="Write raw and merged outputs to data/")

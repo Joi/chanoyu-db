@@ -62,6 +62,21 @@ class NotionFetcher:
 				break
 		return results
 
+	def _first_image_from_blocks(self, page_id: str) -> Optional[str]:
+		cursor: Optional[str] = None
+		while True:
+			resp = self.client.blocks.children.list(block_id=page_id, start_cursor=cursor) if cursor else self.client.blocks.children.list(block_id=page_id)
+			for block in resp.get("results", []) or []:
+				btype = block.get("type")
+				if btype == "image":
+					url = block.get("image", {}).get("file", {}).get("url") or block.get("image", {}).get("external", {}).get("url")
+					if url:
+						return url
+			cursor = resp.get("next_cursor")
+			if not resp.get("has_more"):
+				break
+		return None
+
 	def _simplify_page(self, page: Dict[str, Any]) -> Dict[str, Any]:
 		properties = page.get("properties", {}) or {}
 		title_prop_name = _extract_title_property_name(properties) or ""
@@ -72,7 +87,14 @@ class NotionFetcher:
 		files_aggregated: List[Dict[str, str]] = []
 		for prop in properties.values():
 			if isinstance(prop, dict) and prop.get("type") == "files":
-				files_aggregated.extend(_extract_files(prop.get(prop.get("type"), {})))
+				files_aggregated.extend(_extract_files(prop))
+
+		first_image_url: Optional[str] = None
+		if files_aggregated:
+			first = files_aggregated[0]
+			first_image_url = first.get("url") or None
+		if not first_image_url and page.get("id"):
+			first_image_url = self._first_image_from_blocks(page["id"]) or None
 
 		return {
 			"id": page.get("id"),
@@ -80,4 +102,5 @@ class NotionFetcher:
 			"url": _format_notion_page_url(page.get("id", "")),
 			"properties": properties,
 			"files": files_aggregated,
+			"first_image_url": first_image_url,
 		}
