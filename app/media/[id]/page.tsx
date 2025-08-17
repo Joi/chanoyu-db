@@ -17,6 +17,8 @@ export default async function MediaPage({ params }: { params: { id: string } }) 
 
   if (!data) return notFound();
   const obj: any = (data as any).object;
+  const licArr: any = (data as any).license;
+  const lic: any = Array.isArray(licArr) ? licArr[0] : licArr;
 
   return (
     <main className="max-w-3xl mx-auto p-6">
@@ -30,7 +32,7 @@ export default async function MediaPage({ params }: { params: { id: string } }) 
         <p><strong>Object</strong>: {obj?.title} {obj?.title_ja ? <span lang="ja">/ {obj.title_ja}</span> : null} — {obj ? <a className="underline" href={`/id/${obj.token}`}>/id/{obj.token}</a> : '—'}</p>
         <p><strong>Copyright owner</strong>: {data.copyright_owner || '—'}</p>
         <p><strong>Rights note</strong>: {data.rights_note || '—'}</p>
-        <p><strong>License</strong>: {data.license ? <a className="underline" href={data.license.uri} target="_blank" rel="noreferrer">{data.license.code} — {data.license.name}</a> : '—'}</p>
+        <p><strong>License</strong>: {lic ? <a className="underline" href={lic.uri} target="_blank" rel="noreferrer">{lic.code} — {lic.name}</a> : '—'}</p>
         <p><strong>Storage</strong>: {data.bucket}/{data.storage_path || '—'}</p>
       </div>
     </main>
