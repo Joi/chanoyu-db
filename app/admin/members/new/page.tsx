@@ -21,7 +21,8 @@ async function createMember(formData: FormData) {
   const full_name_ja = String(formData.get('full_name_ja') || '').trim() || null;
   const password = String(formData.get('password') || '');
   if (!email || !password) return;
-  if (!isOwner) role = 'guest';
+  // Admins can create guests and admins; only owners can create owners
+  if (!isOwner && role === 'owner') role = 'admin';
   const db = supabaseAdmin();
   await db.from('accounts').insert({ email, full_name_en, full_name_ja, role, password_hash: hashPassword(password) });
   revalidatePath('/admin/members');
