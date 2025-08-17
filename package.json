@@ -1,13 +1,16 @@
 {
   "name": "ito-collection",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "build:prod": "NODE_ENV=production next build",
+    "test": "vitest run",
+    "ci": "npm run lint && npm run typecheck && npm run test && npm run build:prod && vercel build --yes",
     "seed": "ts-node scripts/seed-object.ts",
     "ingest:notion": "ts-node scripts/ingest-notion.ts",
     "seed:licenses": "ts-node scripts/seed-licenses.ts"
@@ -30,6 +33,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.9"
   }
 }
