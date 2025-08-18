@@ -13,7 +13,8 @@
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build:prod && vercel build --yes",
     "seed": "ts-node scripts/seed-object.ts",
     "ingest:notion": "ts-node scripts/ingest-notion.ts",
-    "seed:licenses": "ts-node scripts/seed-licenses.ts"
+    "seed:licenses": "ts-node scripts/seed-licenses.ts",
+    "sync:accounts-schema": "ts-node scripts/sync-accounts-schema.ts"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
