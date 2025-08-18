@@ -2,19 +2,23 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
+import { prepareTeaSchoolPayload } from '@/lib/teaSchools';
 
 async function createSchool(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
-  let name_en = String(formData.get('name_en') || '').trim() || null;
+  const name_en = String(formData.get('name_en') || '').trim() || null;
   const name_ja = String(formData.get('name_ja') || '').trim() || null;
-  // code/website/notes intentionally not captured in admin UI
-  if (!name_en && !name_ja) return redirect('/admin/tea-schools?error=missing_name');
-  // DB requires name_en; fall back to JA when only JA provided
-  if (!name_en && name_ja) name_en = name_ja;
+  const prepared = prepareTeaSchoolPayload({ nameEn: name_en, nameJa: name_ja });
+  if (prepared.error === 'missing_name') {
+    return redirect('/admin/tea-schools?error=missing_name');
+  }
+  if (prepared.error === 'too_long') {
+    return redirect('/admin/tea-schools?error=too_long');
+  }
   const db = supabaseAdmin();
-  const { error } = await db.from('tea_schools').insert({ name_en, name_ja });
+  const { error } = await db.from('tea_schools').insert(prepared.payload!);
   if (error) {
     console.error('[tea-schools] insert error:', error.message);
     return redirect('/admin/tea-schools?error=insert_failed');
@@ -41,8 +45,11 @@ export default async function TeaSchoolsPage({ searchParams }: { searchParams?: 
       {searchParams?.added ? (
         <div className="card" style={{ background: '#f0fff4', borderColor: '#bbf7d0', marginBottom: 12 }}>Added</div>
       ) : null}
-      {searchParams?.error ? (
-        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Save failed. Please provide a name and try again.</div>
+      {searchParams?.error === 'missing_name' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Please enter a name in EN or JA.</div>
+      ) : null}
+      {searchParams?.error === 'too_long' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Name is too long. Please shorten it.</div>
       ) : null}
 
       <form action={createSchool} className="card grid" style={{ gap: 8, marginBottom: 16 }}>
