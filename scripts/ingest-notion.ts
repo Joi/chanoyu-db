@@ -5,6 +5,7 @@ dotenvConfig();
 import { Client } from '@notionhq/client';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
+import heicConvert from 'heic-convert';
 import { supabaseAdmin } from '../lib/supabase/server';
 import { mintToken } from '../lib/id';
 
@@ -18,8 +19,11 @@ Optional:
 - NOTION_IN_COLLECTION_PROP (checkbox to include item) e.g., 'In Collection' (default)
 - NOTION_TITLE_JA_PROP (if JA title is a separate prop)
 - NOTION_SUMMARY_EN_PROP / NOTION_SUMMARY_JA_PROP (if summaries are separate)
-- NOTION_LIMIT (number of items to import, default 3)
+- NOTION_LIMIT (number of items to import; default: ALL)
 - NOTION_OVERWRITE_TOKENS=1 to force rewriting token/url fields in Notion
+- NOTION_FETCH_IMAGES=0 to skip mirroring images to Supabase Storage (default: 1)
+- NOTION_IMAGES_ONLY=1 to mirror images only (do not insert/update object fields, no Notion writebacks)
+- NOTION_MAX_IMAGES_PER_ITEM (number; default: ALL)
 */
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
@@ -33,7 +37,33 @@ const IN_COLLECTION_PROP = process.env.NOTION_IN_COLLECTION_PROP || 'In Collecti
 const TITLE_JA_PROP = process.env.NOTION_TITLE_JA_PROP || 'Title JA';
 const SUMMARY_EN_PROP = process.env.NOTION_SUMMARY_EN_PROP || 'Summary';
 const SUMMARY_JA_PROP = process.env.NOTION_SUMMARY_JA_PROP || 'Summary JA';
-const IMPORT_LIMIT = Number(process.env.NOTION_LIMIT || process.argv[2] || 3);
+// Import all items by default; override via NOTION_LIMIT or argv[2]
+function parseImportLimit(): number {
+  const envLimit = process.env.NOTION_LIMIT;
+  if (envLimit != null && envLimit !== '') {
+    const n = Number(envLimit);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const arg = process.argv[2];
+  if (arg != null && arg !== '') {
+    const n = Number(arg);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+const IMPORT_LIMIT = parseImportLimit();
+// Control whether to mirror images from Notion into Supabase Storage
+const FETCH_IMAGES = String(process.env.NOTION_FETCH_IMAGES || '1').trim() !== '0';
+const IMAGES_ONLY = String(process.env.NOTION_IMAGES_ONLY || '0').trim() === '1';
+function parseMaxImages(): number {
+  const raw = process.env.NOTION_MAX_IMAGES_PER_ITEM;
+  if (raw != null && raw !== '') {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+const MAX_IMAGES_PER_ITEM = parseMaxImages();
 
 function propText(p: any): string {
   if (!p) return '';
@@ -153,8 +183,8 @@ async function ensureBucket(db: ReturnType<typeof supabaseAdmin>, bucket = 'medi
   }
 }
 
-function sha256Hex(buf: ArrayBuffer): string {
-  const nodeBuf = Buffer.from(buf);
+function sha256Hex(buf: ArrayBuffer | Buffer): string {
+  const nodeBuf = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
   const hash = crypto.createHash('sha256');
   hash.update(nodeBuf);
   return hash.digest('hex');
@@ -164,21 +194,31 @@ async function uploadImageFromUrl(db: ReturnType<typeof supabaseAdmin>, objectId
   try {
     const r = await fetch(url);
     if (!r.ok) throw new Error(`fetch ${url} -> ${r.status}`);
-    const contentType = r.headers.get('content-type') || 'application/octet-stream';
+    let contentType = r.headers.get('content-type') || 'application/octet-stream';
     const ab = await r.arrayBuffer();
-    const hash = sha256Hex(ab).slice(0, 16);
+    let originalBuffer = Buffer.from(ab);
+    if (/image\/(heic|heif)/i.test(contentType) || /\.(heic|heif)(?:$|\?)/i.test(url)) {
+      try {
+        const out = await heicConvert({ buffer: originalBuffer, format: 'JPEG', quality: 0.9 });
+        originalBuffer = Buffer.from(out);
+        contentType = 'image/jpeg';
+      } catch (e) {
+        console.warn('heic convert failed, keeping original', e);
+      }
+    }
+    const hash = sha256Hex(originalBuffer).slice(0, 16);
     const extFromType = contentType.split('/')[1]?.split(';')[0] || (url.split('?')[0].split('.').pop() || 'bin');
     const fileName = `${objectId}-${hash}.${extFromType}`;
     const path = `media/${objectId}/${fileName}`;
     // Upload original
     // @ts-ignore
-    const up = await (db as any).storage.from('media').upload(path, Buffer.from(ab), { contentType, upsert: false });
+    const up = await (db as any).storage.from('media').upload(path, originalBuffer, { contentType, upsert: false });
     if (up.error && !String(up.error?.message || '').toLowerCase().includes('already exists')) {
       throw up.error;
     }
     // Generate 400px longest-edge variant
     try {
-      const resized = await sharp(Buffer.from(ab)).resize({ width: 400, height: 400, fit: 'inside', withoutEnlargement: true }).toBuffer();
+      const resized = await sharp(originalBuffer).resize({ width: 400, height: 400, fit: 'inside', withoutEnlargement: true }).toBuffer();
       const thumbPath = `media/${objectId}/thumb_${fileName}`;
       // @ts-ignore
       const up2 = await (db as any).storage.from('media').upload(thumbPath, resized, { contentType, upsert: true });
@@ -198,7 +238,7 @@ async function uploadImageFromUrl(db: ReturnType<typeof supabaseAdmin>, objectId
   }
 }
 
-async function firstImageUrlsForPage(pageId: string, props: any): Promise<string[]> {
+async function firstImageUrlsForPage(pageId: string, props: any, maxImages: number): Promise<string[]> {
   const urls: string[] = [];
   // files-type properties
   for (const key of Object.keys(props)) {
@@ -206,26 +246,32 @@ async function firstImageUrlsForPage(pageId: string, props: any): Promise<string
     if (p?.type === 'files' && Array.isArray(p.files)) {
       for (const f of p.files) {
         const u = f?.file?.url || f?.external?.url;
-        if (u) urls.push(u);
+        if (u) {
+          urls.push(u);
+          if (urls.length >= maxImages) return Array.from(new Set(urls)).slice(0, maxImages === Number.POSITIVE_INFINITY ? undefined : maxImages);
+        }
       }
     }
   }
   // scan blocks for first few images
   try {
     let cursor: string | undefined = undefined;
-    while (urls.length < 3) {
+    while (urls.length < maxImages) {
       const resp = await notion.blocks.children.list({ block_id: pageId, start_cursor: cursor });
       for (const b of resp.results as any[]) {
         if (b?.type === 'image') {
           const u = b.image?.file?.url || b.image?.external?.url;
-          if (u) urls.push(u);
+          if (u) {
+            urls.push(u);
+            if (urls.length >= maxImages) break;
+          }
         }
       }
       if (!resp.has_more) break;
       cursor = resp.next_cursor || undefined;
     }
   } catch {}
-  return Array.from(new Set(urls)).slice(0, 3);
+  return Array.from(new Set(urls)).slice(0, maxImages === Number.POSITIVE_INFINITY ? undefined : maxImages);
 }
 
 async function run() {
@@ -331,99 +377,116 @@ async function run() {
     }
     if (!token) token = mintToken(12);
 
-    // Upsert/update object by token/local_number
-    const upsert = {
-      token,
-      title: '' as string
-    } as any;
-    if (title_ja) upsert.title_ja = title_ja;
-    // Assign Collection ID if missing
-    if (!local_number) {
-      const year = (typeof (page.properties?.['Date']?.date?.start) === 'string' && page.properties['Date'].date.start)
-        ? new Date(page.properties['Date'].date.start).getFullYear()
-        : new Date().getFullYear();
-      local_number = await nextCollectionId(db, 'I', year);
-    }
-    if (local_number) upsert.local_number = local_number;
-    // Resolve title last so it can fall back to Collection ID if needed
-    upsert.title = title || local_number || '(untitled)';
-    if (summary) upsert.summary = summary;
-    if (summary_ja) upsert.summary_ja = summary_ja;
-    if (craftsman) upsert.craftsman = craftsman;
-    if (craftsman_ja) upsert.craftsman_ja = craftsman_ja;
-    if (store) upsert.store = store;
-    if (store_ja) upsert.store_ja = store_ja;
-    if (location) upsert.location = location;
-    if (location_ja) upsert.location_ja = location_ja;
-    if (notes) upsert.notes = notes;
-    if (notes_ja) upsert.notes_ja = notes_ja;
-    if (url) upsert.url = url;
-    if (tags && tags.length) upsert.tags = tags;
-
-    // If an object exists by token or local_number, update it; else insert
+    // Upsert/update object by token/local_number (unless IMAGES_ONLY)
     let objRow: any = null;
-    const { data: existingByToken } = await db.from('objects').select('id, token').eq('token', token).maybeSingle();
-    if (existingByToken?.id) {
-      const { data: upd, error: eUp } = await db.from('objects').update(upsert).eq('id', existingByToken.id).select('id, token').single();
-      if (eUp) throw eUp; objRow = upd;
-    } else if (local_number) {
-      const { data: existingByLocal } = await db.from('objects').select('id, token').eq('local_number', local_number).maybeSingle();
-      if (existingByLocal?.id) {
-        const { data: upd, error: eUp2 } = await db.from('objects').update({ ...upsert, token: existingByLocal.token }).eq('id', existingByLocal.id).select('id, token').single();
-        if (eUp2) throw eUp2; objRow = upd;
+    if (IMAGES_ONLY) {
+      // Look up existing object; do not insert/update
+      const { data: existingByToken } = await db.from('objects').select('id, token').eq('token', token).maybeSingle();
+      if (existingByToken?.id) {
+        objRow = existingByToken;
+      } else if (local_number) {
+        const { data: existingByLocal } = await db.from('objects').select('id, token').eq('local_number', local_number).maybeSingle();
+        if (existingByLocal?.id) objRow = existingByLocal;
       }
-    }
-    if (!objRow) {
-      const { data: ins, error: eIns } = await db.from('objects').insert(upsert).select('id, token').single();
-      if (eIns) throw eIns; objRow = ins;
+      if (!objRow) {
+        console.warn(`Skipping images for Notion page ${id}: object not found for token/local_number`);
+      }
+    } else {
+      const upsert = {
+        token,
+        title: '' as string
+      } as any;
+      if (title_ja) upsert.title_ja = title_ja;
+      // Assign Collection ID if missing
+      if (!local_number) {
+        const year = (typeof (page.properties?.['Date']?.date?.start) === 'string' && page.properties['Date'].date.start)
+          ? new Date(page.properties['Date'].date.start).getFullYear()
+          : new Date().getFullYear();
+        local_number = await nextCollectionId(db, 'I', year);
+      }
+      if (local_number) upsert.local_number = local_number;
+      // Resolve title last so it can fall back to Collection ID if needed
+      upsert.title = title || local_number || '(untitled)';
+      if (summary) upsert.summary = summary;
+      if (summary_ja) upsert.summary_ja = summary_ja;
+      if (craftsman) upsert.craftsman = craftsman;
+      if (craftsman_ja) upsert.craftsman_ja = craftsman_ja;
+      if (store) upsert.store = store;
+      if (store_ja) upsert.store_ja = store_ja;
+      if (location) upsert.location = location;
+      if (location_ja) upsert.location_ja = location_ja;
+      if (notes) upsert.notes = notes;
+      if (notes_ja) upsert.notes_ja = notes_ja;
+      if (url) upsert.url = url;
+      if (tags && tags.length) upsert.tags = tags;
+
+      const { data: existingByToken } = await db.from('objects').select('id, token').eq('token', token).maybeSingle();
+      if (existingByToken?.id) {
+        const { data: upd, error: eUp } = await db.from('objects').update(upsert).eq('id', existingByToken.id).select('id, token').single();
+        if (eUp) throw eUp; objRow = upd;
+      } else if (local_number) {
+        const { data: existingByLocal } = await db.from('objects').select('id, token').eq('local_number', local_number).maybeSingle();
+        if (existingByLocal?.id) {
+          const { data: upd, error: eUp2 } = await db.from('objects').update({ ...upsert, token: existingByLocal.token }).eq('id', existingByLocal.id).select('id, token').single();
+          if (eUp2) throw eUp2; objRow = upd;
+        }
+      }
+      if (!objRow) {
+        const { data: ins, error: eIns } = await db.from('objects').insert(upsert).select('id, token').single();
+        if (eIns) throw eIns; objRow = ins;
+      }
     }
 
     // Decide whether to write back link to Notion
-    const link = `${BASE_URL}/id/${token}`;
-    const force = String(process.env.NOTION_OVERWRITE_TOKENS || '').trim() === '1';
-    const isUrlProp = tokenProp?.type === 'url';
-    const currentUrlVal = isUrlProp ? (tokenProp?.url || '') : '';
-    const shouldWriteBack = force
-      || !existingTokenRaw
-      || (isUrlProp && currentUrlVal !== link)
-      || (!isUrlProp && extractToken(existingTokenRaw) === token); // bare token present, upgrade
-    if (shouldWriteBack) await writeTokenAndUrlToNotion(id, token, local_number || null, props);
+    if (!IMAGES_ONLY) {
+      const link = `${BASE_URL}/id/${token}`;
+      const force = String(process.env.NOTION_OVERWRITE_TOKENS || '').trim() === '1';
+      const isUrlProp = tokenProp?.type === 'url';
+      const currentUrlVal = isUrlProp ? (tokenProp?.url || '') : '';
+      const shouldWriteBack = force
+        || !existingTokenRaw
+        || (isUrlProp && currentUrlVal !== link)
+        || (!isUrlProp && extractToken(existingTokenRaw) === token); // bare token present, upgrade
+      if (shouldWriteBack) await writeTokenAndUrlToNotion(id, token, local_number || null, props);
+    }
 
-    // Mirror images
-    try {
-      const urls = await firstImageUrlsForPage(id, props);
-      if (urls.length && objRow?.id) {
-        const seen = new Set<string>();
-        for (const u of urls) {
-          if (seen.has(u)) continue;
-          seen.add(u);
-          const { publicUrl, storagePath } = await uploadImageFromUrl(db, objRow.id, u);
-          const finalUri = publicUrl || u;
-          // Check for existing media by storage_path or uri
-          const [byPath, byUri] = await Promise.all([
-            storagePath
-              ? db.from('media').select('id').eq('object_id', objRow.id).eq('storage_path', storagePath).maybeSingle()
-              : Promise.resolve({ data: null } as any),
-            db.from('media').select('id').eq('object_id', objRow.id).eq('uri', finalUri).maybeSingle(),
-          ]);
-          const exists = Boolean(byPath?.data?.id || byUri?.data?.id);
-          if (exists) continue;
-          const storagePathRel = storagePath ? storagePath.replace(/^media\//, '') : null;
-          // Assign media local_number if missing later
-          const { data: ins, error: eIns } = await db
-            .from('media')
-            .insert({ object_id: objRow.id, uri: finalUri, kind: 'image', sort_order: 999, bucket: publicUrl ? 'media' : null, storage_path: storagePathRel, visibility: 'public' })
-            .select('id, local_number')
-            .single();
-          if (eIns) throw eIns;
-          if (ins && !ins.local_number) {
-            const mId = await nextCollectionId(db, 'M');
-            await db.from('media').update({ local_number: mId }).eq('id', ins.id);
+    // Mirror images (optional)
+    if (FETCH_IMAGES && objRow?.id) {
+      try {
+        const urls = await firstImageUrlsForPage(id, props, MAX_IMAGES_PER_ITEM);
+        if (urls.length && objRow?.id) {
+          const seen = new Set<string>();
+          for (const u of urls) {
+            if (seen.has(u)) continue;
+            seen.add(u);
+            const { publicUrl, storagePath } = await uploadImageFromUrl(db, objRow.id, u);
+            const finalUri = publicUrl || u;
+            // Check for existing media by storage_path or uri
+            const [byPath, byUri] = await Promise.all([
+              storagePath
+                ? db.from('media').select('id').eq('object_id', objRow.id).eq('storage_path', storagePath).maybeSingle()
+                : Promise.resolve({ data: null } as any),
+              db.from('media').select('id').eq('object_id', objRow.id).eq('uri', finalUri).maybeSingle(),
+            ]);
+            const exists = Boolean(byPath?.data?.id || byUri?.data?.id);
+            if (exists) continue;
+            const storagePathRel = storagePath ? storagePath.replace(/^media\//, '') : null;
+            // Assign media local_number if missing later
+            const { data: ins, error: eIns } = await db
+              .from('media')
+              .insert({ object_id: objRow.id, uri: finalUri, kind: 'image', sort_order: 999, bucket: publicUrl ? 'media' : null, storage_path: storagePathRel, visibility: 'public' })
+              .select('id, local_number')
+              .single();
+            if (eIns) throw eIns;
+            if (ins && !ins.local_number) {
+              const mId = await nextCollectionId(db, 'M');
+              await db.from('media').update({ local_number: mId }).eq('id', ins.id);
+            }
           }
         }
+      } catch (e) {
+        console.warn('image mirror failed', e);
       }
-    } catch (e) {
-      console.warn('image mirror failed', e);
     }
   }
 
