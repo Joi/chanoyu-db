@@ -1,7 +1,7 @@
 {
   "name": "ito-collection",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
