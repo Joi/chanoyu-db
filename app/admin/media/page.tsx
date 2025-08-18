@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
@@ -42,7 +42,7 @@ async function deleteMedia(formData: FormData) {
 
 export default async function MediaAdminPage({ searchParams }: { searchParams: { q?: string } }) {
   const ok = await requireAdmin();
-  if (!ok) return notFound();
+  if (!ok) redirect('/login');
   const q = (searchParams.q || '').trim();
   const db = supabaseAdmin();
   // Fetch media rows first
@@ -95,7 +95,7 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
                 <input type="hidden" name="id" value={m.id} />
                 <input name="copyright_owner" className="input" placeholder="Copyright owner" defaultValue={m.copyright_owner || ''} />
                 <input name="rights_note" className="input" placeholder="Rights note" defaultValue={m.rights_note || ''} />
-                <input name="license_id" className="input" placeholder="License ID (optional)" defaultValue={m.license?.id || ''} />
+                <input name="license_id" className="input" placeholder="License ID (optional)" defaultValue={m.license_id || ''} />
                 <div>
                   <button className="button" type="submit">Save</button>
                 </div>
