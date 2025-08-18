@@ -13,7 +13,7 @@ function hashPassword(plain: string): string {
 async function createMember(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
-  if (!ok) return notFound();
+  if (!ok) return redirect('/login');
   const email = String(formData.get('email') || '').trim();
   const role = String(formData.get('role') || 'guest');
   const full_name_en = String(formData.get('full_name_en') || '').trim() || null;

@@ -27,7 +27,7 @@ async function addItemToClassification(formData: FormData) {
   const role = String(formData.get('role') || 'primary type');
   if (!clsId || !token) return;
   const ok = await requireAdmin();
-  if (!ok) return notFound();
+  if (!ok) return redirect('/login');
   const db = supabaseAdmin();
   const { data: obj } = await db.from('objects').select('id').eq('token', token).maybeSingle();
   if (!obj) return redirect(`/admin/classifications/${clsId}?error=object-not-found`);

@@ -13,7 +13,7 @@ function hashPassword(plain: string): string {
 async function deleteMember(formData: FormData) {
   'use server';
   const isAdmin = await requireAdmin();
-  if (!isAdmin) return notFound();
+  if (!isAdmin) return redirect('/login');
   const isOwner = await requireOwner();
   const id = String(formData.get('id') || '');
   const role = String(formData.get('role') || 'guest');

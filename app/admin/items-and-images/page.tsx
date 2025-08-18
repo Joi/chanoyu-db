@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
@@ -60,7 +60,7 @@ async function deleteItem(formData: FormData) {
 
 export default async function ItemsAndImagesPage() {
   const isAdmin = await requireAdmin();
-  if (!isAdmin) return notFound();
+  if (!isAdmin) return redirect('/login');
   const isOwner = await requireOwner();
   const db = supabaseAdmin();
   const { data: objs, error: eObjs, count } = await db

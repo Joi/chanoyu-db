@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
@@ -42,7 +42,7 @@ async function deleteMedia(formData: FormData) {
 
 export default async function MediaAdminPage({ searchParams }: { searchParams: { q?: string } }) {
   const ok = await requireAdmin();
-  if (!ok) return notFound();
+  if (!ok) return redirect('/login');
   const q = (searchParams.q || '').trim();
   const db = supabaseAdmin();
   // Fetch media rows first

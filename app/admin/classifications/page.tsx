@@ -1,10 +1,10 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 
 export default async function ClassificationsListPage() {
   const ok = await requireAdmin();
-  if (!ok) return notFound();
+  if (!ok) return redirect('/login');
   const db = supabaseAdmin();
   const { data, error } = await db
     .from('classifications')
