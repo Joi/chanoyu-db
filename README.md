@@ -131,7 +131,8 @@ Create `.env.local` and set the same in Vercel → Project Settings → Environm
     NOTION_TOKEN=...
     NOTION_DB_ID=...
     GOOGLE_APPLICATION_CREDENTIALS=./.secrets/gsa.json
-    SHEET_ID=...
+    GOOGLE_SHEETS_ID=...                 # can be a bare ID or a full Google Sheets URL
+    EXPORT_WORKSHEET_TITLE=...           # optional; defaults to 'Merged YYYY-MM-DD HH:MM'
 
 ---
 

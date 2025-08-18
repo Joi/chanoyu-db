@@ -16,7 +16,10 @@ export default async function ObjectPage({ params }: Props) {
     .from('objects')
     .select(
       `id, token, local_number, title, title_ja, summary, summary_ja, visibility,
-       price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url`
+       price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url,
+       object_classifications:object_classifications(role,
+         classification:classifications(id, scheme, uri, label, label_ja)
+       )`
     )
     .eq('token', token)
     .single();
