@@ -43,41 +43,66 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
 
   const deleted = typeof searchParams?.deleted === 'string' ? searchParams!.deleted : undefined;
   return (
-    <main className="max-w-3xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Members</h1>
-      <p className="text-sm mb-4"><a className="underline" href="/admin/members/new">Add member</a></p>
+    <main className="container">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <h1>Members</h1>
+        <Link href="/admin/members/new" className="button small secondary">Add member</Link>
+      </div>
       {deleted ? (
         <div className="card" style={{ background: '#fff7ed', borderColor: '#fed7aa', marginBottom: 12 }}>Deleted {deleted}</div>
       ) : null}
 
       <section className="card">
-        <div className="grid" style={{ gridTemplateColumns: '1fr', gap: 8 }}>
-          {(data ?? []).map((u: any) => {
-            const adminEditingDisallowed = !isOwner && u.role === 'owner';
-            return (
-              <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 0.8fr 2fr 2fr 1fr 210px', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border-gray)', padding: '10px 12px' }}>
-                <div className="text-sm" style={{ minWidth: 220 }}>{u.email}</div>
-                <div className="text-sm" style={{ minWidth: 100 }}>{u.role}</div>
-                <div className="text-sm" style={{ minWidth: 160 }}>{u.full_name_en || '—'}</div>
-                <div className="text-sm" style={{ minWidth: 160 }} lang="ja">{u.full_name_ja || '—'}</div>
-                <div className="text-xs text-gray-600" style={{ minWidth: 160 }}>
-                  {u.tea_school_id && schoolById[u.tea_school_id]
-                    ? (schoolById[u.tea_school_id].name_en || schoolById[u.tea_school_id].name_ja || '—')
-                    : '—'}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 96px)', gap: 8, justifyContent: 'end', width: '210px' }}>
-                  <Link href={`/admin/members/${u.id}`} className="button small secondary">Edit</Link>
-                  <form action={deleteMember}>
-                    <input type="hidden" name="id" value={u.id} />
-                    <input type="hidden" name="role" value={u.role} />
-                    <button className="button small danger" type="submit" disabled={adminEditingDisallowed} aria-disabled={adminEditingDisallowed}>Delete</button>
-                  </form>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {!isOwner ? <p className="text-xs text-gray-600 mt-2">Signed in as admin — you can manage guests and admins. Sign in as owner to manage owners.</p> : null}
+        <table className="table">
+          <colgroup>
+            <col style={{ width: '260px' }} />
+            <col style={{ width: '80px' }} />
+            <col style={{ width: '240px' }} />
+            <col style={{ width: '180px' }} />
+            <col style={{ width: '190px' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Name</th>
+              <th>Tea school</th>
+              <th className="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data ?? []).map((u: any) => {
+              const adminEditingDisallowed = !isOwner && u.role === 'owner';
+              const teaSchoolLabel = u.tea_school_id && schoolById[u.tea_school_id]
+                ? (schoolById[u.tea_school_id].name_en || schoolById[u.tea_school_id].name_ja || '—')
+                : '—';
+              return (
+                <tr key={u.id}>
+                  <td><div className="truncate" title={u.email}>{u.email}</div></td>
+                  <td>{u.role}</td>
+                  <td>
+                    <div className="truncate" title={`${u.full_name_en || ''}${u.full_name_ja ? ' / ' + u.full_name_ja : ''}`}>
+                      <div>{u.full_name_en || '—'}</div>
+                      <div className="muted" lang="ja">{u.full_name_ja || '—'}</div>
+                    </div>
+                  </td>
+                  <td><div className="truncate" title={teaSchoolLabel}>{teaSchoolLabel}</div></td>
+                  <td className="actions">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 96px)', gap: 8, justifyContent: 'end' }}>
+                      <Link href={`/admin/members/${u.id}`} className="button small secondary">Edit</Link>
+                      <form action={deleteMember}>
+                        <input type="hidden" name="id" value={u.id} />
+                        <input type="hidden" name="role" value={u.role} />
+                        <button className="button small danger" type="submit" disabled={adminEditingDisallowed} aria-disabled={adminEditingDisallowed}>Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {!isOwner ? <p className="muted" style={{ marginTop: 8 }}>Signed in as admin — you can manage guests and admins. Sign in as owner to manage owners.</p> : null}
       </section>
     </main>
   );

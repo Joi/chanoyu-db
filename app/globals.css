@@ -43,3 +43,12 @@ h2{font-size:22px;line-height:1.3;margin:14px 0 8px}
 .grid{display:grid;gap:16px}
 
 .footer{border-top:1px solid var(--border-gray);padding:24px;color:#666;font-size:13px;margin-top:24px;background:#fff}
+
+/* Tables */
+.table{width:100%;border-collapse:separate;border-spacing:0}
+.table thead th{font-size:12px;text-transform:uppercase;letter-spacing:.02em;color:#666;text-align:left;border-bottom:1px solid var(--border-gray);padding:8px 10px;background:#fafafa;position:sticky;top:0;z-index:1}
+.table tbody td{padding:10px;border-bottom:1px solid var(--border-gray);vertical-align:middle}
+.table tbody tr:hover{background:#fbfbfb}
+.table td.actions,.table th.actions{text-align:right}
+.truncate{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muted{color:#666;font-size:12px}
