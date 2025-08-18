@@ -284,7 +284,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   let media: any[] = [];
   if (object?.id) {
     const [direct, links] = await Promise.all([
-      db.from('media').select('id, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id').eq('object_id', object.id),
+      db.from('media').select('id, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id, local_number').eq('object_id', object.id),
       db.from('object_media_links').select('media_id').eq('object_id', object.id),
     ]);
     const ids = new Set<string>();
@@ -320,7 +320,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
                   </a>
                 </div>
                 <div className="mt-2 text-sm">
-                  <a className="underline" href={`/media/${m.id}`}>Open media page</a> to edit license and copyright.
+                  <a className="underline" href={`/media/${m.id}`}>Open media page</a> {m.local_number ? <span> · {m.local_number}</span> : null}
                 </div>
                 <form action={deleteMediaAction} className="mt-2">
                   <input type="hidden" name="media_id" value={m.id} />
