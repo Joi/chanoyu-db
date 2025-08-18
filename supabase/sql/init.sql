@@ -54,12 +54,8 @@ create table if not exists media (
 -- Tea schools (authority for member affiliations)
 create table if not exists tea_schools (
   id uuid primary key default gen_random_uuid(),
-  code text,
   name_en text not null,
-  name_ja text,
-  website text,
-  notes text,
-  created_at timestamptz not null default now()
+  name_ja text
 );
 
 alter table accounts add column if not exists tea_school_id uuid references tea_schools(id);
