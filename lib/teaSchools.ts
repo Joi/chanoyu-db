@@ -9,7 +9,7 @@ export type PrepareTeaSchoolResult = {
 };
 
 export const MAX_TEA_SCHOOL_NAME_LENGTH = 120;
-export const MIN_TEA_SCHOOL_NAME_LENGTH = 2;
+export const MIN_TEA_SCHOOL_NAME_LENGTH = 3;
 
 function sanitize(input?: string | null): string {
 	return (input ?? '').trim();

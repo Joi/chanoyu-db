@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 import { prepareTeaSchoolPayload } from '@/lib/teaSchools';
+import { z } from 'zod';
 
 async function createSchool(formData: FormData) {
   'use server';
@@ -38,7 +39,8 @@ export default async function TeaSchoolsPage({ searchParams }: { searchParams?: 
     .select('id, name_en, name_ja')
     .order('name_en', { ascending: true })
     .order('name_ja', { ascending: true });
-  const schools: Array<{ id: string; name_en: string; name_ja: string | null }> = (data || []) as any;
+  const School = z.object({ id: z.string(), name_en: z.string(), name_ja: z.string().nullable() });
+  const schools = z.array(School).parse(data || []);
   return (
     <main className="container">
       <h1>Tea Schools</h1>
