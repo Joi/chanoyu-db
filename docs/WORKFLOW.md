@@ -37,6 +37,35 @@ vercel              # preview deployment of local tree
 npm run build && vercel --prebuilt
 ```
 
+## Preview verification before promoting to production
+Run this after you're done with local dev and before you merge `dev → main` to ensure Vercel Preview matches local.
+
+```bash
+# 0) ensure local tree is linked to the correct Vercel project
+vercel link --yes
+
+# 1) pull Preview env vars and settings locally
+vercel pull --yes --environment=preview
+
+# 2) reproduce Vercel's build locally (uses .vercel/project.json and env)
+npm ci
+npm run lint && npm run typecheck && npm run test
+vercel build --yes
+
+# 3) deploy to Preview and verify
+git push origin dev             # preferred: triggers Vercel Preview build for the commit
+# or deploy your local prebuilt output if needed:
+# vercel deploy --prebuilt --yes
+
+# 4) confirm the deployment is healthy
+vercel ls | cat                 # find the latest preview URL
+vercel inspect <deployment-url> | cat
+vercel logs <deployment-url> --since 15m | cat
+
+# 5) manual smoke test at your dev domain (mapped to Preview)
+# open: https://dev.collection.ito.com
+```
+
 ## Promote to production
 Preferred (via PR):
 ```bash

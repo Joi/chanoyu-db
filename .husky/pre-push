@@ -1,0 +1,15 @@
+#!/bin/sh
+. "$(dirname \"$0\")/_/husky.sh"
+
+run_ci=0
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/dev) run_ci=1 ;;
+  esac
+done
+
+if [ "$run_ci" = "1" ]; then
+  echo "Running CI (lint+typecheck+tests+build+vercel build) before push to dev..."
+  npm run ci || exit 1
+fi
+exit 0
