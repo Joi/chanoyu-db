@@ -2,6 +2,8 @@ import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ClassificationsListPage() {
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');

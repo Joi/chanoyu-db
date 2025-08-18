@@ -5,6 +5,8 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 import { parseSupabasePublicUrl } from '@/lib/storage';
 
+export const dynamic = 'force-dynamic';
+
 async function addImage(formData: FormData) {
   'use server';
   const token = String(formData.get('token') || '');

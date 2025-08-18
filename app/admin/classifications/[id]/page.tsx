@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 async function updateClassificationLabels(formData: FormData) {
   'use server';
   const id = String(formData.get('classification_id') || '');

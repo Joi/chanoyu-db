@@ -5,6 +5,8 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 import { parseSupabasePublicUrl } from '@/lib/storage';
 
+export const dynamic = 'force-dynamic';
+
 async function saveMedia(formData: FormData) {
   'use server';
   const ok = await requireAdmin();

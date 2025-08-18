@@ -6,6 +6,8 @@ import { fetchAATPreferredLabels } from '@/lib/aat';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 import CopyUrlButton from '@/app/admin/components/CopyUrlButton';
 
+export const dynamic = 'force-dynamic';
+
 async function deleteItem(formData: FormData) {
   'use server';
   const isOwner = await requireOwner();
