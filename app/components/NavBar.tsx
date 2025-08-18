@@ -6,9 +6,9 @@ export default function NavBar() {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const root = ref.current;
-    if (!root) return;
-    const groups = Array.from(root.querySelectorAll('details.nav-group')) as HTMLDetailsElement[];
+    const container = ref.current;
+    if (!container) return;
+    const groups = Array.from(container.querySelectorAll('details.nav-group')) as HTMLDetailsElement[];
     function onToggle(this: HTMLDetailsElement) {
       if (this.open) {
         for (const d of groups) if (d !== this) d.open = false;
@@ -16,7 +16,7 @@ export default function NavBar() {
     }
     function onDocumentClick(e: MouseEvent) {
       const target = e.target as Node;
-      if (!root.contains(target)) {
+      if (!container.contains(target)) {
         for (const d of groups) d.open = false;
       }
     }
