@@ -38,7 +38,7 @@ export default async function TeaSchoolsPage({ searchParams }: { searchParams?: 
     .select('id, name_en, name_ja')
     .order('name_en', { ascending: true })
     .order('name_ja', { ascending: true });
-  const schools = data || [];
+  const schools: Array<{ id: string; name_en: string; name_ja: string | null }> = (data || []) as any;
   return (
     <main className="container">
       <h1>Tea Schools</h1>
@@ -50,6 +50,12 @@ export default async function TeaSchoolsPage({ searchParams }: { searchParams?: 
       ) : null}
       {searchParams?.error === 'too_long' ? (
         <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Name is too long. Please shorten it.</div>
+      ) : null}
+      {searchParams?.error === 'too_short' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Name is too short.</div>
+      ) : null}
+      {searchParams?.error === 'invalid_content' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Please enter a proper name (not a URL).</div>
       ) : null}
 
       <form action={createSchool} className="card grid" style={{ gap: 8, marginBottom: 16 }}>

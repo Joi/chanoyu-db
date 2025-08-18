@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { prepareTeaSchoolPayload, MAX_TEA_SCHOOL_NAME_LENGTH } from '../lib/teaSchools';
+import { prepareTeaSchoolPayload, MAX_TEA_SCHOOL_NAME_LENGTH, MIN_TEA_SCHOOL_NAME_LENGTH } from '../lib/teaSchools';
 
 describe('prepareTeaSchoolPayload', () => {
 	it('returns error when both names are missing', () => {
@@ -21,6 +21,17 @@ describe('prepareTeaSchoolPayload', () => {
 		const long = 'x'.repeat(MAX_TEA_SCHOOL_NAME_LENGTH + 1);
 		const r = prepareTeaSchoolPayload({ nameEn: long, nameJa: '' });
 		expect(r.error).toBe('too_long');
+	});
+
+	it('rejects too short names', () => {
+		const short = 'x'.repeat(MIN_TEA_SCHOOL_NAME_LENGTH - 1);
+		const r = prepareTeaSchoolPayload({ nameEn: short, nameJa: '' });
+		expect(r.error).toBe('too_short');
+	});
+
+	it('rejects URL-like content', () => {
+		const r = prepareTeaSchoolPayload({ nameEn: 'https://example.com', nameJa: '' });
+		expect(r.error).toBe('invalid_content');
 	});
 });
 
