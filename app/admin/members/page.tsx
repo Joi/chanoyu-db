@@ -1,14 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin, requireOwner } from '@/lib/auth';
-import crypto from 'node:crypto';
 
-function hashPassword(plain: string): string {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(plain, salt, 200_000, 32, 'sha256').toString('hex');
-  return `${salt}:${hash}`;
-}
+// no-op hashing here; listing page does not handle password updates
 
 async function deleteMember(formData: FormData) {
   'use server';
@@ -26,15 +22,24 @@ async function deleteMember(formData: FormData) {
 
 // Note: Editing moved to detail page. This listing is read-only except for delete.
 
+export const dynamic = 'force-dynamic';
+
 export default async function MembersPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
   const isAdmin = await requireAdmin();
-  if (!isAdmin) return notFound();
+  if (!isAdmin) return redirect('/login');
   const isOwner = await requireOwner();
   const db = supabaseAdmin();
-  const { data } = await db
+  const [{ data, error: eAcc }, { data: schools, error: eSch }] = await Promise.all([
+    db
     .from('accounts')
-    .select('id,email,full_name_en,full_name_ja,role,created_at')
-    .order('created_at', { ascending: false });
+    .select('id,email,full_name_en,full_name_ja,tea_school_id,role,created_at')
+    .order('created_at', { ascending: false }),
+    db.from('tea_schools').select('id,name_en,name_ja'),
+  ]);
+  const schoolById: Record<string, { name_en?: string | null; name_ja?: string | null }> = {};
+  for (const s of (schools as any[]) || []) {
+    schoolById[(s as any).id] = { name_en: (s as any).name_en, name_ja: (s as any).name_ja };
+  }
 
   const deleted = typeof searchParams?.deleted === 'string' ? searchParams!.deleted : undefined;
   return (
@@ -46,40 +51,31 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
       ) : null}
 
       <section className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th className="text-left p-2">Email</th>
-                <th className="text-left p-2">Role</th>
-                <th className="text-left p-2">Name (EN)</th>
-                <th className="text-left p-2">Name (JA)</th>
-                <th className="text-left p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data ?? []).map((u: any) => {
-                // Allow admins to manage guests and admins; only block owner rows for non-owner
-                const adminEditingDisallowed = !isOwner && u.role === 'owner';
-                return (
-                  <tr key={u.id}>
-                    <td className="p-2" style={{ minWidth: 220 }}>{u.email}</td>
-                    <td className="p-2" style={{ minWidth: 140 }}>{u.role}</td>
-                    <td className="p-2" style={{ minWidth: 180 }}>{u.full_name_en || '—'}</td>
-                    <td className="p-2" style={{ minWidth: 180 }}>{u.full_name_ja || '—'}</td>
-                    <td className="p-2" style={{ whiteSpace: 'nowrap' }}>
-                      <a className="button secondary" href={`/admin/members/${u.id}`}>Edit</a>
-                      <form action={deleteMember} className="inline" style={{ marginLeft: 8 }}>
-                        <input type="hidden" name="id" value={u.id} />
-                        <input type="hidden" name="role" value={u.role} />
-                        <button className="text-red-600 text-sm" type="submit" disabled={adminEditingDisallowed}>Delete</button>
-                      </form>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="grid" style={{ gridTemplateColumns: '1fr', gap: 8 }}>
+          {(data ?? []).map((u: any) => {
+            const adminEditingDisallowed = !isOwner && u.role === 'owner';
+            return (
+              <div key={u.id} style={{ display: 'grid', gridTemplateColumns: '2fr 0.8fr 2fr 2fr 1fr 210px', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border-gray)', padding: '10px 12px' }}>
+                <div className="text-sm" style={{ minWidth: 220 }}>{u.email}</div>
+                <div className="text-sm" style={{ minWidth: 100 }}>{u.role}</div>
+                <div className="text-sm" style={{ minWidth: 160 }}>{u.full_name_en || '—'}</div>
+                <div className="text-sm" style={{ minWidth: 160 }} lang="ja">{u.full_name_ja || '—'}</div>
+                <div className="text-xs text-gray-600" style={{ minWidth: 160 }}>
+                  {u.tea_school_id && schoolById[u.tea_school_id]
+                    ? (schoolById[u.tea_school_id].name_en || schoolById[u.tea_school_id].name_ja || '—')
+                    : '—'}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 96px)', gap: 8, justifyContent: 'end', width: '210px' }}>
+                  <Link href={`/admin/members/${u.id}`} className="button small secondary">Edit</Link>
+                  <form action={deleteMember}>
+                    <input type="hidden" name="id" value={u.id} />
+                    <input type="hidden" name="role" value={u.role} />
+                    <button className="button small danger" type="submit" disabled={adminEditingDisallowed} aria-disabled={adminEditingDisallowed}>Delete</button>
+                  </form>
+                </div>
+              </div>
+            );
+          })}
         </div>
         {!isOwner ? <p className="text-xs text-gray-600 mt-2">Signed in as admin — you can manage guests and admins. Sign in as owner to manage owners.</p> : null}
       </section>

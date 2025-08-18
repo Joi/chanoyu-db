@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import TeaSchoolSelect from './TeaSchoolSelect';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 import crypto from 'node:crypto';
@@ -9,6 +10,9 @@ function hashPassword(plain: string): string {
   const hash = crypto.pbkdf2Sync(plain, salt, 200_000, 32, 'sha256').toString('hex');
   return `${salt}:${hash}`;
 }
+
+// Force dynamic to avoid caching issues on member edits
+export const dynamic = 'force-dynamic';
 
 async function updateAction(formData: FormData) {
   'use server';
@@ -20,6 +24,8 @@ async function updateAction(formData: FormData) {
   let role = String(formData.get('role') || 'guest');
   const full_name_en = String(formData.get('full_name_en') || '').trim() || null;
   const full_name_ja = String(formData.get('full_name_ja') || '').trim() || null;
+  const tea_school_id = String(formData.get('tea_school_id') || '').trim() || null;
+  // Optional fields not present in remote DB are omitted
   const current_role = String(formData.get('current_role') || 'guest');
   const password = String(formData.get('password') || '');
   if (!id) return notFound();
@@ -27,7 +33,7 @@ async function updateAction(formData: FormData) {
   if (!isOwner && current_role === 'owner') return notFound();
   if (!isOwner && role === 'owner') role = 'admin';
   const db = supabaseAdmin();
-  const patch: any = { email, full_name_en, full_name_ja, role };
+  const patch: any = { email, full_name_en, full_name_ja, tea_school_id, role };
   if (password) patch.password_hash = hashPassword(password);
   await db.from('accounts').update(patch).eq('id', id);
   revalidatePath(`/admin/members/${id}`);
@@ -36,15 +42,19 @@ async function updateAction(formData: FormData) {
 
 export default async function MemberDetail({ params, searchParams }: { params: { id: string }, searchParams?: { [key: string]: string | string[] | undefined } }) {
   const isAdmin = await requireAdmin();
-  if (!isAdmin) return notFound();
+  if (!isAdmin) return redirect('/login');
   const isOwner = await requireOwner();
   const db = supabaseAdmin();
-  const { data } = await db
+  const id = String(params.id || '').trim();
+  const { data, error } = await db
     .from('accounts')
-    .select('id,email,full_name_en,full_name_ja,role,created_at')
-    .eq('id', params.id)
+    .select('id,email,full_name_en,full_name_ja,tea_school_id,role,created_at')
+    .eq('id', id)
     .maybeSingle();
-  if (!data) return notFound();
+  if (!data) {
+    console.error('[members/[id]] not found', id, error?.message || error);
+    return redirect('/admin/members?missing=1');
+  }
 
   const saved = typeof searchParams?.saved === 'string' ? searchParams!.saved : undefined;
   return (
@@ -66,6 +76,9 @@ export default async function MemberDetail({ params, searchParams }: { params: {
         <input name="full_name_en" className="input" defaultValue={data.full_name_en || ''} />
         <label className="label">Name (JA)</label>
         <input name="full_name_ja" className="input" defaultValue={data.full_name_ja || ''} />
+        <label className="label">Tea school</label>
+        <TeaSchoolSelect name="tea_school_id" defaultValue={(data as any).tea_school_id || ''} />
+        {/* Website/Bio fields omitted to match live DB schema */}
         <label className="label">Set new password (optional)</label>
         <input name="password" className="input" placeholder="New password" />
         <div>

@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap node python test typecheck lint merge
+.PHONY: bootstrap node python test typecheck lint merge update-prices
 
 bootstrap: ## Install Node and Python deps
 	pnpm i || npm i
@@ -26,5 +26,8 @@ typecheck: ## TS typecheck
 
 merge: ## Merge Notion + Sheets and dump JSON
 	. .venv/bin/activate && python3 run_merge.py
+
+update-prices: ## Read sheet, merge with Notion In-Collection items, write merged sheet, update Supabase prices (JPY)
+	. .venv/bin/activate && PYTHONPATH=. python3 scripts/update_prices_from_sheet.py
 
 

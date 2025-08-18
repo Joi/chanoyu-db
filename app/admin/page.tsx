@@ -23,6 +23,8 @@ export default async function AdminHome() {
       <ul className="list-disc pl-5 space-y-2">
         <li><Link href="/admin/items" className="underline">Items</Link></li>
         <li><Link href="/admin/media" className="underline">Media</Link></li>
+        <li><Link href="/admin/classifications" className="underline">Classifications</Link></li>
+        <li><Link href="/admin/tea-schools" className="underline">Tea Schools</Link></li>
         <li><Link href="/admin/new" className="underline">Create object</Link></li>
         <li><Link href="/lookup" className="underline">Category Lookup (AAT + Wikidata)</Link></li>
         {/* Accounts merged into Members */}

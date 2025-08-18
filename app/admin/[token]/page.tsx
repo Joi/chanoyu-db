@@ -6,6 +6,8 @@ import { parseSupabasePublicUrl } from '@/lib/storage';
 import { translateText } from '@/lib/translate';
 import LookupPanel from './lookup-panel';
 import { requireOwner, requireAdmin } from '@/lib/auth';
+import RevealPrice from '@/app/components/RevealPrice';
+import PriceInput from '@/app/components/PriceInput';
 
 // Server action to save a classification for the current object token
 async function saveClassificationAction(formData: FormData) {
@@ -281,6 +283,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   ]);
   const object = objectCore?.data || null;
   const licenses = (licensesRes as any)?.data || [];
+  if (!isAdmin) return redirect('/login');
   let media: any[] = [];
   if (object?.id) {
     const [direct, links] = await Promise.all([
@@ -386,7 +389,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
             {isOwner ? (
               <>
                 <label className="label">Price</label>
-                <input name="price" type="number" step="0.01" className="input" defaultValue={object.price ?? ''} />
+                <PriceInput defaultValue={object.price ?? ''} />
               </>
             ) : null}
 

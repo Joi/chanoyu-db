@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
+import RevealPrice from '@/app/components/RevealPrice';
 // import { makeSupabaseThumbUrl } from '@/lib/storage';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 
@@ -115,7 +116,7 @@ export default async function ObjectPage({ params }: Props) {
             {isOwner && (data.price != null) ? (
               <div>
                 <dt className="text-sm text-gray-600">Price</dt>
-                <dd>{String(data.price)}</dd>
+                <dd><RevealPrice price={Number(data.price)} /></dd>
               </div>
             ) : null}
           </dl>

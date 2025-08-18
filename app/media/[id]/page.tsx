@@ -73,11 +73,11 @@ export default async function MediaPage({ params, searchParams }: { params: { id
   // Resolve ALL linked objects: direct FK + many-to-many
   const { data: linkRows } = await db
     .from('object_media_links')
-    .select('id, object_id')
+    .select('object_id, media_id')
     .eq('media_id', mediaRow.id);
   const objIds = new Set<string>();
   if (mediaRow.object_id) objIds.add(mediaRow.object_id);
-  for (const r of linkRows || []) objIds.add((r as any).object_id);
+  for (const r of (linkRows || [])) objIds.add((r as any).object_id);
   const idsArr = Array.from(objIds);
   let objectsById: Record<string, any> = {};
   if (idsArr.length) {
@@ -88,10 +88,10 @@ export default async function MediaPage({ params, searchParams }: { params: { id
   if (mediaRow.object_id && objectsById[mediaRow.object_id]) {
     associations.push({ kind: 'direct', object: objectsById[mediaRow.object_id], linkId: null });
   }
-  for (const r of linkRows || []) {
+  for (const r of (linkRows || [])) {
     const oid = (r as any).object_id;
     if (oid && objectsById[oid]) {
-      associations.push({ kind: 'link', object: objectsById[oid], linkId: (r as any).id });
+      associations.push({ kind: 'link', object: objectsById[oid], linkId: null });
     }
   }
 

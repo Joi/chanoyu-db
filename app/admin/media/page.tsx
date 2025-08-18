@@ -8,7 +8,7 @@ import { parseSupabasePublicUrl } from '@/lib/storage';
 async function saveMedia(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
-  if (!ok) return notFound();
+  if (!ok) return redirect('/login');
   const id = String(formData.get('id') || '');
   const copyright_owner = String(formData.get('copyright_owner') || '').trim() || null;
   const rights_note = String(formData.get('rights_note') || '').trim() || null;
@@ -22,7 +22,7 @@ async function saveMedia(formData: FormData) {
 async function deleteMedia(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
-  if (!ok) return notFound();
+  if (!ok) return redirect('/login');
   const id = String(formData.get('id') || '');
   if (!id) return;
   const db = supabaseAdmin();
@@ -48,7 +48,7 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
   // Fetch media rows first
   let query = db
     .from('media')
-    .select('id, uri, kind, rights_note, copyright_owner, license_id, object_id', { count: 'exact' })
+    .select('id, uri, kind, rights_note, copyright_owner, license_id, object_id, local_number', { count: 'exact' })
     .order('id', { ascending: false })
     .limit(200);
   if (q) query = query.ilike('rights_note', `%${q}%`);
@@ -58,7 +58,7 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
   const objectIds = Array.from(new Set(rows.map((r: any) => r.object_id).filter(Boolean)));
   const objectsById: Record<string, any> = {};
   if (objectIds.length) {
-    const { data: objs, error: eObj } = await db.from('objects').select('id, token, title').in('id', objectIds);
+    const { data: objs, error: eObj } = await db.from('objects').select('id, token, title, local_number').in('id', objectIds);
     if (eObj) console.error('[admin/media] objects query error', eObj.message || eObj);
     for (const o of objs || []) objectsById[(o as any).id] = o;
   }
@@ -74,22 +74,19 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
       <form className="mb-4">
         <input name="q" className="input" placeholder="Search rights/owner" defaultValue={q} />
       </form>
-      <div className="grid" style={{ gap: 12 }}>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
         {rows.map((m: any) => (
-          <div key={m.id} className="card" style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12 }}>
-            <div style={{ position: 'relative', width: 120, height: 90, background: '#f5f5f5', borderRadius: 4, overflow: 'hidden' }}>
+          <div key={m.id} className="card">
+            <div style={{ position: 'relative', width: '100%', paddingTop: '66%', background: '#f5f5f5', borderRadius: 4, overflow: 'hidden' }}>
               {m.uri ? (
-                <a href={m.uri} target="_blank" rel="noreferrer">
-                  <Image src={m.uri} alt={m.object?.title || 'Image'} fill sizes="120px" style={{ objectFit: 'cover' }} />
+                <a href={`/media/${m.id}`}>
+                  <Image src={m.uri} alt={objectsById[m.object_id as string]?.title || 'Image'} fill sizes="240px" style={{ objectFit: 'cover' }} />
                 </a>
               ) : null}
             </div>
-            <div>
+            <div style={{ marginTop: 8 }}>
               <p className="text-sm">
-                {objectsById[m.object_id as string] ? (
-                  <a className="underline" href={`/admin/${objectsById[m.object_id as string].token}`}>{objectsById[m.object_id as string].title}</a>
-                ) : '—'}
-                {' '}· <a className="underline" href={`/media/${m.id}`}>/media/{m.id}</a>
+                <a className="underline" href={`/media/${m.id}`}>{m.local_number || m.id}</a>
               </p>
               <form action={saveMedia} className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
                 <input type="hidden" name="id" value={m.id} />

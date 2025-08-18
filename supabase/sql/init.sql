@@ -51,6 +51,22 @@ create table if not exists media (
   sort_order int
 );
 
+-- Tea schools (authority for member affiliations)
+create table if not exists tea_schools (
+  id uuid primary key default gen_random_uuid(),
+  code text,
+  name_en text not null,
+  name_ja text,
+  website text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+alter table accounts add column if not exists tea_school_id uuid references tea_schools(id);
+
+alter table tea_schools enable row level security;
+create policy tea_schools_public_read on tea_schools for select using (true);
+
 -- Simple accounts table managed by owner via admin UI
 create table if not exists accounts (
   id uuid primary key default gen_random_uuid(),
@@ -100,6 +116,13 @@ alter table objects add column if not exists notes_ja text;
 alter table objects add column if not exists store text;
 alter table objects add column if not exists store_ja text;
 alter table objects add column if not exists url text;
+
+-- Extend accounts with optional member profile fields (idempotent)
+alter table accounts add column if not exists tea_school text;
+alter table accounts add column if not exists tea_school_ja text;
+alter table accounts add column if not exists website text;
+alter table accounts add column if not exists bio text;
+alter table accounts add column if not exists bio_ja text;
 
 -- Extend media for storage controls (idempotent)
 alter table media add column if not exists bucket text default 'media';
