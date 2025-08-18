@@ -43,9 +43,10 @@ def _format_notion_page_url(page_id: str) -> str:
 class NotionFetcher:
 	"""Fetch and simplify items from a Notion database."""
 
-	def __init__(self, token: str, database_id: str) -> None:
+	def __init__(self, token: str, database_id: str, include_block_image_fallback: bool = False) -> None:
 		self.client = Client(auth=token)
 		self.database_id = database_id
+		self.include_block_image_fallback = include_block_image_fallback
 
 	def fetch_all(self) -> List[Dict[str, Any]]:
 		results: List[Dict[str, Any]] = []
@@ -93,7 +94,7 @@ class NotionFetcher:
 		if files_aggregated:
 			first = files_aggregated[0]
 			first_image_url = first.get("url") or None
-		if not first_image_url and page.get("id"):
+		if not first_image_url and self.include_block_image_fallback and page.get("id"):
 			first_image_url = self._first_image_from_blocks(page["id"]) or None
 
 		return {
