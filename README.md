@@ -119,6 +119,14 @@ Curl examples:
 ---
 
 ## Environment
+### Ops workflow cheat sheet
+
+See `docs/WORKFLOW.md` for a concise reference covering:
+- Branching (`dev` → Preview, `main` → Production)
+- Vercel domain mapping and envs
+- Daily loop (local dev → push to `dev` → Preview → PR to `main`)
+- Shortcut deploys with `vercel` / `vercel --prebuilt` / `vercel --prod`
+
 
 Create `.env.local` and set the same in Vercel → Project Settings → Environment Variables:
 
