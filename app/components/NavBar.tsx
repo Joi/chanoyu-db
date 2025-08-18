@@ -16,7 +16,7 @@ export default function NavBar() {
     }
     function onDocumentClick(e: MouseEvent) {
       const target = e.target as Node;
-      if (!container.contains(target)) {
+      if (container && !container.contains(target)) {
         for (const d of groups) d.open = false;
       }
     }
