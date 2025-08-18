@@ -97,7 +97,7 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
                 <input type="hidden" name="id" value={m.id} />
                 <input name="copyright_owner" className="input" placeholder="Copyright owner" defaultValue={m.copyright_owner || ''} />
                 <input name="rights_note" className="input" placeholder="Rights note" defaultValue={m.rights_note || ''} />
-                <input name="license_id" className="input" placeholder="License ID (optional)" defaultValue={m.license?.id || ''} />
+                <input name="license_id" className="input" placeholder="License ID (optional)" defaultValue={m.license_id || ''} />
                 <div>
                   <button className="button" type="submit">Save</button>
                 </div>
