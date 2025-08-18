@@ -190,17 +190,34 @@ Configure `.env` (examples in `.env.example`) and run:
 Notes:
 - Notion file URLs are temporary; the provided TypeScript ingest mirrors images into Supabase Storage and stores durable public URLs.
 - The Next.js ingest scripts:
-  - `scripts/ingest-notion.ts` — imports first N pages (default 3), guesses EN/JA, maps fields, mirrors images, and writes a `Collection Token` back to Notion (URL or rich_text). Configure via:
+  - `scripts/ingest-notion.ts` — imports in-collection pages, guesses EN/JA, maps fields, mirrors images (with HEIC→JPEG conversion), and writes a `Collection Token` back to Notion (URL or rich_text). Configure via:
 
         NOTION_TOKEN=...               # internal integration token
         NOTION_DB_ID=...               # or NOTION_DATABASE_ID
         NOTION_TOKEN_PROP=Collection Token
-        NOTION_LIMIT=3
+        # selection & limits
+        NOTION_LIMIT=50                  # number of pages to ingest (default: ALL)
+        NOTION_IN_COLLECTION_PROP=In Collection
+
+        # image controls
+        NOTION_FETCH_IMAGES=1            # set to 0 to skip images
+        NOTION_IMAGES_ONLY=0             # set to 1 to mirror images only (no object upserts)
+        NOTION_MAX_IMAGES_PER_ITEM=999   # per-item cap (default: ALL)
         COLLECTION_BASE_URL=https://collection.ito.com  # optional for token links
 
       Run:
 
-        npx ts-node --compiler-options "{\"module\":\"CommonJS\"}" scripts/ingest-notion.ts
+        # ingest objects first, no images
+        NOTION_FETCH_IMAGES=0 npx --yes tsx scripts/ingest-notion.ts
+
+        # then mirror images only (idempotent)
+        NOTION_IMAGES_ONLY=1 npx --yes tsx scripts/ingest-notion.ts
+
+        # small sample
+        NOTION_LIMIT=10 NOTION_FETCH_IMAGES=0 npx --yes tsx scripts/ingest-notion.ts
+  - `scripts/convert-heic-existing.ts` — one-off utility to convert existing HEIC/HEIF media rows to JPEG in Supabase Storage and update their `uri` in `media`. Uses content-hash filenames so re-runs are safe.
+ 
+        npx --yes tsx scripts/convert-heic-existing.ts
 
   - `scripts/ingest-sheets.ts` — imports valuations from Google Sheets (TBD example)
 
