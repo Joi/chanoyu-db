@@ -167,15 +167,15 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Wikidata
-  const wdUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=ja&uselang=ja&type=item&limit=8&origin=*&search=${encodeURIComponent(q)}`;
+  // Wikidata: request English labels while showing Japanese UI labels when available
+  const wdUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=en&uselang=ja&type=item&limit=8&origin=*&search=${encodeURIComponent(q)}`;
   const wdJson = (await fetchJSON(wdUrl)) ?? { search: [] };
   const wikidata: Normalized[] = (wdJson.search || []).map((r: any) => ({
     scheme: 'wikidata',
     uri: `https://www.wikidata.org/entity/${r.id}`,
     id: r.id,
     label_en: r.label || '',
-    label_ja: (r.display && r.display.label && r.display.label.value) || r.label || '',
+    label_ja: (r.display && r.display.label && r.display.label.value) || '',
     note: r.description || '',
   }));
 

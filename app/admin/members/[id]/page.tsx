@@ -27,7 +27,9 @@ async function updateAction(formData: FormData) {
   if (!isOwner && current_role === 'owner') return notFound();
   if (!isOwner && role === 'owner') role = 'admin';
   const db = supabaseAdmin();
-  const patch: any = { email, full_name_en, full_name_ja, role };
+  const tea_school_id_raw = String(formData.get('tea_school_id') || '').trim();
+  const tea_school_id = tea_school_id_raw || null;
+  const patch: any = { email, full_name_en, full_name_ja, role, tea_school_id };
   if (password) patch.password_hash = hashPassword(password);
   await db.from('accounts').update(patch).eq('id', id);
   revalidatePath(`/admin/members/${id}`);
@@ -39,11 +41,18 @@ export default async function MemberDetail({ params, searchParams }: { params: {
   if (!isAdmin) return notFound();
   const isOwner = await requireOwner();
   const db = supabaseAdmin();
-  const { data } = await db
-    .from('accounts')
-    .select('id,email,full_name_en,full_name_ja,role,created_at')
-    .eq('id', params.id)
-    .maybeSingle();
+  const [{ data: acct }, { data: schools }] = await Promise.all([
+    db
+      .from('accounts')
+      .select('id,email,full_name_en,full_name_ja,role,created_at,tea_school_id')
+      .eq('id', params.id)
+      .maybeSingle(),
+    db
+      .from('tea_schools')
+      .select('id,name_en,name_ja')
+      .order('name_en'),
+  ]);
+  const data = acct || null;
   if (!data) return notFound();
 
   const saved = typeof searchParams?.saved === 'string' ? searchParams!.saved : undefined;
@@ -66,6 +75,13 @@ export default async function MemberDetail({ params, searchParams }: { params: {
         <input name="full_name_en" className="input" defaultValue={data.full_name_en || ''} />
         <label className="label">Name (JA)</label>
         <input name="full_name_ja" className="input" defaultValue={data.full_name_ja || ''} />
+        <label className="label">Tea school</label>
+        <select name="tea_school_id" className="input" defaultValue={(data as any).tea_school_id || ''}>
+          <option value="">(none)</option>
+          {((schools as any[]) || []).map((s) => (
+            <option key={(s as any).id} value={(s as any).id}>{(s as any).name_en}{(s as any).name_ja ? ` / ${(s as any).name_ja}` : ''}</option>
+          ))}
+        </select>
         <label className="label">Set new password (optional)</label>
         <input name="password" className="input" placeholder="New password" />
         <div>

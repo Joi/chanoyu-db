@@ -3,13 +3,14 @@ export default function HomePage() {
     <main>
       <section className="prose">
         <h1>Ito Collection</h1>
-        <p>
-          This site publishes identifiers for items in the Ito Collection. Given the right URL, it resolves to
-          human-readable pages and machine-readable Linked Art JSON-LD metadata for the object.
-        </p>
-        <p>
-          Try the <a href="/lookup">Category Lookup</a> or visit an object at <code>/id/&lt;token&gt;</code>.
-        </p>
+        <ul className="list-disc pl-5">
+          <li><a className="underline" href="/admin/items">Items</a> — list and manage items</li>
+          <li><a className="underline" href="/admin/items-and-images">Items and Images</a> — manage items with images</li>
+          <li><a className="underline" href="/admin/media">Images</a> — browse and edit media</li>
+          <li><a className="underline" href="/admin/classifications">Classifications</a> — browse and edit categories</li>
+          <li><a className="underline" href="/admin/members">Members</a> — manage users</li>
+          <li><a className="underline" href="/lookup">Lookup</a> — find AAT/Wikidata classifications</li>
+        </ul>
       </section>
     </main>
   );

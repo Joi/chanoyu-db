@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
 // import { makeSupabaseThumbUrl } from '@/lib/storage';
 import { requireAdmin, requireOwner } from '@/lib/auth';
+import { fetchAATPreferredLabels } from '@/lib/aat';
 
 type Props = { params: { token: string } };
 
@@ -38,6 +39,20 @@ export default async function ObjectPage({ params }: Props) {
   const classifications = (data.object_classifications ?? [])
     .map((oc: any) => oc.classification)
     .filter(Boolean);
+  const primaryCandidates = (data.object_classifications ?? [])
+    .filter((oc: any) => oc.role === 'primary type')
+    .map((oc: any) => oc.classification)
+    .filter(Boolean);
+  const primaryCls = primaryCandidates.find((c: any) => c.scheme === 'aat')
+    || primaryCandidates.find((c: any) => c.scheme === 'wikidata')
+    || primaryCandidates[0];
+  let primaryEn = primaryCls?.label as string | undefined;
+  let primaryJa = primaryCls?.label_ja as string | undefined;
+  if (primaryCls && (!primaryEn && !primaryJa) && primaryCls.scheme === 'aat' && primaryCls.uri) {
+    const labels = await fetchAATPreferredLabels(primaryCls.uri as string);
+    primaryEn = labels.en;
+    primaryJa = labels.ja;
+  }
 
   const baseId = `https://collection.ito.com/id/${token}`;
   const jsonld = buildLinkedArtJSONLD(data, media, classifications, baseId);
@@ -47,6 +62,14 @@ export default async function ObjectPage({ params }: Props) {
       <header className="mb-4">
         <h1 className="text-xl font-semibold">{data.title}</h1>
         {data.title_ja ? <p className="text-sm" lang="ja">{data.title_ja}</p> : null}
+        {primaryCls ? (
+          <p className="text-xs text-gray-600">
+            {primaryEn || (!primaryJa ? (primaryCls.uri as string) : '')}
+            {primaryEn && primaryJa ? ' / ' : ''}
+            {primaryJa ? <span lang="ja">{primaryJa}</span> : null}
+            {!primaryEn && !primaryJa ? (primaryCls.uri as string) : ''}
+          </p>
+        ) : null}
         {isAdmin || isOwner ? (
           <p className="text-xs mt-1"><a className="underline" href={`/admin/${token}`}>Edit</a></p>
         ) : null}

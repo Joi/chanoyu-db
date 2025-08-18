@@ -2,50 +2,9 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { fetchAATPreferredLabels } from '@/lib/aat';
 import { requireAdmin, requireOwner } from '@/lib/auth';
-import { parseSupabasePublicUrl } from '@/lib/storage';
-
-async function addImage(formData: FormData) {
-  'use server';
-  const token = String(formData.get('token') || '');
-  const url = String(formData.get('image_url') || '').trim();
-  if (!token || !url) return;
-  const db = supabaseAdmin();
-  const { data: obj } = await db.from('objects').select('id').eq('token', token).single();
-  if (!obj) return;
-  await db.from('media').insert({ object_id: obj.id, uri: url, kind: 'image', sort_order: 999 });
-  revalidatePath('/admin/items');
-}
-
-async function deleteImage(formData: FormData) {
-  'use server';
-  const mediaId = String(formData.get('media_id') || '');
-  if (!mediaId) return;
-  const db = supabaseAdmin();
-  const { data } = await db.from('media').select('id, uri').eq('id', mediaId).single();
-  if (data) {
-    const parsed = parseSupabasePublicUrl(data.uri);
-    if (parsed) {
-      try {
-        // @ts-ignore
-        await (db as any).storage.from(parsed.bucket).remove([parsed.path]);
-      } catch {}
-    }
-    await db.from('media').delete().eq('id', mediaId);
-  }
-  revalidatePath('/admin/items');
-}
-
-async function makePrimary(formData: FormData) {
-  'use server';
-  const mediaId = String(formData.get('media_id') || '');
-  const objectId = String(formData.get('object_id') || '');
-  if (!mediaId || !objectId) return;
-  const db = supabaseAdmin();
-  await db.from('media').update({ sort_order: 0 }).eq('id', mediaId);
-  await db.from('media').update({ sort_order: 999 }).neq('id', mediaId).eq('object_id', objectId);
-  revalidatePath('/admin/items');
-}
+import CopyUrlButton from '@/app/admin/components/CopyUrlButton';
 
 async function deleteItem(formData: FormData) {
   'use server';
@@ -65,7 +24,12 @@ export default async function ItemsPage() {
   const db = supabaseAdmin();
   const { data: objs, error: eObjs, count } = await db
     .from('objects')
-    .select('id, token, title, title_ja, local_number, price, store, location', { count: 'exact' })
+    .select(`
+      id, token, title, title_ja,
+      object_classifications:object_classifications(role,
+        classification:classifications(id, scheme, uri, label, label_ja)
+      )
+    `, { count: 'exact' })
     .order('updated_at', { ascending: false })
     .limit(200);
   if (eObjs) console.error('[admin/items] query error', eObjs.message || eObjs);
@@ -85,6 +49,33 @@ export default async function ItemsPage() {
     }
   }
 
+  // Pre-compute primary classification labels per object (AAT preferred)
+  const primaryLabelsByObjectId: Record<string, { id?: string; en?: string; ja?: string; uri?: string } | null> = {};
+  await Promise.all(
+    objectList.map(async (o: any) => {
+      const ocs = (o.object_classifications || []) as any[];
+      const primaryCandidates = ocs
+        .filter((oc: any) => (oc as any).role === 'primary type')
+        .map((oc: any) => (oc as any).classification)
+        .filter(Boolean);
+      const primaryCls = primaryCandidates.find((c: any) => c.scheme === 'aat')
+        || primaryCandidates.find((c: any) => c.scheme === 'wikidata')
+        || primaryCandidates[0];
+      if (!primaryCls) {
+        primaryLabelsByObjectId[o.id] = null;
+        return;
+      }
+      let en = (primaryCls?.label as string | undefined) || undefined;
+      let ja = (primaryCls?.label_ja as string | undefined) || undefined;
+      if ((!en && !ja) && primaryCls.scheme === 'aat' && primaryCls.uri) {
+        const labels = await fetchAATPreferredLabels(primaryCls.uri as string);
+        en = labels.en;
+        ja = labels.ja;
+      }
+      primaryLabelsByObjectId[o.id] = { id: primaryCls?.id as string | undefined, en, ja, uri: primaryCls?.uri as string | undefined };
+    })
+  );
+
   return (
     <main className="max-w-5xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Items</h1>
@@ -96,58 +87,41 @@ export default async function ItemsPage() {
       <div className="grid" style={{ gap: 12 }}>
         {objectList.map((o: any) => {
           const mediaSorted = (mediaByObject[o.id] || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-          const thumb = mediaSorted[0]?.uri;
-          return (
-            <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 12 }}>
-              <div>
-                <div style={{ position: 'relative', width: 120, height: 120, background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, overflow: 'hidden' }}>
-                  {thumb ? <Image src={thumb} alt={o.title} fill sizes="120px" style={{ objectFit: 'cover' }} /> : null}
-                </div>
-                <form action={addImage} className="mt-2">
-                  <input type="hidden" name="token" value={o.token} />
-                  <input name="image_url" className="input" placeholder="Add image URL" />
-                  <button className="button" type="submit" style={{ marginTop: 6 }}>Add</button>
-                </form>
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <a href={`/admin/${o.token}`} className="text-sm font-semibold underline">{o.title || o.local_number || '(untitled)'}</a>
-                  {o.title_ja ? <span className="text-sm" lang="ja">/ {o.title_ja}</span> : null}
-                  <span className="text-xs text-gray-600">· Token: {o.token}</span>
-                  <a href={`/id/${o.token}`} className="text-xs underline" style={{ marginLeft: 'auto' }}>View</a>
-                  <a href={`/admin/${o.token}`} className="text-xs underline">Edit</a>
-                  {isOwner ? (
-                    <form action={deleteItem}>
-                      <input type="hidden" name="object_id" value={o.id} />
-                      <button className="text-red-600 text-xs" type="submit">Delete</button>
-                    </form>
-                  ) : null}
-                </div>
-                <div className="text-xs text-gray-600" style={{ marginBottom: 8 }}>
-                  {isOwner ? <span>Price: {o.price ?? '—'} · </span> : null}
-                  <span>Store: {o.store ?? '—'} · Location: {o.location ?? '—'}</span>
-                </div>
+          const primaryMedia = mediaSorted[0] as any;
+          const thumb = primaryMedia?.uri;
+          const primary = primaryLabelsByObjectId[o.id];
+          const primaryLabelEn = primary?.en;
+          const primaryLabelJa = primary?.ja;
+          const primaryUri = primary?.uri;
+          const primaryId = primary?.id;
 
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {mediaSorted.slice(0, 6).map((m: any) => (
-                    <div key={m.id} className="card">
-                      <div style={{ position: 'relative', width: '100%', paddingTop: '66%', background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, overflow: 'hidden' }}>
-                        {m.uri ? <Image src={m.uri} alt={o.title} fill sizes="160px" style={{ objectFit: 'cover' }} /> : null}
-                      </div>
-                      <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                        <form action={makePrimary}>
-                          <input type="hidden" name="media_id" value={m.id} />
-                          <input type="hidden" name="object_id" value={o.id} />
-                          <button className="button secondary" type="submit">Make primary</button>
-                        </form>
-                        <form action={deleteImage}>
-                          <input type="hidden" name="media_id" value={m.id} />
-                          <button className="text-red-600 text-sm" type="submit">Delete</button>
-                        </form>
-                      </div>
-                    </div>
-                  ))}
+          return (
+            <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 12, alignItems: 'center' }}>
+              <a href={primaryMedia ? `/media/${primaryMedia.id}` : '#'} title="Open media" style={{ display: 'block' }}>
+                <div style={{ position: 'relative', width: 80, height: 54, background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, overflow: 'hidden' }}>
+                  {thumb ? <Image src={thumb} alt={o.title} fill sizes="80px" style={{ objectFit: 'cover' }} /> : null}
                 </div>
+              </a>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <a href={`/admin/${o.token}`} className="text-sm font-semibold underline">{o.title || o.title_ja || o.token}</a>
+                {o.title && o.title_ja ? <span className="text-sm" lang="ja">/ {o.title_ja}</span> : null}
+                {primary ? (
+                  <span className="text-xs text-gray-600">
+                    · <a className="underline" href={`/admin/classifications/${primaryId || ''}`}>{primaryLabelEn || (!primaryLabelJa ? (primaryUri as string) : '')}</a>
+                    {primaryLabelEn && primaryLabelJa ? ' / ' : ''}
+                    {primaryLabelJa ? <a className="underline" href={`/admin/classifications/${primaryId || ''}`} lang="ja">{primaryLabelJa}</a> : null}
+                    {!primaryLabelEn && !primaryLabelJa ? <a className="underline" href={`/admin/classifications/${primaryId || ''}`}>{primaryUri as string}</a> : ''}
+                  </span>
+                ) : null}
+                <a href={`/id/${o.token}`} className="text-xs underline" style={{ marginLeft: 'auto' }}>View</a>
+                <a href={`/admin/${o.token}`} className="text-xs underline">Edit</a>
+                <CopyUrlButton path={`/id/${o.token}`} />
+                {isOwner ? (
+                  <form action={deleteItem}>
+                    <input type="hidden" name="object_id" value={o.id} />
+                    <button className="text-red-600 text-xs" type="submit">Delete</button>
+                  </form>
+                ) : null}
               </div>
             </div>
           );

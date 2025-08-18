@@ -33,7 +33,7 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
   const db = supabaseAdmin();
   const { data } = await db
     .from('accounts')
-    .select('id,email,full_name_en,full_name_ja,role,created_at')
+    .select('id,email,full_name_en,full_name_ja,role,created_at,tea_school_id, tea_school:tea_schools(name_en,name_ja)')
     .order('created_at', { ascending: false });
 
   const deleted = typeof searchParams?.deleted === 'string' ? searchParams!.deleted : undefined;
@@ -54,6 +54,7 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
                 <th className="text-left p-2">Role</th>
                 <th className="text-left p-2">Name (EN)</th>
                 <th className="text-left p-2">Name (JA)</th>
+                <th className="text-left p-2">Tea school</th>
                 <th className="text-left p-2">Actions</th>
               </tr>
             </thead>
@@ -67,13 +68,16 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
                     <td className="p-2" style={{ minWidth: 140 }}>{u.role}</td>
                     <td className="p-2" style={{ minWidth: 180 }}>{u.full_name_en || '—'}</td>
                     <td className="p-2" style={{ minWidth: 180 }}>{u.full_name_ja || '—'}</td>
+                    <td className="p-2" style={{ minWidth: 200 }}>{u.tea_school?.name_en ? `${u.tea_school.name_en}${u.tea_school?.name_ja ? ' / ' + u.tea_school.name_ja : ''}` : '—'}</td>
                     <td className="p-2" style={{ whiteSpace: 'nowrap' }}>
-                      <a className="button secondary" href={`/admin/members/${u.id}`}>Edit</a>
-                      <form action={deleteMember} className="inline" style={{ marginLeft: 8 }}>
-                        <input type="hidden" name="id" value={u.id} />
-                        <input type="hidden" name="role" value={u.role} />
-                        <button className="text-red-600 text-sm" type="submit" disabled={adminEditingDisallowed}>Delete</button>
-                      </form>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <a className="button secondary small" href={`/admin/members/${u.id}`}>Edit</a>
+                        <form action={deleteMember}>
+                          <input type="hidden" name="id" value={u.id} />
+                          <input type="hidden" name="role" value={u.role} />
+                          <button className="button danger small" type="submit" disabled={adminEditingDisallowed}>Delete</button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 );

@@ -57,6 +57,7 @@ create table if not exists accounts (
   email text unique not null,
   full_name_en text,
   full_name_ja text,
+  tea_school_id uuid references tea_schools(id),
   role text not null check (role in ('owner','admin','guest')),
   password_hash text not null,
   created_at timestamptz not null default now()
@@ -87,6 +88,15 @@ create policy accounts_read_owner_only on accounts for select using (false);
 create policy accounts_write_owner_only on accounts for all using (false) with check (false);
 
 -- Note: We enforce account and price visibility at the API level (server routes)
+-- Tea schools
+create table if not exists tea_schools (
+  id uuid primary key default gen_random_uuid(),
+  name_en text not null,
+  name_ja text
+);
+
+alter table tea_schools enable row level security;
+create policy tea_schools_public_read on tea_schools for select using (true);
 
 -- Extend objects with editorial and commerce fields (idempotent)
 alter table objects add column if not exists tags text[];

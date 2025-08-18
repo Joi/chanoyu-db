@@ -21,7 +21,9 @@ export default async function AdminHome() {
     <main style={{ maxWidth: 640, margin: '40px auto', padding: 24 }}>
       <h1 className="text-xl font-semibold mb-4">Admin</h1>
       <ul className="list-disc pl-5 space-y-2">
-        <li><Link href="/admin/items" className="underline">Items</Link></li>
+        <li><Link href="/admin/items" className="underline">Items</Link> <span className="text-xs text-gray-600">(lightweight)</span></li>
+        <li><Link href="/admin/items-and-images" className="underline">Items and Images</Link></li>
+        <li><Link href="/admin/classifications" className="underline">Classifications</Link></li>
         <li><Link href="/admin/media" className="underline">Media</Link></li>
         <li><Link href="/admin/new" className="underline">Create object</Link></li>
         <li><Link href="/lookup" className="underline">Category Lookup (AAT + Wikidata)</Link></li>

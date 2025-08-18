@@ -96,3 +96,18 @@ export async function requireOwner(): Promise<boolean> {
     return false;
   }
 }
+
+export async function requireMember(): Promise<boolean> {
+  const token = cookies().get('ito_admin')?.value;
+  if (!token) return false;
+  try {
+    const { payload } = await jwtVerify(token, encoder.encode(AUTH_SECRET));
+    const email = typeof payload.sub === 'string' ? payload.sub : '';
+    if (!email) return false;
+    const db = supabaseAdmin();
+    const { data } = await db.from('accounts').select('role').eq('email', email).maybeSingle();
+    return data?.role === 'guest' || data?.role === 'admin' || data?.role === 'owner';
+  } catch {
+    return false;
+  }
+}

@@ -6,6 +6,7 @@ import { parseSupabasePublicUrl } from '@/lib/storage';
 import { translateText } from '@/lib/translate';
 import LookupPanel from './lookup-panel';
 import { requireOwner, requireAdmin } from '@/lib/auth';
+import { fetchAATPreferredLabels } from '@/lib/aat';
 
 // Server action to save a classification for the current object token
 async function saveClassificationAction(formData: FormData) {
@@ -13,49 +14,138 @@ async function saveClassificationAction(formData: FormData) {
   const token = String(formData.get('object_token') || '');
   const scheme = String(formData.get('scheme') || '');
   const uri = String(formData.get('uri') || '');
-  const label = String(formData.get('label') || '');
-  const label_ja = String(formData.get('label_ja') || '');
+  let label = String(formData.get('label') || '');
+  let label_ja = String(formData.get('label_ja') || '');
   const role = String(formData.get('role') || 'primary type');
   const db = supabaseAdmin();
-  try {
-    console.log('[classification] start', { token, scheme, uri, role });
-    if (!token || !scheme || !uri) throw new Error('missing token|scheme|uri');
-    const { data: obj, error: eObj } = await db.from('objects').select('id').eq('token', token).single();
-    if (eObj || !obj) throw eObj || new Error('object not found');
 
-    // Find existing classification by scheme+uri, or create if missing
-    let clsId: string | null = null;
-    const { data: existing, error: eFind } = await db
-      .from('classifications')
-      .select('id')
-      .eq('scheme', scheme)
-      .eq('uri', uri)
-      .maybeSingle();
-    if (eFind) throw eFind;
-    if (existing?.id) {
-      clsId = existing.id;
-    } else {
-      const { data: inserted, error: eIns } = await db
-        .from('classifications')
-        .insert({ scheme, uri, label, label_ja, kind: 'concept' })
-        .select('id')
-        .single();
-      if (eIns || !inserted) throw eIns || new Error('classification insert failed');
-      clsId = inserted.id;
-    }
-
-    const { error: eLink } = await db
-      .from('object_classifications')
-      .upsert({ object_id: obj.id, classification_id: clsId, role });
-    if (eLink) throw eLink;
-
-    console.log('[classification] saved', { token, cls: clsId });
-    revalidatePath(`/admin/${token}`);
-    redirect(`/admin/${token}?saved=classification`);
-  } catch (err: any) {
-    console.error('[classification] error', err?.message || err);
-    redirect(`/admin/${token}?error=classification`);
+  console.log('[classification] start', { token, scheme, uri, role });
+  if (!token || !scheme || !uri) {
+    return redirect(`/admin/${token}?error=classification`);
   }
+
+  // For AAT, resolve preferred labels if missing or placeholder
+  if (scheme.toLowerCase() === 'aat' && (!label || /^\s*AAT\b/i.test(label))) {
+    const id = uri.replace(/^.*?(\d+)$/, '$1');
+    if (id) {
+      const pref = await fetchAATPreferredLabels(id);
+      label = pref.en || label || `AAT ${id}`;
+      label_ja = pref.ja || label_ja || '';
+    }
+  }
+
+  const { data: obj, error: eObj } = await db.from('objects').select('id').eq('token', token).single();
+  if (eObj || !obj) return redirect(`/admin/${token}?error=classification`);
+
+  // Find existing classification by scheme+uri, or create if missing
+  let clsId: string | null = null;
+  const { data: existing, error: eFind } = await db
+    .from('classifications')
+    .select('id')
+    .eq('scheme', scheme)
+    .eq('uri', uri)
+    .maybeSingle();
+  if (eFind) return redirect(`/admin/${token}?error=classification`);
+  if (existing?.id) {
+    clsId = existing.id;
+    // If labels are provided and differ or AAT placeholder present, update classification
+    const shouldUpdate = Boolean((label && label !== '') || (label_ja && label_ja !== ''));
+    if (shouldUpdate) {
+      await db
+        .from('classifications')
+        .update({
+          label: label || null,
+          label_ja: label_ja || null,
+        })
+        .eq('id', clsId);
+    }
+  } else {
+    const { data: inserted, error: eIns } = await db
+      .from('classifications')
+      .insert({ scheme, uri, label, label_ja, kind: 'concept' })
+      .select('id')
+      .single();
+    if (eIns || !inserted) return redirect(`/admin/${token}?error=classification`);
+    clsId = inserted.id;
+  }
+
+  const { error: eLink } = await db
+    .from('object_classifications')
+    .upsert({ object_id: obj.id, classification_id: clsId, role });
+  if (eLink) return redirect(`/admin/${token}?error=classification`);
+
+  console.log('[classification] saved', { token, cls: clsId });
+  revalidatePath(`/admin/${token}`);
+  redirect(`/admin/${token}?saved=classification`);
+}
+
+// Allow editing labels for an existing classification linked to this object
+async function updateClassificationLabelAction(formData: FormData) {
+  'use server';
+  const token = String(formData.get('object_token') || '');
+  const classification_id = String(formData.get('classification_id') || '');
+  const label = String(formData.get('label') || '');
+  const label_ja = String(formData.get('label_ja') || '');
+  if (!token || !classification_id) return redirect(`/admin/${token}?error=classification-edit`);
+  const db = supabaseAdmin();
+  await db
+    .from('classifications')
+    .update({ label: label || null, label_ja: label_ja || null })
+    .eq('id', classification_id);
+  revalidatePath(`/admin/${token}`);
+  redirect(`/admin/${token}?saved=classification-edit`);
+}
+
+// Remove a classification link from this object
+async function unlinkClassificationAction(formData: FormData) {
+  'use server';
+  const token = String(formData.get('object_token') || '');
+  const classification_id = String(formData.get('classification_id') || '');
+  const role = String(formData.get('role') || 'primary type');
+  if (!token || !classification_id || !role) return redirect(`/admin/${token}?error=classification-remove`);
+  const db = supabaseAdmin();
+  const { data: obj } = await db.from('objects').select('id').eq('token', token).single();
+  if (!obj) return redirect(`/admin/${token}?error=classification-remove`);
+  await db
+    .from('object_classifications')
+    .delete()
+    .eq('object_id', obj.id)
+    .eq('classification_id', classification_id)
+    .eq('role', role);
+  revalidatePath(`/admin/${token}`);
+  redirect(`/admin/${token}?saved=classification-remove`);
+}
+
+// Link an existing classification to this object by ID
+async function addExistingClassificationAction(formData: FormData) {
+  'use server';
+  const token = String(formData.get('object_token') || '');
+  const classification_id = String(formData.get('classification_id') || '');
+  const role = String(formData.get('role') || 'primary type');
+  if (!token || !classification_id) return redirect(`/admin/${token}?error=classification-add`);
+  const db = supabaseAdmin();
+  const { data: obj } = await db.from('objects').select('id').eq('token', token).single();
+  if (!obj) return redirect(`/admin/${token}?error=classification-add`);
+  await db
+    .from('object_classifications')
+    .upsert({ object_id: obj.id, classification_id, role });
+
+  // If selected classification is AAT and labels are missing/placeholder, resolve and update
+  const { data: cls } = await db.from('classifications').select('id, scheme, uri, label, label_ja').eq('id', classification_id).maybeSingle();
+  if (cls && String(cls.scheme).toLowerCase() === 'aat' && (!cls.label || /^\s*AAT\b/i.test(String(cls.label)))) {
+    const id = String(cls.uri || '').replace(/^.*?(\d+)$/, '$1');
+    if (id) {
+      const pref = await fetchAATPreferredLabels(id);
+      if (pref.en || pref.ja) {
+        await db
+          .from('classifications')
+          .update({ label: pref.en || cls.label || null, label_ja: pref.ja || cls.label_ja || null })
+          .eq('id', classification_id);
+      }
+    }
+  }
+  revalidatePath(`/admin/${token}`);
+  redirect(`/admin/${token}?saved=classification-add`);
 }
 
 async function deleteMediaAction(formData: FormData) {
@@ -264,7 +354,7 @@ async function updateObjectAction(formData: FormData) {
 export default async function AdminObjectPage({ params, searchParams }: { params: { token: string }, searchParams?: { [key: string]: string | string[] | undefined } }) {
   const token = params.token;
   const db = supabaseAdmin();
-  const [objectCore, licensesRes, isOwner, isAdmin] = await Promise.all([
+  const [objectCore, licensesRes, allClassifications, isOwner, isAdmin] = await Promise.all([
     db
       .from('objects')
       .select(
@@ -276,11 +366,31 @@ export default async function AdminObjectPage({ params, searchParams }: { params
       .eq('token', token)
       .single(),
     db.from('licenses').select('id,code,name,uri').order('code'),
+    db.from('classifications').select('id, scheme, uri, label, label_ja').order('scheme'),
     requireOwner(),
     requireAdmin(),
   ]);
   const object = objectCore?.data || null;
   const licenses = (licensesRes as any)?.data || [];
+  const classificationList = (allClassifications as any)?.data || [];
+
+  // Improve labels for AAT entries in the dropdown when missing/placeholder
+  for (const c of classificationList) {
+    if (String(c.scheme).toLowerCase() === 'aat' && (!c.label || /^\s*AAT\b/i.test(String(c.label)))) {
+      const id = String(c.uri || '').replace(/^.*?(\d+)$/, '$1');
+      if (id) {
+        const pref = await fetchAATPreferredLabels(id);
+        if (pref.en || pref.ja) {
+          c.label = pref.en || c.label;
+          c.label_ja = pref.ja || c.label_ja;
+          await supabaseAdmin()
+            .from('classifications')
+            .update({ label: c.label || null, label_ja: c.label_ja || null })
+            .eq('id', c.id);
+        }
+      }
+    }
+  }
   let media: any[] = [];
   if (object?.id) {
     const [direct, links] = await Promise.all([
@@ -302,12 +412,41 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   const saved = typeof searchParams?.saved === 'string' ? searchParams!.saved : undefined;
   const error = typeof searchParams?.error === 'string' ? searchParams!.error : undefined;
 
+  // Compute primary classification label(s) (AAT preferred), resolving AAT labels if missing
+  let primaryType: { en?: string; ja?: string; uri?: string } | null = null;
+  {
+    const ocs = (object.object_classifications || []) as any[];
+    const primary = ocs
+      .filter((oc: any) => oc.role === 'primary type')
+      .map((oc: any) => oc.classification)
+      .filter(Boolean);
+    const primaryCls = primary.find((c: any) => c.scheme === 'aat') || primary.find((c: any) => c.scheme === 'wikidata') || primary[0];
+    if (primaryCls) {
+      let en = (primaryCls.label as string | undefined) || undefined;
+      let ja = (primaryCls.label_ja as string | undefined) || undefined;
+      if ((!en && !ja) && primaryCls.scheme === 'aat' && primaryCls.uri) {
+        const labels = await fetchAATPreferredLabels(primaryCls.uri as string);
+        en = labels.en;
+        ja = labels.ja;
+      }
+      primaryType = { en, ja, uri: primaryCls.uri as string | undefined };
+    }
+  }
+
   return (
     <main className="max-w-4xl mx-auto p-6">
       {saved ? <div className="card" style={{ background: '#f0fff4', borderColor: '#bbf7d0', marginBottom: 12 }}>Saved {saved}</div> : null}
       {error ? <div className="card" style={{ background: '#fff1f2', borderColor: '#fecdd3', marginBottom: 12 }}>Error: {error}</div> : null}
       <h1 className="text-xl font-semibold mb-2">Admin: {object.title}</h1>
       {object.title_ja ? <p className="text-sm" lang="ja">{object.title_ja}</p> : null}
+      {primaryType ? (
+        <p className="text-xs text-gray-600">
+          Primary type: {primaryType.en || (!primaryType.ja ? (primaryType.uri as string) : '')}
+          {primaryType.en && primaryType.ja ? ' / ' : ''}
+          {primaryType.ja ? <span lang="ja">{primaryType.ja}</span> : null}
+          {!primaryType.en && !primaryType.ja ? (primaryType.uri as string) : ''}
+        </p>
+      ) : null}
       <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
         <section>
           <h2 className="text-lg font-semibold mb-2">Images</h2>
@@ -458,6 +597,29 @@ export default async function AdminObjectPage({ params, searchParams }: { params
                   {oc.classification?.label_ja ? <span lang="ja">/ {oc.classification.label_ja}</span> : null}
                   <div className="text-xs text-gray-600">{oc.role} · {oc.classification?.scheme} · <a className="underline" href={oc.classification?.uri} target="_blank" rel="noreferrer">{oc.classification?.uri}</a></div>
                 </div>
+                <div className="grid" style={{ gridTemplateColumns: '1fr auto', gap: 8, marginTop: 8 }}>
+                  <form action={updateClassificationLabelAction} className="grid" style={{ gridTemplateColumns: '1fr 1fr auto', gap: 8 }}>
+                    <input type="hidden" name="object_token" value={token} />
+                    <input type="hidden" name="classification_id" value={oc.classification?.id || ''} />
+                    <div>
+                      <label className="label">Label (EN)</label>
+                      <input name="label" className="input" defaultValue={oc.classification?.label || ''} />
+                    </div>
+                    <div>
+                      <label className="label">Label (JA)</label>
+                      <input name="label_ja" className="input" defaultValue={oc.classification?.label_ja || ''} />
+                    </div>
+                    <div style={{ alignSelf: 'end' }}>
+                      <button className="button" type="submit">Save labels</button>
+                    </div>
+                  </form>
+                  <form action={unlinkClassificationAction} style={{ alignSelf: 'end' }}>
+                    <input type="hidden" name="object_token" value={token} />
+                    <input type="hidden" name="classification_id" value={oc.classification?.id || ''} />
+                    <input type="hidden" name="role" value={oc.role || ''} />
+                    <button className="text-red-600 text-sm" type="submit">Remove</button>
+                  </form>
+                </div>
               </li>
             ))}
           </ul>
@@ -473,6 +635,26 @@ export default async function AdminObjectPage({ params, searchParams }: { params
               <input name="label_ja" className="input" placeholder="Label JA (optional)" />
               <input name="role" className="input" placeholder="primary type" defaultValue="primary type" />
               <button className="button" type="submit">Save classification</button>
+            </form>
+            <form action={addExistingClassificationAction} className="grid" style={{ gridTemplateColumns: '2fr 1fr auto', gap: 8, marginTop: 12 }}>
+              <input type="hidden" name="object_token" value={token} />
+              <div>
+                <label className="label">Pick existing</label>
+                <select name="classification_id" className="input">
+                  {(classificationList || []).map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {(c.label || c.uri)}{c.label_ja ? ` / ${c.label_ja}` : ''} · {c.scheme}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Role</label>
+                <input name="role" className="input" defaultValue="primary type" />
+              </div>
+              <div style={{ alignSelf: 'end' }}>
+                <button className="button" type="submit">Add</button>
+              </div>
             </form>
           </div>
         </section>

@@ -43,14 +43,18 @@ async function unlinkObjectAction(formData: FormData) {
   'use server';
   const mediaId = String(formData.get('media_id') || '');
   const objectId = String(formData.get('object_id') || '');
-  const linkId = String(formData.get('link_id') || '');
+  const linkObjectId = String(formData.get('link_object_id') || '');
   if (!mediaId || !objectId) return;
   const okAdmin = await requireAdmin();
   const okOwner = await requireOwner();
   if (!okAdmin && !okOwner) return;
   const db = supabaseAdmin();
-  if (linkId) {
-    await db.from('object_media_links').delete().eq('id', linkId);
+  if (linkObjectId) {
+    await db
+      .from('object_media_links')
+      .delete()
+      .eq('media_id', mediaId)
+      .eq('object_id', linkObjectId);
   } else {
     // If it is the direct FK association, null it out instead
     await db.from('media').update({ object_id: null }).eq('id', mediaId).eq('object_id', objectId);
@@ -73,7 +77,7 @@ export default async function MediaPage({ params, searchParams }: { params: { id
   // Resolve ALL linked objects: direct FK + many-to-many
   const { data: linkRows } = await db
     .from('object_media_links')
-    .select('id, object_id')
+    .select('object_id')
     .eq('media_id', mediaRow.id);
   const objIds = new Set<string>();
   if (mediaRow.object_id) objIds.add(mediaRow.object_id);
@@ -84,14 +88,14 @@ export default async function MediaPage({ params, searchParams }: { params: { id
     const { data: objs } = await db.from('objects').select('id, token, title, title_ja').in('id', idsArr);
     for (const o of objs || []) objectsById[(o as any).id] = o;
   }
-  const associations: Array<{ kind: 'direct' | 'link'; object: any; linkId: string | null }> = [];
+  const associations: Array<{ kind: 'direct' | 'link'; object: any; linkObjectId: string | null }> = [];
   if (mediaRow.object_id && objectsById[mediaRow.object_id]) {
-    associations.push({ kind: 'direct', object: objectsById[mediaRow.object_id], linkId: null });
+    associations.push({ kind: 'direct', object: objectsById[mediaRow.object_id], linkObjectId: null });
   }
   for (const r of linkRows || []) {
     const oid = (r as any).object_id;
     if (oid && objectsById[oid]) {
-      associations.push({ kind: 'link', object: objectsById[oid], linkId: (r as any).id });
+      associations.push({ kind: 'link', object: objectsById[oid], linkObjectId: oid });
     }
   }
 
@@ -172,7 +176,9 @@ export default async function MediaPage({ params, searchParams }: { params: { id
                   <form key={i} action={unlinkObjectAction} className="space-y-2">
                     <input type="hidden" name="media_id" value={mediaRow.id} />
                     <input type="hidden" name="object_id" value={a.object.id} />
-                    {a.linkId ? <input type="hidden" name="link_id" value={a.linkId} /> : null}
+                    {a.kind === 'link' && a.linkObjectId ? (
+                      <input type="hidden" name="link_object_id" value={a.linkObjectId} />
+                    ) : null}
                     <div className="text-sm">{a.object.title || a.object.title_ja || a.object.token}</div>
                     <button className="button secondary" type="submit">Unlink</button>
                   </form>

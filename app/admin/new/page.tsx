@@ -31,32 +31,43 @@ async function createObject(formData: FormData): Promise<void> {
 
 export default function NewObjectPage() {
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">New Object</h1>
-      <form action={createObject} className="space-y-3">
-        <div>
-          <label className="block text-sm">Title (EN)</label>
-          <input name="title" className="border rounded p-2 w-full" required />
-        </div>
-        <div>
-          <label className="block text-sm">Title (JA)</label>
-          <input name="title_ja" className="border rounded p-2 w-full" />
-        </div>
-        <div>
-          <label className="block text-sm">Local Number</label>
-          <input name="local_number" className="border rounded p-2 w-full" />
-        </div>
-        <div>
-          <label className="block text-sm">Summary (EN)</label>
-          <textarea name="summary" className="border rounded p-2 w-full" rows={3} />
-        </div>
-        <div>
-          <label className="block text-sm">Summary (JA)</label>
-          <textarea name="summary_ja" className="border rounded p-2 w-full" rows={3} />
-        </div>
-        <p className="text-xs text-gray-600">After saving, use <a className="underline" href="/lookup">Lookup</a> to find AAT/Wikidata and attach in DB (next step).</p>
-        <button className="bg-black text-white px-4 py-2 rounded" type="submit">Create</button>
-      </form>
+    <main className="max-w-3xl mx-auto p-6">
+      <div className="card" style={{ padding: 24 }}>
+        <h1 className="text-xl font-semibold mb-1">Create New Item</h1>
+        <p className="text-sm text-gray-600 mb-4">Enter the core details now. You can add images and classifications after creation.</p>
+
+        <form action={createObject} className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="label">Title (EN)</label>
+            <input name="title" className="input" required placeholder="e.g., Tea bowl" />
+          </div>
+
+          <div>
+            <label className="label">Title (JA)</label>
+            <input name="title_ja" className="input" placeholder="例: 茶碗" />
+          </div>
+
+          <div>
+            <label className="label">Local number</label>
+            <input name="local_number" className="input" placeholder="e.g., ITO-2025-I-0001" />
+          </div>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="label">Summary (EN)</label>
+            <textarea name="summary" className="textarea" placeholder="Short description…" />
+          </div>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="label">Summary (JA)</label>
+            <textarea name="summary_ja" className="textarea" placeholder="概要…" />
+          </div>
+
+          <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button className="button" type="submit">Create item</button>
+            <span className="text-xs text-gray-600">Next: add images and classifications.</span>
+          </div>
+        </form>
+      </div>
     </main>
   );
 }
