@@ -18,12 +18,25 @@ coverage/
 .env
 .env.local
 .env.*.local
+.env.*
+*.env
+*.bak
+*.backup
+*.secret*
+*secrets*
+*.key
+*.pem
+*.p12
 private/
 .secrets/
+**/authorized_user.json
+**/credentials.json
+**/service_account.json
 
-# Images/artifacts
+# Images/artifacts and data dumps
 public/generated/
 app/**/*.generated.*
+data/*.json
 
 # Python virtualenv
 .venv/

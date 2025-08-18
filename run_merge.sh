@@ -6,14 +6,15 @@ if [ -f "/Users/joi/tea-utensil-db/.venv/bin/activate" ]; then
   source "/Users/joi/tea-utensil-db/.venv/bin/activate"
 fi
 
-# Export env vars (override if already set)
-export NOTION_TOKEN="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"
-export NOTION_DATABASE_ID="6f00be82b99445d2a1f7123441d9fcf5"
-export GOOGLE_SHEETS_ID="1zcbd_az-PZG4zSr_E1g0rOy6P8k7BT0W8J08FgoBwqM"
-export GOOGLE_WORKSHEET_NAME="Odogu Prices"
-export GOOGLE_OAUTH_TOKEN_PATH="$HOME/.gcalendar"
-export OUTPUT_DIR="data"
-export DUMP="true"
+# Export env vars (require caller to provide secrets)
+if [ -z "${NOTION_TOKEN:-}" ] || [ -z "${NOTION_DATABASE_ID:-}" ] || [ -z "${GOOGLE_SHEETS_ID:-}" ]; then
+  echo "Missing required envs. Set NOTION_TOKEN, NOTION_DATABASE_ID, GOOGLE_SHEETS_ID (and optionally GOOGLE_WORKSHEET_NAME, GOOGLE_OAUTH_TOKEN_PATH, OUTPUT_DIR, DUMP)." >&2
+  exit 1
+fi
+
+# Optional runtime knobs (do not hardcode secrets here)
+export OUTPUT_DIR="${OUTPUT_DIR:-data}"
+export DUMP="${DUMP:-true}"
 
 exec /Users/joi/tea-utensil-db/.venv/bin/python3 /Users/joi/tea-utensil-db/run_merge.py
 
