@@ -174,6 +174,33 @@ Verify:
 
 > These scripts run locally or as Vercel scheduled jobs (cron). Keep service credentials in project secrets.
 
+### Notion ingest runbook (two common workflows)
+
+- **New “In Collection” items (no token yet)**
+  1) Metadata only (mint token, create object, write back URL to Notion; skip images):
+
+     ```bash
+     NOTION_FETCH_IMAGES=0 NOTION_LIMIT=20 npm run ingest:notion
+     ```
+
+  2) Then mirror images only (dedup, optional per-item cap):
+
+     ```bash
+     NOTION_IMAGES_ONLY=1 NOTION_FETCH_IMAGES=1 NOTION_MAX_IMAGES_PER_ITEM=5 NOTION_LIMIT=20 npm run ingest:notion
+     ```
+
+- **Existing “In Collection” items with new images**
+  - Images only (no object updates; matches by token or `Collection ID` written previously):
+
+    ```bash
+    NOTION_IMAGES_ONLY=1 NOTION_FETCH_IMAGES=1 NOTION_MAX_IMAGES_PER_ITEM=20 NOTION_LIMIT=20 npm run ingest:notion
+    ```
+
+- **Tips for efficiency**
+  - Results are sorted by Notion `last_edited_time`, so keeping `NOTION_LIMIT` small and running the images-only job frequently picks up recent image additions first.
+  - Image inserts are deduped by storage path/URI; re-running is safe.
+  - For a single page, make a tiny edit in Notion (e.g., add/remove a space) to bubble it to the top, then run with `NOTION_LIMIT=1`.
+
 ---
 
 ## Editorial workflow
