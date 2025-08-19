@@ -5,6 +5,7 @@ import sys
 import json
 import urllib.parse
 from typing import Any, Dict, List, Optional, Tuple
+import re
 
 # Ensure project root is on sys.path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,6 +14,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 import requests
+from requests import RequestException
 from dotenv import load_dotenv
 
 from src.sheets_writer import _load_gspread_client_write, _extract_spreadsheet_id_from_input
@@ -64,15 +66,21 @@ def _postgrest_get(
     encoded_params = {}
     for k, v in params.items():
         if k == "or":
-            # do not percent-encode parentheses and commas
             encoded_params[k] = v
         else:
             encoded_params[k] = v
-    r = requests.get(url, headers=headers, params=encoded_params, timeout=20)
+    try:
+        r = requests.get(url, headers=headers, params=encoded_params, timeout=20)
+    except RequestException as e:
+        print(f"Supabase request error for {resource}: {e}", file=sys.stderr)
+        return 599, {"error": "request_failed"}
     try:
         data = r.json()
     except Exception:
         data = r.text
+    if r.status_code != 200:
+        # Avoid printing secrets; only status and resource
+        print(f"Supabase responded {r.status_code} for {resource}", file=sys.stderr)
     return r.status_code, data
 
 
@@ -95,7 +103,9 @@ def find_token_by_name(supabase_url: str, service_role_key: str, name: str) -> O
             "or": _build_or_filter_for_name(clean),
         },
     )
-    candidates: List[Dict[str, Any]] = data if (status == 200 and isinstance(data, list)) else []
+    if status != 200:
+        return None
+    candidates: List[Dict[str, Any]] = data if isinstance(data, list) else []
     # Prefer exact match (normalized to strip spaces) on either title or title_ja
     exact_normal = clean.lower()
     for row in candidates:
@@ -115,7 +125,9 @@ def find_token_by_name(supabase_url: str, service_role_key: str, name: str) -> O
             "or": _build_or_filter_for_name_ilike(clean),
         },
     )
-    candidates = data if (status == 200 and isinstance(data, list)) else []
+    if status != 200:
+        return None
+    candidates = data if isinstance(data, list) else []
     # First try exact normalized match
     for row in candidates:
         t = str((row or {}).get("title") or "").strip().lower()
@@ -148,6 +160,23 @@ def fetch_all_objects(supabase_url: str, service_role_key: str) -> List[Dict[str
     if status == 200 and isinstance(data, list):
         return data
     return []
+
+
+_TOKEN_SAFE_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _is_valid_token(value: str | None) -> bool:
+    if not value:
+        return False
+    return bool(_TOKEN_SAFE_RE.match(value))
+
+
+def _sanitize_for_sheet(value: str) -> str:
+    # Prevent Google Sheets formula injection and stray control chars
+    s = str(value).replace("\r", " ").replace("\n", " ")
+    if s and s[0] in ("=", "+", "-", "@"):
+        return "'" + s
+    return s
 
 
 def load_worksheet(spreadsheet_id: str, worksheet_name: str):
@@ -244,10 +273,17 @@ def update_tokens_in_sheet(ws, supabase_url: str, service_role_key: str) -> Dict
     if updates:
         data = []
         for (r, c, tok) in updates:
+            if not _is_valid_token(tok):
+                # Skip suspicious tokens
+                continue
             a1 = gspread.utils.rowcol_to_a1(r, c)  # type: ignore
-            data.append({"range": a1, "values": [[tok]]})
-        # Use worksheet-level batch_update for value ranges
-        ws.batch_update(data, value_input_option="USER_ENTERED")
+            data.append({"range": a1, "values": [[_sanitize_for_sheet(tok)]]})
+        if data:
+            try:
+                ws.batch_update(data, value_input_option="USER_ENTERED")
+            except Exception as e:
+                print(f"Google Sheets batch_update failed: {e}", file=sys.stderr)
+                return {"rows": len(values) - 1, "checked": checked, "updated": found, "error": "sheets_update_failed"}
 
     return {"rows": len(values) - 1, "checked": checked, "updated": found}
 
@@ -266,8 +302,14 @@ def main() -> None:
     if not supabase_url or not service_role_key:
         raise SystemExit("Missing NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY in environment")
 
-    ws = load_worksheet(spreadsheet_id, worksheet_name)
-    result = update_tokens_in_sheet(ws, supabase_url, service_role_key)
+    try:
+        ws = load_worksheet(spreadsheet_id, worksheet_name)
+        result = update_tokens_in_sheet(ws, supabase_url, service_role_key)
+    except SystemExit:
+        raise
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        raise SystemExit(1)
     print(json.dumps({"worksheet": worksheet_name, "result": result}, ensure_ascii=False))
 
 
