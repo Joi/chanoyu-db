@@ -43,7 +43,7 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
 
   const deleted = typeof searchParams?.deleted === 'string' ? searchParams!.deleted : undefined;
   return (
-    <main className="container">
+    <main className="max-w-5xl mx-auto p-6">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h1>Members</h1>
         <Link href="/admin/members/new" className="button small secondary">Add member</Link>
@@ -52,14 +52,14 @@ export default async function MembersPage({ searchParams }: { searchParams?: { [
         <div className="card" style={{ background: '#fff7ed', borderColor: '#fed7aa', marginBottom: 12 }}>Deleted {deleted}</div>
       ) : null}
 
-      <section className="card">
+      <section>
         <table className="table">
           <colgroup>
             <col style={{ width: '260px' }} />
             <col style={{ width: '80px' }} />
-            <col style={{ width: '240px' }} />
-            <col style={{ width: '180px' }} />
-            <col style={{ width: '190px' }} />
+            <col style={{ width: '220px' }} />
+            <col style={{ width: '160px' }} />
+            <col style={{ width: '160px' }} />
           </colgroup>
           <thead>
             <tr>
