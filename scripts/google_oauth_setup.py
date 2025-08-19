@@ -16,11 +16,17 @@ SCOPES = [
 def main() -> None:
 	load_dotenv()
 	client_secret = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET_JSON")
+	# Fallback to ~/.googleauth/credentials.json if env not set
+	if not client_secret:
+		default_client_secret = os.path.expanduser("~/.googleauth/credentials.json")
+		if os.path.isfile(default_client_secret):
+			client_secret = default_client_secret
 	if not client_secret or not os.path.isfile(os.path.expanduser(client_secret)):
-		print("GOOGLE_OAUTH_CLIENT_SECRET_JSON is not set or file missing.", file=sys.stderr)
+		print("GOOGLE_OAUTH_CLIENT_SECRET_JSON is not set and ~/.googleauth/credentials.json not found.", file=sys.stderr)
 		sys.exit(1)
 
-	output_path = os.getenv("GOOGLE_OAUTH_TOKEN_PATH") or os.path.join("private", "authorized_user.json")
+	# Default to app-specific token directory to avoid scope collisions
+	output_path = os.getenv("GOOGLE_OAUTH_TOKEN_PATH") or os.path.join("~/.googleauth/tea-utensil-db", "authorized_user.json")
 	output_path = os.path.expanduser(output_path)
 	output_dir = os.path.dirname(output_path)
 	os.makedirs(output_dir, exist_ok=True)

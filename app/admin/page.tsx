@@ -10,7 +10,7 @@ export default async function AdminHome() {
   const ok = await requireAdmin();
   if (!ok) {
     return (
-      <main style={{ maxWidth: 640, margin: '80px auto', padding: 24 }}>
+      <main className="max-w-2xl mx-auto my-20 px-6">
         <p>You are not signed in. <a className="underline" href="/login">Go to login</a>.</p>
       </main>
     );
@@ -18,7 +18,7 @@ export default async function AdminHome() {
   const isOwner = await requireOwner();
 
   return (
-    <main style={{ maxWidth: 640, margin: '40px auto', padding: 24 }}>
+    <main className="max-w-2xl mx-auto my-10 px-6">
       <h1 className="text-xl font-semibold mb-4">Admin</h1>
       <ul className="list-disc pl-5 space-y-2">
         <li><Link href="/admin/items" className="underline">Items</Link></li>

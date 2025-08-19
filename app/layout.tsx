@@ -14,16 +14,16 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <header className="header">
-          <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <a className="brand" href="/">Ito Collection</a>
+      <body className="bg-background text-foreground">
+        <header className="border-b border-borderGray bg-white">
+          <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a className="font-extrabold text-lg no-underline text-inherit" href="/">Ito Collection</a>
             <NavBar />
           </div>
         </header>
-        <div className="container">{children}</div>
-        <footer className="footer">
-          <div className="container">© Ito Collection</div>
+        <div className="max-w-3xl mx-auto px-6 py-6">{children}</div>
+        <footer className="border-t border-borderGray bg-white">
+          <div className="max-w-3xl mx-auto px-6 py-6 text-sm text-gray-600">© Ito Collection</div>
         </footer>
       </body>
     </html>
