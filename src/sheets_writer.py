@@ -18,9 +18,16 @@ def _load_gspread_client_write(service_account_json: str | None, oauth_token_pat
 	if service_account_json and os.path.exists(os.path.expanduser(service_account_json)):
 		creds = ServiceAccountCredentials.from_service_account_file(os.path.expanduser(service_account_json), scopes=SCOPES_WRITE)
 		return gspread.authorize(creds)
-	if oauth_token_path and os.path.exists(os.path.expanduser(oauth_token_path)):
-		creds = UserCredentials.from_authorized_user_file(os.path.expanduser(oauth_token_path), scopes=SCOPES_WRITE)
-		return gspread.authorize(creds)
+	# Prefer app-specific token directory if no explicit path
+	candidates: list[str] = []
+	if oauth_token_path:
+		candidates.append(oauth_token_path)
+	candidates.extend(["~/.googleauth/tea-utensil-db/authorized_user.json", "~/.googleauth/tea-utensil-db/token.json", "~/.gcalendar/authorized_user.json", "~/.gcalendar/token.json", "~/.config/gspread/authorized_user.json", "~/.config/gspread/token.json"])
+	for cand in candidates:
+		path = os.path.expanduser(cand)
+		if os.path.exists(path):
+			creds = UserCredentials.from_authorized_user_file(path, scopes=SCOPES_WRITE)
+			return gspread.authorize(creds)
 	return gspread.oauth()
 
 

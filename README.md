@@ -141,6 +141,8 @@ Create `.env.local` and set the same in Vercel → Project Settings → Environm
     GOOGLE_APPLICATION_CREDENTIALS=./.secrets/gsa.json
     GOOGLE_SHEETS_ID=...                 # can be a bare ID or a full Google Sheets URL
     EXPORT_WORKSHEET_TITLE=...           # optional; defaults to 'Merged YYYY-MM-DD HH:MM'
+    # OAuth token defaults to ~/.googleauth/tea-utensil-db/authorized_user.json if unset
+    # GOOGLE_OAUTH_TOKEN_PATH=~/.googleauth/tea-utensil-db/authorized_user.json
 
 ---
 

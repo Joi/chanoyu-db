@@ -41,8 +41,8 @@ def _find_oauth_token_path(path_hint: Optional[str]) -> Optional[str]:
 		if found:
 			return found
 
-	# 2) Common fallbacks used in this repo and by gspread
-	for fallback in ("~/.gcalendar", "~/.config/gspread"):
+	# 2) App-specific default location, then common fallbacks used by gspread
+	for fallback in ("~/.googleauth/tea-utensil-db", "~/.gcalendar", "~/.config/gspread"):
 		found = search_in(fallback)
 		if found:
 			return found
