@@ -32,7 +32,9 @@ export default async function LoginPage({ searchParams }: { searchParams?: { [ke
         <h1 className="text-xl font-semibold">Logged in</h1>
         <div className="mt-3 border border-borderGray bg-white rounded-lg p-4">
           <p className="text-sm">Logged in as <strong>{String(displayName)}</strong>.</p>
-          <a className="button mt-3 inline-block" href="/logout">Sign out</a>
+          <form action="/logout" method="post" className="mt-3">
+            <button className="button" type="submit">Sign out</button>
+          </form>
         </div>
       </main>
     );

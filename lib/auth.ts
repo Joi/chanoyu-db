@@ -3,7 +3,17 @@ import { cookies } from 'next/headers';
 import crypto from 'node:crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
-const AUTH_SECRET = (process.env.AUTH_SECRET || 'change-me').padEnd(32, 'x');
+// Constants
+export const COOKIE_NAME = 'ito_admin';
+export const TOKEN_EXPIRY = '2h';
+
+const AUTH_SECRET_RAW = process.env.AUTH_SECRET || 'change-me';
+const AUTH_SECRET = AUTH_SECRET_RAW.padEnd(32, 'x');
+
+// Soft validation in production builds if secret isn't configured
+if (process.env.NODE_ENV === 'production' && AUTH_SECRET_RAW === 'change-me') {
+  console.warn('[auth] AUTH_SECRET is not set; using default. Set AUTH_SECRET in production.');
+}
 
 const encoder = new TextEncoder();
 
@@ -37,10 +47,10 @@ export async function login(email: string, password: string): Promise<boolean> {
   if (acct && verifyPassword(password, String(acct.password_hash || ''))) {
     const token = await new SignJWT({ sub: acct.email, role: acct.role })
       .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('2h')
+      .setExpirationTime(TOKEN_EXPIRY)
       .setIssuedAt()
       .sign(encoder.encode(AUTH_SECRET));
-    cookies().set('ito_admin', token, {
+    cookies().set(COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -53,11 +63,11 @@ export async function login(email: string, password: string): Promise<boolean> {
 }
 
 export async function logout() {
-  cookies().delete('ito_admin');
+  cookies().delete(COOKIE_NAME);
 }
 
 export async function currentUserEmail(): Promise<string | null> {
-  const token = cookies().get('ito_admin')?.value;
+  const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, encoder.encode(AUTH_SECRET));
@@ -70,7 +80,7 @@ export async function currentUserEmail(): Promise<string | null> {
 // Unsafe helper: attempts to read email from the JWT without verifying the signature.
 // Only use for non-sensitive UI hints. Never authorize based on this value.
 export function currentUserEmailUnsafe(): string | null {
-  const token = cookies().get('ito_admin')?.value;
+  const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return null;
   try {
     const payload = decodeJwt(token);
@@ -81,7 +91,7 @@ export function currentUserEmailUnsafe(): string | null {
 }
 
 export async function requireAdmin(): Promise<boolean> {
-  const token = cookies().get('ito_admin')?.value;
+  const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return false;
   try {
     const { payload } = await jwtVerify(token, encoder.encode(AUTH_SECRET));
@@ -96,7 +106,7 @@ export async function requireAdmin(): Promise<boolean> {
 }
 
 export async function requireOwner(): Promise<boolean> {
-  const token = cookies().get('ito_admin')?.value;
+  const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return false;
   try {
     const { payload } = await jwtVerify(token, encoder.encode(AUTH_SECRET));

@@ -52,7 +52,9 @@ export default function NavBar() {
         <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/login">Login</a>
-          <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/logout">Sign out</a>
+          <form action="/logout" method="post">
+            <button className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-50 rounded" type="submit">Sign out</button>
+          </form>
         </div>
       </details>
     </nav>
