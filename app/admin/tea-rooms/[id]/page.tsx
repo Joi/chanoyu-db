@@ -1,9 +1,106 @@
 import { redirect, notFound } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import Image from 'next/image';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 import GoogleMapSearchPicker from '@/app/components/GoogleMapSearchPicker';
+import { mintToken } from '@/lib/id';
+import SubmitButton from '@/app/components/SubmitButton';
+import PendingProgress from '@/app/components/PendingProgress';
 
+async function addMediaUrlAction(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const locationId = String(formData.get('location_id') || '');
+  const url = String(formData.get('image_url') || '').trim();
+  if (!locationId || !url) return;
+  const db = supabaseAdmin();
+  const token = mintToken();
+  const { data: media, error: eIns } = await db
+    .from('media')
+    .insert({ uri: url, kind: 'image', sort_order: 999, token })
+    .select('id')
+    .single();
+  if (eIns || !media) throw eIns;
+  await db.from('location_media_links').upsert({ location_id: locationId, media_id: (media as any).id });
+  revalidatePath(`/admin/tea-rooms/${locationId}`);
+}
+
+async function uploadMediaFileAction(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const locationId = String(formData.get('location_id') || '');
+  const file = formData.get('file') as File | null;
+  if (!locationId || !file) return;
+  const db = supabaseAdmin();
+  // Ensure bucket
+  try {
+    // @ts-ignore
+    const b = await (db as any).storage.getBucket('media');
+    if (!b || (b && b.error) || (b && b.data == null)) {
+      // @ts-ignore
+      const created = await (db as any).storage.createBucket('media', { public: true });
+      if (created?.error) throw created.error;
+    }
+  } catch (e: any) {
+    throw new Error('media bucket missing');
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const filename = `${mintToken(6)}.${ext}`;
+  const path = `media/location/${locationId}/${filename}`;
+  // @ts-ignore
+  const body: any = typeof Buffer !== 'undefined' ? Buffer.from(arrayBuffer) : arrayBuffer;
+  // @ts-ignore
+  const upload = await (db as any).storage.from('media').upload(path, body, { contentType: file.type || 'application/octet-stream', upsert: false });
+  if (upload.error) throw upload.error;
+  // @ts-ignore
+  const pub = (db as any).storage.from('media').getPublicUrl(path);
+  const uri = pub?.data?.publicUrl as string | undefined;
+  if (!uri) throw new Error('public url missing');
+  const token = mintToken();
+  const { data: media } = await db
+    .from('media')
+    .insert({ uri, kind: 'image', sort_order: 999, token })
+    .select('id')
+    .single();
+  await db.from('location_media_links').upsert({ location_id: locationId, media_id: (media as any).id });
+  revalidatePath(`/admin/tea-rooms/${locationId}`);
+}
+
+async function linkExistingMediaAction(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const locationId = String(formData.get('location_id') || '');
+  const mediaRef = String(formData.get('media_ref') || '').trim();
+  if (!locationId || !mediaRef) return;
+  const db = supabaseAdmin();
+  let mediaId: string | null = null;
+  if (/^[0-9a-fA-F-]{36}$/.test(mediaRef)) {
+    mediaId = mediaRef;
+  } else {
+    const { data: byLocal } = await db.from('media').select('id').ilike('local_number', mediaRef).maybeSingle();
+    mediaId = (byLocal as any)?.id || null;
+  }
+  if (!mediaId) return;
+  await db.from('location_media_links').upsert({ location_id: locationId, media_id: mediaId });
+  revalidatePath(`/admin/tea-rooms/${locationId}`);
+}
+
+async function unlinkMediaAction(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const locationId = String(formData.get('location_id') || '');
+  const mediaId = String(formData.get('media_id') || '');
+  if (!locationId || !mediaId) return;
+  const db = supabaseAdmin();
+  await db.from('location_media_links').delete().eq('location_id', locationId).eq('media_id', mediaId);
+  revalidatePath(`/admin/tea-rooms/${locationId}`);
+}
 async function updateTeaRoom(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
@@ -73,9 +170,74 @@ export default async function EditTeaRoomPage({ params }: { params: { id: string
     .maybeSingle();
   if (!loc) return notFound();
 
+  // Fetch linked media via location_media_links
+  const { data: linkRows } = await db
+    .from('location_media_links')
+    .select('media_id')
+    .eq('location_id', (loc as any).id);
+  const mediaIds = Array.from(new Set((linkRows || []).map((r: any) => r.media_id).filter(Boolean)));
+  let media: any[] = [];
+  if (mediaIds.length) {
+    const { data: m } = await db
+      .from('media')
+      .select('id, token, uri, kind, local_number')
+      .in('id', mediaIds);
+    media = m || [];
+  }
+
   return (
-    <main className="max-w-xl mx-auto p-6">
+    <main className="max-w-4xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Edit Tea Room</h1>
+      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+      <section>
+      <h2 className="text-lg font-semibold mb-2">Images</h2>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+        {media.map((m: any) => (
+          <div key={m.id} className="card">
+            <div className="relative w-full" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
+              <a href={`/media/${m.token || m.id}`}>
+                <Image src={m.uri} alt={(loc as any).name_en || (loc as any).name_ja || (loc as any).name || 'Image'} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+              </a>
+            </div>
+            <div className="mt-2 text-sm">
+              <a className="underline" href={`/media/${m.token || m.id}`}>Open media page</a> {m.local_number ? <span> · {m.local_number}</span> : null}
+            </div>
+            <form action={unlinkMediaAction} className="mt-2">
+              <input type="hidden" name="location_id" value={(loc as any).id} />
+              <input type="hidden" name="media_id" value={m.id} />
+              <button type="submit" className="text-red-600 text-sm">Unlink</button>
+            </form>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 card">
+        <form action={addMediaUrlAction} className="space-y-2">
+          <input type="hidden" name="location_id" value={(loc as any).id} />
+          <label className="label">Add image by URL (public)</label>
+          <input name="image_url" className="input" placeholder="https://..." />
+          <SubmitButton label="Add" pendingLabel="Adding..." />
+        </form>
+        <form action={uploadMediaFileAction} className="space-y-2" style={{ marginTop: 12 }}>
+          <input type="hidden" name="location_id" value={(loc as any).id} />
+          <label className="label">Or upload image</label>
+          <div className="flex items-center gap-2">
+            <label htmlFor={`file-upload-${(loc as any).id}`} className="button file-choose small">Choose file</label>
+            <input id={`file-upload-${(loc as any).id}`} name="file" type="file" accept="image/*" className="sr-only" />
+            <span className="text-xs text-gray-600">Select an image, then click Upload</span>
+          </div>
+          <PendingProgress className="mt-1" />
+          <SubmitButton label="Upload" pendingLabel="Uploading..." />
+        </form>
+        <form action={linkExistingMediaAction} className="space-y-2" style={{ marginTop: 12 }}>
+          <input type="hidden" name="location_id" value={(loc as any).id} />
+          <label className="label">Link existing media by ID or local number</label>
+          <input name="media_ref" className="input" placeholder="UUID or local number" />
+          <SubmitButton label="Link" pendingLabel="Linking..." />
+        </form>
+      </div>
+      </section>
+
+      <section>
       <form action={updateTeaRoom} className="grid gap-3">
         <input type="hidden" name="id" value={loc.id} />
         <div>
@@ -126,7 +288,7 @@ export default async function EditTeaRoomPage({ params }: { params: { id: string
           </select>
         </div>
         <div className="flex gap-3 mt-2">
-          <button className="button" type="submit">Save</button>
+          <SubmitButton label="Save" pendingLabel="Saving..." />
           <a className="button secondary" href="/admin/tea-rooms">Cancel</a>
         </div>
       </form>
@@ -134,6 +296,8 @@ export default async function EditTeaRoomPage({ params }: { params: { id: string
         <input type="hidden" name="id" value={loc.id} />
         <button className="text-sm text-red-600 underline" type="submit">Delete Tea Room</button>
       </form>
+      </section>
+      </div>
     </main>
   );
 }

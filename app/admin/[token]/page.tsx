@@ -2,12 +2,15 @@ import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { mintToken } from '@/lib/id';
 import { parseSupabasePublicUrl } from '@/lib/storage';
 import { translateText } from '@/lib/translate';
 import LookupPanel from './lookup-panel';
 import { requireOwner, requireAdmin } from '@/lib/auth';
 import RevealPrice from '@/app/components/RevealPrice';
 import PriceInput from '@/app/components/PriceInput';
+import SubmitButton from '@/app/components/SubmitButton';
+import PendingProgress from '@/app/components/PendingProgress';
 
 // Server action to save a classification for the current object token
 async function saveClassificationAction(formData: FormData) {
@@ -102,7 +105,7 @@ async function addMediaUrlAction(formData: FormData) {
     if (!token || !url) throw new Error('missing token|url');
     const { data: obj, error: eObj } = await db.from('objects').select('id').eq('token', token).single();
     if (eObj || !obj) throw eObj || new Error('object not found');
-    const { error: eIns } = await db.from('media').insert({ object_id: obj.id, uri: url, kind: 'image', sort_order: 999 });
+    const { error: eIns } = await db.from('media').insert({ object_id: obj.id, uri: url, kind: 'image', sort_order: 999, token: mintToken() });
     if (eIns) throw eIns;
     console.log('[media:url] saved');
     revalidatePath(`/admin/${token}`);
@@ -139,7 +142,7 @@ async function uploadMediaFileAction(formData: FormData) {
     }
     const arrayBuffer = await file.arrayBuffer();
     const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-    const filename = `${obj.id}-${Date.now()}.${ext}`;
+    const filename = `${mintToken(6)}.${ext}`;
     const path = `media/${obj.id}/${filename}`;
     // @ts-ignore
     const body: any = typeof Buffer !== 'undefined' ? Buffer.from(arrayBuffer) : arrayBuffer;
@@ -150,7 +153,7 @@ async function uploadMediaFileAction(formData: FormData) {
     const pub = (db as any).storage.from('media').getPublicUrl(path);
     const uri = pub?.data?.publicUrl as string | undefined;
     if (!uri) throw new Error('public url missing');
-    const { error: eIns } = await db.from('media').insert({ object_id: obj.id, uri, kind: 'image', sort_order: 999 });
+    const { error: eIns } = await db.from('media').insert({ object_id: obj.id, uri, kind: 'image', sort_order: 999, token: mintToken() });
     if (eIns) throw eIns;
     console.log('[media:upload] saved', { path });
     revalidatePath(`/admin/${token}`);
@@ -287,7 +290,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   let media: any[] = [];
   if (object?.id) {
     const [direct, links] = await Promise.all([
-      db.from('media').select('id, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id, local_number').eq('object_id', object.id),
+      db.from('media').select('id, token, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id, local_number').eq('object_id', object.id),
       db.from('object_media_links').select('media_id').eq('object_id', object.id),
     ]);
     const ids = new Set<string>();
@@ -295,7 +298,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
     const linkIds = (links.data || []).map((r: any) => r.media_id).filter((id: string) => !ids.has(id));
     let linked: any[] = [];
     if (linkIds.length) {
-      const { data: lm } = await db.from('media').select('id, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id').in('id', linkIds);
+      const { data: lm } = await db.from('media').select('id, token, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id').in('id', linkIds);
       linked = lm || [];
     }
     media = ([...(direct.data || []), ...linked]).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -323,7 +326,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
                   </a>
                 </div>
                 <div className="mt-2 text-sm">
-                  <a className="underline" href={`/media/${m.id}`}>Open media page</a> {m.local_number ? <span> · {m.local_number}</span> : null}
+                  <a className="underline" href={`/media/${m.token || m.id}`}>Open media page</a> {m.local_number ? <span> · {m.local_number}</span> : null}
                 </div>
                 <form action={deleteMediaAction} className="mt-2">
                   <input type="hidden" name="media_id" value={m.id} />
@@ -338,13 +341,18 @@ export default async function AdminObjectPage({ params, searchParams }: { params
               <input type="hidden" name="object_token" value={token} />
               <label className="label">Add image by URL (public)</label>
               <input name="image_url" className="input" placeholder="https://..." />
-              <button className="button" type="submit">Add</button>
+              <SubmitButton label="Add" pendingLabel="Adding..." />
             </form>
             <form action={uploadMediaFileAction} className="space-y-2" style={{ marginTop: 12 }}>
               <input type="hidden" name="object_token" value={token} />
-              <label className="label">Or upload file</label>
-              <input name="file" type="file" className="input" />
-              <button className="button" type="submit">Upload</button>
+              <label className="label">Or upload image</label>
+              <div className="flex items-center gap-2">
+                <label htmlFor={`file-upload-${token}`} className="button file-choose small">Choose file</label>
+                <input id={`file-upload-${token}`} name="file" type="file" accept="image/*" className="sr-only" />
+                <span className="text-xs text-gray-600">Select an image, then click Upload</span>
+              </div>
+              <PendingProgress className="mt-1" />
+              <SubmitButton label="Upload" pendingLabel="Uploading..." />
             </form>
           </div>
         </section>
@@ -446,7 +454,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
             ) : null}
 
             <div style={{ marginTop: 8 }}>
-              <button className="button" type="submit">Save metadata</button>
+              <SubmitButton label="Save metadata" pendingLabel="Saving..." />
             </div>
           </form>
         </section>
@@ -475,7 +483,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
               <input name="label" className="input" placeholder="Label EN (optional)" />
               <input name="label_ja" className="input" placeholder="Label JA (optional)" />
               <input name="role" className="input" placeholder="primary type" defaultValue="primary type" />
-              <button className="button" type="submit">Save classification</button>
+              <SubmitButton label="Save classification" pendingLabel="Saving..." />
             </form>
           </div>
         </section>

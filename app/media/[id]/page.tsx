@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 // import { makeSupabaseThumbUrl } from '@/lib/storage';
+import { parseSupabasePublicUrl } from '@/lib/storage';
 
 async function updateMediaAction(formData: FormData) {
   'use server';
@@ -59,16 +60,63 @@ async function unlinkObjectAction(formData: FormData) {
   redirect(`/media/${mediaId}?saved=unlink`);
 }
 
+async function linkLocationAction(formData: FormData) {
+  'use server';
+  const mediaId = String(formData.get('media_id') || '');
+  const locationRef = String(formData.get('location_ref') || '').trim();
+  if (!mediaId || !locationRef) return;
+  const okAdmin = await requireAdmin();
+  const okOwner = await requireOwner();
+  if (!okAdmin && !okOwner) return;
+  const db = supabaseAdmin();
+  let locId: string | null = null;
+  if (/^[0-9a-fA-F-]{36}$/.test(locationRef)) {
+    locId = locationRef;
+  } else {
+    const { data: byToken } = await db.from('locations').select('id').eq('token', locationRef).maybeSingle();
+    locId = (byToken as any)?.id || null;
+    if (!locId) {
+      const { data: byLocal } = await db.from('locations').select('id').ilike('local_number', locationRef).maybeSingle();
+      locId = (byLocal as any)?.id || null;
+    }
+  }
+  if (!locId) return redirect(`/media/${mediaId}?error=location-not-found`);
+  await db.from('location_media_links').upsert({ location_id: locId, media_id: mediaId });
+  revalidatePath(`/media/${mediaId}`);
+  redirect(`/media/${mediaId}?saved=link-location`);
+}
+
+async function unlinkLocationAction(formData: FormData) {
+  'use server';
+  const mediaId = String(formData.get('media_id') || '');
+  const locationId = String(formData.get('location_id') || '');
+  if (!mediaId || !locationId) return;
+  const okAdmin = await requireAdmin();
+  const okOwner = await requireOwner();
+  if (!okAdmin && !okOwner) return;
+  const db = supabaseAdmin();
+  await db.from('location_media_links').delete().eq('media_id', mediaId).eq('location_id', locationId);
+  revalidatePath(`/media/${mediaId}`);
+  redirect(`/media/${mediaId}?saved=unlink-location`);
+}
+
 export default async function MediaPage({ params, searchParams }: { params: { id: string }, searchParams?: { [key: string]: string | string[] | undefined } }) {
-  const id = params.id;
+  const idParam = params.id;
   const db = supabaseAdmin();
   // Fetch media row without ambiguous embeds
-  const { data: mediaRow, error } = await db
+  const isUuid = /^[0-9a-fA-F-]{36}$/.test(idParam);
+  const baseQuery = db
     .from('media')
-    .select('id, uri, kind, copyright_owner, rights_note, bucket, storage_path, license_id, object_id, local_number')
-    .eq('id', id)
-    .single();
+    .select('id, uri, kind, copyright_owner, rights_note, bucket, storage_path, license_id, object_id, local_number, token');
+  const { data: mediaRow, error } = isUuid
+    ? await baseQuery.eq('id', idParam).single()
+    : await baseQuery.eq('token', idParam).single();
   if (error || !mediaRow) return notFound();
+
+  // Canonicalize: if requested by UUID and we have a token, redirect to token URL
+  if (isUuid && mediaRow.token) {
+    return redirect(`/media/${mediaRow.token}`);
+  }
 
   // Resolve ALL linked objects: direct FK + many-to-many
   const { data: linkRows } = await db
@@ -95,6 +143,21 @@ export default async function MediaPage({ params, searchParams }: { params: { id
     }
   }
 
+  // Fetch linked tea rooms (locations)
+  const { data: locLinks } = await db
+    .from('location_media_links')
+    .select('location_id')
+    .eq('media_id', mediaRow.id);
+  const locIds = Array.from(new Set((locLinks || []).map((r: any) => r.location_id)));
+  let locations: any[] = [];
+  if (locIds.length) {
+    const { data: locs } = await db
+      .from('locations')
+      .select('id, name, name_en, name_ja, local_number, token')
+      .in('id', locIds);
+    locations = locs || [];
+  }
+
   // License info and list for editing
   const [{ data: licOne }, { data: licList }, isOwner, isAdmin] = await Promise.all([
     mediaRow.license_id ? db.from('licenses').select('id, code, name, uri').eq('id', mediaRow.license_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -104,9 +167,31 @@ export default async function MediaPage({ params, searchParams }: { params: { id
   ] as any);
   const canEdit = Boolean(isOwner || isAdmin);
 
+  async function deleteMediaAction(formData: FormData) {
+    'use server';
+    const okAdmin = await requireAdmin();
+    const okOwner = await requireOwner();
+    if (!okAdmin && !okOwner) return;
+    const mediaId = String(formData.get('media_id') || '');
+    if (!mediaId) return;
+    const db2 = supabaseAdmin();
+    const { data } = await db2.from('media').select('id, uri').eq('id', mediaId).maybeSingle();
+    if (data?.uri) {
+      const parsed = parseSupabasePublicUrl(data.uri);
+      if (parsed) {
+        try {
+          // @ts-ignore
+          await (db2 as any).storage.from(parsed.bucket).remove([parsed.path]);
+        } catch {}
+      }
+    }
+    await db2.from('media').delete().eq('id', mediaId);
+    redirect('/admin/media');
+  }
+
   return (
     <main className="max-w-3xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-2">Media</h1>
+      <h1 className="text-xl font-semibold mb-2">Media {mediaRow.token ? <span className="text-sm text-gray-600">({mediaRow.token})</span> : null}</h1>
       {typeof searchParams?.saved === 'string' ? (
         <div className="card" style={{ background: '#f0fff4', borderColor: '#bbf7d0', marginBottom: 12 }}>Saved media</div>
       ) : null}
@@ -118,7 +203,7 @@ export default async function MediaPage({ params, searchParams }: { params: { id
         </div>
       ) : null}
       <div className="card" style={{ marginTop: 12 }}>
-        <p><strong>Media number</strong>: {mediaRow.local_number || '—'}</p>
+        <p><strong>Media number</strong>: {mediaRow.local_number || '—'}{mediaRow.token ? <span className="text-xs text-gray-600"> · token:{mediaRow.token}</span> : null}</p>
         <p><strong>Associated objects</strong>:</p>
         <ul className="list-disc pl-5">
           {associations.length === 0 ? <li className="text-sm text-gray-600">None</li> : null}
@@ -134,6 +219,10 @@ export default async function MediaPage({ params, searchParams }: { params: { id
         <p><strong>Rights note</strong>: {mediaRow.rights_note || '—'}</p>
         <p><strong>License</strong>: {licOne ? <a className="underline" href={licOne.uri} target="_blank" rel="noreferrer">{licOne.code} — {licOne.name}</a> : '—'}</p>
         <p><strong>Storage</strong>: {mediaRow.bucket}/{(mediaRow.storage_path || '').replace(/^media\//,'') || '—'}</p>
+        <form action={deleteMediaAction} className="mt-3">
+          <input type="hidden" name="media_id" value={mediaRow.id} />
+          <button className="text-red-600 text-sm underline" type="submit">Delete media</button>
+        </form>
       </div>
 
       {canEdit ? (
@@ -178,6 +267,28 @@ export default async function MediaPage({ params, searchParams }: { params: { id
                   </form>
                 ))}
               </div>
+            </div>
+          ) : null}
+
+          {locations.length ? (
+            <div className="card" style={{ marginTop: 12 }}>
+              <h3 className="text-md font-semibold mb-2">Linked tea rooms</h3>
+              <ul className="space-y-2">
+                {locations.map((l: any) => (
+                  <li key={l.id} className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <a className="underline" href={`/admin/tea-rooms/${l.id}`}>{l.name_en || l.name_ja || l.name}</a>
+                      {l.local_number ? <span> · {l.local_number}</span> : null}
+                      {l.token ? <span className="text-xs text-gray-500"> · {l.token}</span> : null}
+                    </div>
+                    <form action={unlinkLocationAction}>
+                      <input type="hidden" name="media_id" value={mediaRow.id} />
+                      <input type="hidden" name="location_id" value={l.id} />
+                      <button className="text-red-600 text-sm" type="submit">Unlink</button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
         </>

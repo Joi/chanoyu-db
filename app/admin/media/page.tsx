@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
+import SubmitButton from '@/app/components/SubmitButton';
 import { parseSupabasePublicUrl } from '@/lib/storage';
 
 async function saveMedia(formData: FormData) {
@@ -48,7 +49,7 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
   // Fetch media rows first
   let query = db
     .from('media')
-    .select('id, uri, kind, rights_note, copyright_owner, license_id, object_id, local_number', { count: 'exact' })
+    .select('id, uri, kind, rights_note, copyright_owner, license_id, object_id, local_number, token', { count: 'exact' })
     .order('id', { ascending: false })
     .limit(200);
   if (q) query = query.ilike('rights_note', `%${q}%`);
@@ -86,7 +87,7 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
             </div>
             <div style={{ marginTop: 8 }}>
               <p className="text-sm">
-                <a className="underline" href={`/media/${m.id}`}>{m.local_number || m.id}</a>
+                <a className="underline" href={`/media/${m.token || m.id}`}>{m.local_number || (m.token ? `token:${m.token}` : m.id)}</a>
               </p>
               <form action={saveMedia} className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
                 <input type="hidden" name="id" value={m.id} />
@@ -94,7 +95,7 @@ export default async function MediaAdminPage({ searchParams }: { searchParams: {
                 <input name="rights_note" className="input" placeholder="Rights note" defaultValue={m.rights_note || ''} />
                 <input name="license_id" className="input" placeholder="License ID (optional)" defaultValue={m.license_id || ''} />
                 <div>
-                  <button className="button" type="submit">Save</button>
+                  <SubmitButton label="Save" pendingLabel="Saving..." />
                 </div>
               </form>
               <form action={deleteMedia} className="mt-2">

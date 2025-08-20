@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 
 const SEARCH_RESULT_LIMIT = 12;
 
 export async function GET(req: NextRequest) {
+  // Simple auth gate to avoid exposing search externally
+  const ok = await requireAdmin();
+  if (!ok) return NextResponse.json({ code: 'UNAUTHORIZED' }, { status: 401 });
   const q = (req.nextUrl.searchParams.get('q') || '').trim();
   if (!q) return NextResponse.json([]);
   const db = supabaseAdmin();

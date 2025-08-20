@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
+import React from 'react';
 
 type Props = {
   apiKey?: string;
@@ -37,12 +38,25 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const [savedMapsUrl, setSavedMapsUrl] = useState<string | null>(defaultMapsUrl || null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
 
+  const computedDraftUrl = React.useMemo(() => {
+    if (lat == null || lng == null) return null;
+    const z = currentZoom || 17;
+    return `https://www.google.com/maps/@?api=1&map_action=map&center=${encodeURIComponent(String(lat))},${encodeURIComponent(String(lng))}&zoom=${encodeURIComponent(String(z))}`;
+  }, [lat, lng, currentZoom]);
+
   // Load Maps JS API with places library
   const resolvedKey = apiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const missingKey = !resolvedKey;
   const [loadError, setLoadError] = useState<string | null>(null);
   function logError(msg: string) {
+    // Visible console log and async beacon for later aggregation (non-blocking)
     try { console.error('[GoogleMapSearchPicker]', msg); } catch {}
+    try {
+      if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+        const blob = new Blob([JSON.stringify({ ts: Date.now(), msg, component: 'GoogleMapSearchPicker' })], { type: 'application/json' });
+        navigator.sendBeacon('/api/log', blob);
+      }
+    } catch {}
   }
   useEffect(() => {
     if (typeof window === 'undefined') return;

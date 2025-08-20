@@ -5,6 +5,7 @@ import SearchSelect from '@/app/components/SearchSelect';
 import { z } from 'zod';
 import { createChakaiSchema } from '@/lib/chakai';
 import { requireAdmin } from '@/lib/auth';
+import { mintToken } from '@/lib/id';
 
 async function createChakai(formData: FormData) {
   'use server';
@@ -33,6 +34,7 @@ async function createChakai(formData: FormData) {
         address_en: location_address_en || null,
         address_ja: location_address_ja || null,
         url: location_url || null,
+        token: mintToken(),
       })
       .select('id')
       .single();
@@ -50,6 +52,7 @@ async function createChakai(formData: FormData) {
     visibility,
     notes: notes || null,
     location_id: locationId,
+    token: mintToken(),
   };
   const { data: inserted, error } = await db
     .from('chakai')
