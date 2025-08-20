@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
+import { BASE_URL, APP_OWNER } from '@/lib/branding';
 
 export async function GET(req: NextRequest, { params }: { params: { naan: string; name: string[] } }) {
   const arkName = params.name.join('/');
@@ -25,14 +26,14 @@ export async function GET(req: NextRequest, { params }: { params: { naan: string
 
   if (!data || data.visibility !== 'public') return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const baseArk = `https://collection.ito.com/ark:/${params.naan}/${arkName}`;
+  const baseArk = `${BASE_URL}/ark:/${params.naan}/${arkName}`;
   const media = (data.media ?? []);
   const classifications = (data.object_classifications ?? []).map((oc: any) => oc.classification).filter(Boolean);
   const jsonld = buildLinkedArtJSONLD(
     data,
     media,
     classifications,
-    `https://collection.ito.com/id/${data.token}`,
+    `${BASE_URL}/id/${data.token}`,
     baseArk
   );
 
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: { naan: string
   }
 
   if (search === '?') {
-    return NextResponse.json({ who: 'ITO Collection', what: data.title, local_number: data.local_number, id: baseArk });
+    return NextResponse.json({ who: APP_OWNER, what: data.title, local_number: data.local_number, id: baseArk });
   }
 
   if (accept.includes('application/ld+json')) {

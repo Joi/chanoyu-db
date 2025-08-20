@@ -1,8 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# Activate venv if present
-if [ -f "/Users/joi/tea-utensil-db/.venv/bin/activate" ]; then
+# Activate venv if present (prefer repo-local path; fallback to legacy path)
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$REPO_ROOT/.venv/bin/activate" ]; then
+  # shellcheck disable=SC1091
+  source "$REPO_ROOT/.venv/bin/activate"
+elif [ -f "/Users/joi/tea-utensil-db/.venv/bin/activate" ]; then
+  # legacy fallback for old machine path
+  # shellcheck disable=SC1091
   source "/Users/joi/tea-utensil-db/.venv/bin/activate"
 fi
 
@@ -16,7 +22,15 @@ fi
 export OUTPUT_DIR="${OUTPUT_DIR:-data}"
 export DUMP="${DUMP:-true}"
 
-exec /Users/joi/tea-utensil-db/.venv/bin/python3 /Users/joi/tea-utensil-db/run_merge.py
+# Prefer repo-local interpreter; fallback to legacy path
+if [ -x "$REPO_ROOT/.venv/bin/python3" ]; then
+  exec "$REPO_ROOT/.venv/bin/python3" "$REPO_ROOT/run_merge.py"
+elif [ -x "/Users/joi/tea-utensil-db/.venv/bin/python3" ]; then
+  exec "/Users/joi/tea-utensil-db/.venv/bin/python3" "/Users/joi/tea-utensil-db/run_merge.py"
+else
+  echo "No Python interpreter found. Create a venv with: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt" >&2
+  exit 1
+fi
 
 
 

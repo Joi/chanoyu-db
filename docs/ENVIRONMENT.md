@@ -37,9 +37,9 @@ Copy `.env.example` to `.env` and fill in values:
     - `GOOGLE_SERVICE_ACCOUNT_JSON=/absolute/path/to/service_account.json`
     - Share your sheet with the service account email in that file
   - Or: User OAuth token
-    - Defaults to app-specific directory: `~/.googleauth/tea-utensil-db/authorized_user.json`
+    - Defaults to app-specific directory: `~/.googleauth/chanoyu-db/authorized_user.json`
     - You can override with `GOOGLE_OAUTH_TOKEN_PATH=/absolute/path/to/authorized_user.json`
-    - To mint one: `python3 scripts/google_oauth_setup.py` (requires `GOOGLE_OAUTH_CLIENT_SECRET_JSON`). If `GOOGLE_OAUTH_TOKEN_PATH` is unset, the script will save to `~/.googleauth/tea-utensil-db/authorized_user.json`.
+    - To mint one: `python3 scripts/google_oauth_setup.py` (requires `GOOGLE_OAUTH_CLIENT_SECRET_JSON`). If `GOOGLE_OAUTH_TOKEN_PATH` is unset, the script will save to `~/.googleauth/chanoyu-db/authorized_user.json`.
     - Client secret location: set `GOOGLE_OAUTH_CLIENT_SECRET_JSON=/absolute/path/to/credentials.json`, or place it at `~/.googleauth/credentials.json` and the setup script will auto-detect it.
   - Sheet selection
     - `GOOGLE_SHEETS_ID` (accepts either the bare spreadsheet ID or a full Google Sheets URL)
@@ -47,7 +47,7 @@ Copy `.env.example` to `.env` and fill in values:
 - Output directory for dumps: `OUTPUT_DIR=data`
 
 Notes:
-- The Python Sheets loader first tries `GOOGLE_SERVICE_ACCOUNT_JSON`. If not present, it tries `GOOGLE_OAUTH_TOKEN_PATH`, then `~/.googleauth/tea-utensil-db`, and finally common gspread fallbacks `~/.gcalendar` and `~/.config/gspread`.
+- The Python Sheets loader first tries `GOOGLE_SERVICE_ACCOUNT_JSON`. If not present, it tries `GOOGLE_OAUTH_TOKEN_PATH`, then `~/.googleauth/chanoyu-db` (and also recognizes the legacy `~/.googleauth/tea-utensil-db`), and finally common gspread fallbacks `~/.gcalendar` and `~/.config/gspread`.
 - Interactive prompts are disabled in non-interactive contexts; missing credentials will raise a clear error with instructions.
 
 ### One-liners

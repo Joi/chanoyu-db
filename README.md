@@ -1,12 +1,20 @@
-# Ito Collection — ARK-ready, AAT/Wikidata-aware Collection Site
+# Chanoyu DB — Unified database for tea utensils, 茶会, and locations
 
-A standards-friendly stack for publishing a collection of Japanese tea utensils (and related artifacts) with persistent IDs, interoperable metadata, and a simple category lookup.
+Unified database to manage tea utensil items linking them to Wikilinks and Getty AAT classifications, people, 茶会/chakai, tea room locations — providing publicly accessible canonical links as well as access-controlled pages for 茶会/chakai and items.
 
 - **Frontend/API:** Next.js (App Router, TypeScript) on Vercel
 - **Data:** Supabase (Postgres + RLS, Storage for images)
 - **Identifiers:** Stable HTTPS IDs today (`/id/{token}`), ARK-ready (`/ark:/NAAN/{name}`)
 - **Interoperability:** Linked Art JSON-LD; categories via Getty AAT and Wikidata QIDs
 - **Ingest:** Notion (images/fields) + Google Sheets (valuations) → mirrored into Supabase
+
+> This software powers the public site for Ito Chanoyu: `https://chanoyu.ito.com/` (Ito Chanoyu DB). While built for our use, it is open source and designed to be portable so others can run their own instance. Please comment, open PRs, and contribute.
+
+Branding (env-driven):
+
+    # Example local branding overrides
+    NEXT_PUBLIC_APP_NAME="Ito Chanoyu DB"
+    NEXT_PUBLIC_APP_DESCRIPTION="Unified database for tea utensils, 茶会, and locations"
 
 ---
 
@@ -158,8 +166,8 @@ Create `.env.local` and set the same in Vercel → Project Settings → Environm
     GOOGLE_APPLICATION_CREDENTIALS=./.secrets/gsa.json
     GOOGLE_SHEETS_ID=...                 # can be a bare ID or a full Google Sheets URL
     EXPORT_WORKSHEET_TITLE=...           # optional; defaults to 'Merged YYYY-MM-DD HH:MM'
-    # OAuth token defaults to ~/.googleauth/tea-utensil-db/authorized_user.json if unset
-    # GOOGLE_OAUTH_TOKEN_PATH=~/.googleauth/tea-utensil-db/authorized_user.json
+    # OAuth token defaults to ~/.googleauth/chanoyu-db/authorized_user.json if unset
+    # GOOGLE_OAUTH_TOKEN_PATH=~/.googleauth/chanoyu-db/authorized_user.json
 
 ---
 

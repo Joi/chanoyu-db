@@ -22,7 +22,7 @@ def _load_gspread_client_write(service_account_json: str | None, oauth_token_pat
 	candidates: list[str] = []
 	if oauth_token_path:
 		candidates.append(oauth_token_path)
-	candidates.extend(["~/.googleauth/tea-utensil-db/authorized_user.json", "~/.googleauth/tea-utensil-db/token.json", "~/.gcalendar/authorized_user.json", "~/.gcalendar/token.json", "~/.config/gspread/authorized_user.json", "~/.config/gspread/token.json"])
+	candidates.extend(["~/.googleauth/chanoyu-db/authorized_user.json", "~/.googleauth/chanoyu-db/token.json", "~/.googleauth/tea-utensil-db/authorized_user.json", "~/.googleauth/tea-utensil-db/token.json", "~/.gcalendar/authorized_user.json", "~/.gcalendar/token.json", "~/.config/gspread/authorized_user.json", "~/.config/gspread/token.json"])
 	for cand in candidates:
 		path = os.path.expanduser(cand)
 		if os.path.exists(path):
