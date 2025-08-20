@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# Activate venv if present
-if [ -f "/Users/joi/tea-utensil-db/.venv/bin/activate" ]; then
+# Activate venv if present (prefer repo-local path; fallback to old path for compatibility)
+if [ -f "/Users/joi/chanoyu-db/.venv/bin/activate" ]; then
+  source "/Users/joi/chanoyu-db/.venv/bin/activate"
+elif [ -f "/Users/joi/tea-utensil-db/.venv/bin/activate" ]; then
   source "/Users/joi/tea-utensil-db/.venv/bin/activate"
 fi
 
@@ -16,7 +18,12 @@ fi
 export OUTPUT_DIR="${OUTPUT_DIR:-data}"
 export DUMP="${DUMP:-true}"
 
-exec /Users/joi/tea-utensil-db/.venv/bin/python3 /Users/joi/tea-utensil-db/run_merge.py
+# Prefer repo-local interpreter; fallback to old path if still present
+if [ -x "/Users/joi/chanoyu-db/.venv/bin/python3" ]; then
+  exec "/Users/joi/chanoyu-db/.venv/bin/python3" "/Users/joi/chanoyu-db/run_merge.py"
+else
+  exec "/Users/joi/tea-utensil-db/.venv/bin/python3" "/Users/joi/tea-utensil-db/run_merge.py"
+fi
 
 
 

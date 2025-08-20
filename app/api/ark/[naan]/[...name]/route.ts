@@ -1,3 +1,4 @@
+import { APP_OWNER } from '@/lib/branding';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: { naan: string
   }
 
   if (search === '?') {
-    return NextResponse.json({ who: 'ITO Collection', what: data.title, local_number: data.local_number, id: baseArk });
+    return NextResponse.json({ who: APP_OWNER, what: data.title, local_number: data.local_number, id: baseArk });
   }
 
   if (accept.includes('application/ld+json')) {

@@ -26,7 +26,7 @@ def main() -> None:
 		sys.exit(1)
 
 	# Default to app-specific token directory to avoid scope collisions
-	output_path = os.getenv("GOOGLE_OAUTH_TOKEN_PATH") or os.path.join("~/.googleauth/tea-utensil-db", "authorized_user.json")
+	output_path = os.getenv("GOOGLE_OAUTH_TOKEN_PATH") or os.path.join("~/.googleauth/chanoyu-db", "authorized_user.json")
 	output_path = os.path.expanduser(output_path)
 	output_dir = os.path.dirname(output_path)
 	os.makedirs(output_dir, exist_ok=True)
