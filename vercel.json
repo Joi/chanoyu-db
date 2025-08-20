@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "nextjs",
   "installCommand": "npm install --no-audit --no-fund",
-  "buildCommand": "NEXT_DISABLE_LIGHTNINGCSS=1 next build",
+  "buildCommand": "TAILWIND_DISABLE_OXIDE=1 NEXT_DISABLE_LIGHTNINGCSS=1 next build",
   "redirects": [
     {
       "source": "/:path*",
