@@ -1,0 +1,43 @@
+{
+  "workspace": {
+    "pinnedFiles": [
+      "CLAUDE.md",
+      "TASKS.md",
+      "README.md",
+      "docs/ARCHITECTURE.md",
+      "CONTRIBUTING.md"
+    ]
+  },
+  "context": {
+    "alwaysInclude": [
+      "CLAUDE.md",
+      "TASKS.md"
+    ],
+    "projectDescription": "Next.js + Supabase app for managing tea ceremony (chanoyu) collections with bilingual support (EN/JA). Uses Vercel for deployment, Supabase for database/storage, and integrates with Notion/Google Sheets for data ingestion.",
+    "codebaseContext": {
+      "architecture": "See docs/ARCHITECTURE.md for system overview",
+      "workflow": "See docs/WORKFLOW.md for deployment process",
+      "testing": "See docs/TESTING.md for testing guidelines",
+      "contributing": "See CONTRIBUTING.md for development setup"
+    }
+  },
+  "ai": {
+    "defaultPromptContext": [
+      "This is a Next.js 14 app with App Router",
+      "Database is Supabase (Postgres with RLS)",
+      "TypeScript is strictly enforced",
+      "Follow patterns in existing code",
+      "Check CLAUDE.md for AI collaboration guidelines",
+      "Current tasks are in TASKS.md"
+    ],
+    "customInstructions": "Always check CLAUDE.md for project-specific guidelines. Keep changes focused and testable. Use TypeScript strictly with no 'any' types. Test locally before pushing to dev branch."
+  },
+  "folders": {
+    "importantPaths": [
+      "/app",
+      "/lib", 
+      "/scripts",
+      "/supabase"
+    ]
+  }
+}

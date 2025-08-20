@@ -1,0 +1,79 @@
+# Cursor AI Rules for Chanoyu-DB
+
+## Project Context
+You are working on a Next.js + Supabase application for managing tea ceremony (chanoyu) collections. The app supports bilingual content (EN/JA) and has both public and admin interfaces.
+
+## Always Remember
+1. Check TASKS.md for current priorities
+2. Read CLAUDE.md for detailed guidelines
+3. TypeScript is strictly enforced - no 'any' types
+4. Test changes locally before suggesting commits
+5. Keep changes small and focused
+
+## Code Standards
+- Use Next.js App Router patterns (not Pages Router)
+- Follow existing file structure in /app directory
+- Use Supabase client for data fetching
+- Maintain RLS policies for security
+- Handle errors gracefully with proper logging
+
+## Common Patterns
+
+### Database Queries
+```typescript
+// Always use typed queries
+const { data, error } = await supabase
+  .from('table_name')
+  .select('*')
+  .eq('field', value)
+
+if (error) {
+  console.error('Error:', error)
+  return null
+}
+```
+
+### API Routes
+- Located in /app/api/*/route.ts
+- Use NextRequest and NextResponse
+- Check authentication when needed
+- Return proper HTTP status codes
+
+### Component Structure
+- Server components by default
+- Client components only when needed (use 'use client')
+- Keep components small and focused
+- Use TypeScript interfaces for props
+
+## File Locations
+- Pages: /app/*/page.tsx
+- API: /app/api/*/route.ts
+- Components: /app/components/*
+- Utilities: /lib/*
+- Types: /lib/types.ts
+- Database client: /lib/supabase.ts
+
+## Testing Workflow
+1. npm run dev - Start local server
+2. npm run typecheck - Check types
+3. npm run lint - Check code style
+4. Test on localhost:3000
+5. Push to dev branch
+6. Verify on dev.collection.ito.com
+
+## Branch Strategy
+- main: Production (collection.ito.com)
+- dev: Development (dev.collection.ito.com)
+- Work on dev, PR to main
+
+## Environment Variables
+- NEXT_PUBLIC_* for client-side
+- Others for server-side only
+- Never commit .env files
+
+## When Stuck
+1. Check existing patterns in codebase
+2. Refer to docs/ARCHITECTURE.md
+3. Test in Supabase dashboard first
+4. Keep changes minimal
+5. Ask for clarification if needed
