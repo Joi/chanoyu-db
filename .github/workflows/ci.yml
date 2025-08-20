@@ -14,12 +14,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-      - run: npm install --no-audit --no-fund
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test
-      - run: TAILWIND_DISABLE_OXIDE=1 NEXT_DISABLE_LIGHTNINGCSS=1 npm run build:prod
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: TAILWIND_DISABLE_OXIDE=1 NEXT_DISABLE_LIGHTNINGCSS=1 pnpm build:prod
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

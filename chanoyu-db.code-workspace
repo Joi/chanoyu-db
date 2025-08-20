@@ -23,7 +23,7 @@
     "typescript.enablePromptUseWorkspaceTsdk": true,
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": true
+      "source.fixAll.eslint": "explicit"
     },
     "cursor.cpp.defaultContext": [
       "CLAUDE.md",
@@ -32,7 +32,8 @@
     ],
     "workbench.editorAssociations": {
       "*.md": "default"
-    }
+    },
+    "makefile.configureOnOpen": false
   },
   "extensions": {
     "recommendations": [
@@ -50,8 +51,13 @@
         "type": "node",
         "request": "launch",
         "runtimeExecutable": "npm",
-        "runtimeArgs": ["run", "dev"],
-        "skipFiles": ["<node_internals>/**"],
+        "runtimeArgs": [
+          "run",
+          "dev"
+        ],
+        "skipFiles": [
+          "<node_internals>/**"
+        ],
         "serverReadyAction": {
           "pattern": "- Local:.+(https?://.+)",
           "uriFormat": "%s",

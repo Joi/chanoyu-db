@@ -4,24 +4,24 @@
 
 ```bash
 # Type checking (most important)
-npm run typecheck
+pnpm typecheck
 
 # Linting
-npm run lint
+pnpm lint
 
 # Run all tests
-npm test
+pnpm test
 
 # Run specific test
-npm test -- chakai
+pnpm test -- chakai
 ```
 
 ## What to Test
 
 ### Before Every Push
-1. ✅ TypeScript compiles (`npm run typecheck`)
-2. ✅ App builds (`npm run build`)
-3. ✅ Basic pages load (`npm run dev`)
+1. ✅ TypeScript compiles (`pnpm typecheck`)
+2. ✅ App builds (`pnpm build`)
+3. ✅ Basic pages load (`pnpm dev`)
 
 ### Before PR to Main
 1. All of the above
@@ -56,10 +56,10 @@ npm test -- chakai
 ### TypeScript Errors
 ```bash
 # See all errors
-npm run typecheck
+pnpm typecheck
 
 # Fix auto-fixable issues
-npm run lint -- --fix
+pnpm lint --fix
 ```
 
 ### Database Issues

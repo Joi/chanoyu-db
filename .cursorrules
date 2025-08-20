@@ -57,8 +57,8 @@ const { data, error } = await supabaseAdmin
 ## DEVELOPMENT WORKFLOW
 
 1. Work on `dev` branch
-2. Test locally: `npm run dev`
-3. Check types: `npm run typecheck`
+2. Test locally: `pnpm dev`
+3. Check types: `pnpm typecheck`
 4. Push to dev: `git push origin dev`
 5. Test on: dev.collection.ito.com
 6. When ready: PR from dev → main

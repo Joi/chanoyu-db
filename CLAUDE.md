@@ -48,8 +48,8 @@ Always provide:
 3. Whether this affects public visibility
 
 ### Testing Approach
-- Local first: `npm run dev`
-- Check types: `npm run typecheck`
+- Local first: `pnpm dev`
+- Check types: `pnpm typecheck`
 - Deploy to preview: `git push origin dev`
 - Test on dev.collection.ito.com before PR
 

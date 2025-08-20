@@ -12,7 +12,7 @@ git clone [repo-url]
 cd chanoyu-db
 
 # Install dependencies
-npm install
+pnpm install
 
 # Copy environment variables
 cp .env.example .env.local
@@ -33,11 +33,11 @@ git checkout dev
 git pull origin dev
 
 # Make your changes
-npm run dev  # Start local server
+pnpm dev  # Start local server
 
 # Test your changes
-npm run typecheck  # Check types
-npm run lint       # Check code style
+pnpm typecheck  # Check types
+pnpm lint       # Check code style
 
 # Commit and push
 git add .

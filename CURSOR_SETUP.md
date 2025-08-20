@@ -68,7 +68,7 @@ To add files to the chat context:
    - Ask Cursor: "@TASKS.md what files are related to [task name]?"
 
 3. **Before committing:**
-   - Run: `npm run typecheck`
+   - Run: `pnpm typecheck`
    - Check the preview site
 
 ### For You (Project Lead)
