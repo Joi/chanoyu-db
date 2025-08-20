@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { currentUserEmail, requireAdmin, requireOwner } from '@/lib/auth';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default async function ChakaiDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -53,10 +54,24 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
     .from('chakai_attendees')
     .select('accounts(id, full_name_en, full_name_ja, email)')
     .eq('chakai_id', c.id);
-  const { data: items } = await db
+  const { data: itemRows } = await db
     .from('chakai_items')
-    .select('objects(id, token, title, title_ja, local_number, media:media(id, uri, sort_order))')
+    .select('objects(id, token, title, title_ja, local_number)')
     .eq('chakai_id', c.id);
+  const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
+  let thumbByObject: Record<string, string | null> = {};
+  if (itemObjects.length) {
+    const ids = itemObjects.map((o: any) => o.id);
+    const { data: mediaRows } = await db
+      .from('media')
+      .select('object_id, uri, sort_order')
+      .in('object_id', ids);
+    const sorted = (mediaRows || []).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+    for (const m of sorted) {
+      const oid = (m as any).object_id as string;
+      if (!thumbByObject[oid]) thumbByObject[oid] = (m as any).uri || null;
+    }
+  }
 
   const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
   const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
@@ -114,20 +129,18 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       </section>
       <section className="mb-6">
         <h2 className="font-medium">Items used</h2>
-        {!items?.length ? <div className="text-sm">—</div> : (
+        {!itemObjects?.length ? <div className="text-sm">—</div> : (
           <div className="grid" style={{ gap: 8 }}>
-            {items!.map((r: any, i: number) => {
-              const o = (r as any).objects;
+            {itemObjects!.map((o: any, i: number) => {
               const ja = o.title_ja || '';
               const en = o.title || '';
               const label = ja || en || o.local_number || o.token;
               const secondary = ja && en ? en : '';
-              const media = (o.media || []).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
-              const thumb = media[0]?.uri || null;
+              const thumb = thumbByObject[o.id] || null;
               return (
                 <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', alignItems: 'center', gap: 8 }}>
                   <div style={{ position: 'relative', width: 64, height: 64, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
-                    {thumb ? <img src={thumb} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                    {thumb ? <Image src={thumb} alt={label} fill sizes="64px" style={{ objectFit: 'cover' }} /> : null}
                   </div>
                   <div className="text-sm">
                     <a className="underline" href={`/id/${o.token}`}>{label}</a>{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}
