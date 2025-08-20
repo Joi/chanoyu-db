@@ -1,15 +1,9 @@
-// Use legacy PostCSS config when Oxide is disabled
-const config = process.env.TAILWIND_DISABLE_OXIDE === '1' 
-  ? {
-      plugins: {
-        'tailwindcss': { config: './tailwind.config.ts' },
-        'autoprefixer': {},
-      },
-    }
-  : {
-      plugins: {
-        '@tailwindcss/postcss': {},
-      },
-    };
+// Use Tailwind v3 for compatibility
+const config = {
+  plugins: {
+    'tailwindcss': {},
+    'autoprefixer': {},
+  },
+};
 
 export default config;

@@ -76,7 +76,8 @@ async function uploadMediaFileAction(formData: FormData) {
   const arrayBuffer = await file.arrayBuffer();
   const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
   const filename = `${mintToken(6)}.${ext}`;
-  const path = `media/location/${locationId}/${filename}`;
+  // Store alongside other entities at a uniform level: media/<entityId>/<filename>
+  const path = `media/${locationId}/${filename}`;
   // @ts-ignore
   const body: any = typeof Buffer !== 'undefined' ? Buffer.from(arrayBuffer) : arrayBuffer;
   // @ts-ignore

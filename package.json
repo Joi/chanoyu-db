@@ -4,11 +4,11 @@
   "version": "1.2.1",
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "TAILWIND_DISABLE_OXIDE=1 NEXT_DISABLE_LIGHTNINGCSS=1 next build",
+    "build": "NEXT_DISABLE_LIGHTNINGCSS=1 next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "build:prod": "NODE_ENV=production TAILWIND_DISABLE_OXIDE=1 NEXT_DISABLE_LIGHTNINGCSS=1 next build",
+    "build:prod": "NODE_ENV=production NEXT_DISABLE_LIGHTNINGCSS=1 next build",
     "test": "vitest run --environment=jsdom",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build:prod && vercel build --yes",
     "ci:local": "npm run lint && npm run typecheck && npm run test && NEXT_DISABLE_LIGHTNINGCSS=1 npm run build:prod",
@@ -17,7 +17,9 @@
     "ingest:notion": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/ingest-notion.ts",
     "seed:licenses": "ts-node scripts/seed-licenses.ts",
     "sync:accounts-schema": "ts-node scripts/sync-accounts-schema.ts",
-    "backfill:tokens": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/backfill-tokens.ts"
+    "backfill:tokens": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/backfill-tokens.ts",
+    "migrate:location-media": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-location-media.ts",
+    "cleanup:location-folder": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/cleanup-location-folder.ts"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
@@ -34,7 +36,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/react": "^16.0.0",
     "@types/google.maps": "^3.58.1",
@@ -53,5 +54,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "vitest": "^3.2.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.24.4"
   }
 }
