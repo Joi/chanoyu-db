@@ -21,7 +21,7 @@ Vercel project settings:
 ## Daily dev loop
 ```bash
 # 1) work locally
-npm run dev
+pnpm dev
 
 # 2) push to preview
 git checkout dev
@@ -48,8 +48,8 @@ vercel link --yes
 vercel pull --yes --environment=preview
 
 # 2) reproduce Vercel's build locally (uses .vercel/project.json and env)
-npm ci
-npm run lint && npm run typecheck && npm run test
+pnpm install --frozen-lockfile
+pnpm lint && pnpm typecheck && pnpm test
 vercel build --yes
 
 # 3) deploy to Preview and verify

@@ -1,5 +1,7 @@
 # Node/Next
 node_modules/
+package-lock.json
+.pnpm-store/
 .next/
 out/
 .vercel/

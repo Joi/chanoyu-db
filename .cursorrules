@@ -1,0 +1,83 @@
+# Cursor AI Rules and Context for Chanoyu-DB
+
+## IMPORTANT PROJECT FILES TO REFERENCE
+Always check these files first:
+- CLAUDE.md - AI collaboration guidelines
+- TASKS.md - Current work items
+- README.md - Project overview
+- docs/ARCHITECTURE.md - System design
+- docs/WORKFLOW.md - Deployment process
+
+## PROJECT CONTEXT
+This is a Next.js + Supabase application for managing tea ceremony (chanoyu) collections with bilingual support (EN/JA).
+
+Tech Stack:
+- Frontend: Next.js 14 (App Router)
+- Database: Supabase (Postgres with RLS)
+- Storage: Supabase Storage
+- Deployment: Vercel (dev branch → preview, main → production)
+- Language: TypeScript (strict mode)
+
+## ALWAYS FOLLOW THESE RULES
+
+1. **Check TASKS.md first** to understand current priorities
+2. **Read CLAUDE.md** for detailed AI collaboration guidelines  
+3. **No 'any' types** - TypeScript must be strictly typed
+4. **Test locally first** with `npm run dev` before suggesting code
+5. **Keep changes small** - one feature/fix at a time
+
+## CODE PATTERNS TO FOLLOW
+
+### Database Queries
+```typescript
+// Client-side (public data only)
+const { data, error } = await supabase
+  .from('objects')
+  .select('*')
+  .eq('visibility', 'public')
+
+// Server-side (use service role)
+const { data, error } = await supabaseAdmin
+  .from('objects')
+  .select('*')
+```
+
+### File Structure
+- Pages: `/app/[feature]/page.tsx`
+- API Routes: `/app/api/[endpoint]/route.ts`
+- Components: `/app/components/[name].tsx`
+- Database: `/lib/supabase.ts`
+- Types: `/lib/types.ts`
+
+### Common Tasks
+- Before adding new features, check existing patterns in `/app`
+- For database changes, update both schema and TypeScript types
+- For images, use Supabase Storage (automatic HEIC→JPEG conversion)
+
+## DEVELOPMENT WORKFLOW
+
+1. Work on `dev` branch
+2. Test locally: `pnpm dev`
+3. Check types: `pnpm typecheck`
+4. Push to dev: `git push origin dev`
+5. Test on: dev.collection.ito.com
+6. When ready: PR from dev → main
+
+## KEY TABLES
+- `objects` - Tea utensils/items
+- `chakai` - Tea gatherings/events
+- `locations` - Venues
+- `media` - Images
+- `classifications` - Categories (AAT/Wikidata)
+
+## WHEN WORKING ON TASKS
+1. Check TASKS.md for the specific task
+2. Find related files using the patterns above
+3. Keep changes focused on the task
+4. Update TASKS.md when complete
+
+## IF YOU GET STUCK
+- Review existing code in `/app` for patterns
+- Check `docs/ARCHITECTURE.md` for system overview
+- Test queries in Supabase dashboard first
+- Keep changes minimal and focused
