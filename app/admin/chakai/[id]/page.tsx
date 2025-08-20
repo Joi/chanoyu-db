@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation';
+import Image from 'next/image';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
 import { requireAdmin } from '@/lib/auth';
@@ -100,7 +101,23 @@ export default async function EditChakai({ params }: { params: { id: string } })
     .from('chakai_items')
     .select('objects(id, token, title, title_ja, local_number)')
     .eq('chakai_id', c.id);
-  const items = (itemRows || []).map((r: any) => ({ value: r.objects.id, label: r.objects.title || r.objects.title_ja || r.objects.local_number || r.objects.token }));
+  const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
+  const items = itemObjects.map((o: any) => ({ value: o.id, label: o.title || o.title_ja || o.local_number || o.token }));
+
+  // Thumbnails for selected items (primary image = lowest sort_order)
+  let thumbByObject: Record<string, string | null> = {};
+  if (itemObjects.length) {
+    const ids = itemObjects.map((o: any) => o.id);
+    const { data: mediaRows } = await db
+      .from('media')
+      .select('object_id, uri, sort_order')
+      .in('object_id', ids);
+    const sorted = (mediaRows || []).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+    for (const m of sorted) {
+      const oid = (m as any).object_id as string;
+      if (!thumbByObject[oid]) thumbByObject[oid] = (m as any).uri || null;
+    }
+  }
 
   const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
   const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
@@ -201,6 +218,28 @@ export default async function EditChakai({ params }: { params: { id: string } })
         <section className="grid gap-3">
           <h2 className="font-medium">Items used</h2>
           <SearchSelect name="item_ids" label="Items used" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={items} />
+          {itemObjects.length ? (
+            <div className="grid" style={{ gap: 8 }}>
+              {itemObjects.map((o: any) => {
+                const ja = o.title_ja || '';
+                const en = o.title || '';
+                const label = ja || en || o.local_number || o.token;
+                const secondary = ja && en ? en : '';
+                const thumb = thumbByObject[o.id] || null;
+                return (
+                  <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', alignItems: 'center', gap: 8 }}>
+                    <div style={{ position: 'relative', width: 64, height: 64, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
+                      {thumb ? <Image src={thumb} alt={label} fill sizes="64px" style={{ objectFit: 'cover' }} /> : null}
+                    </div>
+                    <div className="text-sm">
+                      <div>{label}{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}</div>
+                    </div>
+                    <a className="text-xs underline" href={`/admin/${o.token}`}>Edit item</a>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </section>
         <div className="flex gap-3 mt-2">
           <button className="button" type="submit">Save</button>

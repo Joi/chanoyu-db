@@ -55,7 +55,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
     .eq('chakai_id', c.id);
   const { data: items } = await db
     .from('chakai_items')
-    .select('objects(id, token, title, title_ja, local_number)')
+    .select('objects(id, token, title, title_ja, local_number, media:media(id, uri, sort_order))')
     .eq('chakai_id', c.id);
 
   const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
@@ -115,13 +115,28 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       <section className="mb-6">
         <h2 className="font-medium">Items used</h2>
         {!items?.length ? <div className="text-sm">—</div> : (
-          <ul className="list-disc pl-5 text-sm">
+          <div className="grid" style={{ gap: 8 }}>
             {items!.map((r: any, i: number) => {
               const o = (r as any).objects;
-              const name = o.title || o.title_ja || o.local_number || o.token;
-              return <li key={i}><a className="underline" href={`/id/${o.token}`}>{name}</a></li>;
+              const ja = o.title_ja || '';
+              const en = o.title || '';
+              const label = ja || en || o.local_number || o.token;
+              const secondary = ja && en ? en : '';
+              const media = (o.media || []).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+              const thumb = media[0]?.uri || null;
+              return (
+                <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', alignItems: 'center', gap: 8 }}>
+                  <div style={{ position: 'relative', width: 64, height: 64, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
+                    {thumb ? <img src={thumb} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                  </div>
+                  <div className="text-sm">
+                    <a className="underline" href={`/id/${o.token}`}>{label}</a>{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}
+                  </div>
+                  <a className="text-xs underline" href={`/id/${o.token}`}>View</a>
+                </div>
+              );
             })}
-          </ul>
+          </div>
         )}
       </section>
     </main>
