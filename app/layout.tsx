@@ -24,7 +24,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <div className="max-w-3xl mx-auto px-6 py-6">{children}</div>
         <footer className="border-t border-borderGray bg-white">
-          <div className="max-w-3xl mx-auto px-6 py-6 text-sm text-gray-600">© {APP_NAME}</div>
+          <div className="max-w-3xl mx-auto px-6 py-6 text-sm text-gray-600">
+            <span className="inline-flex items-center gap-2">
+              <span>© {APP_NAME}</span>
+              <a
+                href="https://creativecommons.org/licenses/by/4.0/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center"
+                aria-label="Creative Commons Attribution 4.0 International (CC BY 4.0)"
+                title="Creative Commons Attribution 4.0 International (CC BY 4.0)"
+              >
+                <img
+                  src="https://licensebuttons.net/l/by/4.0/88x31.png"
+                  alt="CC BY 4.0"
+                  className="h-5 w-auto"
+                />
+                <span className="sr-only">Licensed under CC BY 4.0</span>
+              </a>
+            </span>
+          </div>
         </footer>
       </body>
     </html>

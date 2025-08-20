@@ -2,7 +2,7 @@ export default function HomePage() {
   return (
     <main>
       <section className="prose">
-        <h1>Ito Soichi Chanoyu Database</h1>
+        <h1>Soichi Ito Chanoyu Database</h1>
         <h2 lang="ja">伊藤宗一茶の湯データベース</h2>
 
         <p>
@@ -30,6 +30,8 @@ export default function HomePage() {
             View our codebase and contribute on GitHub
           </a>
         </p>
+
+        <p className="mt-8 text-[10px] text-gray-500">"Soichi/宗一" is the tea name of Joichi Ito / 伊藤穰一</p>
       </section>
     </main>
   );
