@@ -50,7 +50,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       return;
     }
     const s = document.createElement('script');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places,marker&v=weekly`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly`;
     s.async = true;
     s.defer = true;
     s.setAttribute('data-maps-loader', 'true');
@@ -82,16 +82,8 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     });
     mapRef.current = map;
 
-    // Marker (AdvancedMarker if available)
-    let marker: any;
-    try {
-      marker = gm.marker?.AdvancedMarkerElement
-        ? new gm.marker.AdvancedMarkerElement({ position: { lat: centerLat, lng: centerLng }, map })
-        : new gm.Marker({ position: { lat: centerLat, lng: centerLng }, map });
-    } catch (e) {
-      // Fallback to classic Marker if AdvancedMarker fails for any reason
-      marker = new gm.Marker({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map });
-    }
+    // Marker (always classic Marker to avoid Map ID requirement)
+    const marker: any = new gm.Marker({ position: { lat: centerLat, lng: centerLng }, map });
     markerRef.current = marker;
 
     // Search box control
