@@ -24,7 +24,9 @@ async function createChakai(formData: FormData) {
   });
   const parsed = schema.safeParse(Object.fromEntries(formData as any));
   if (!parsed.success) {
-    throw new Error('Invalid input. Please check the form fields.');
+    const first = parsed.error.issues?.[0];
+    const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Invalid input.';
+    throw new Error(`Invalid input. ${msg}`);
   }
   const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name, location_address, location_url } = parsed.data as any;
 

@@ -10,7 +10,7 @@ export default async function ChakaiListPage() {
   // We rely on RLS for defense in depth, but filter here for UX.
   let query = db
     .from('chakai')
-    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, location_id')
+    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, locations(id, name)')
     .order('event_date', { ascending: false })
     .limit(200);
 
@@ -32,12 +32,7 @@ export default async function ChakaiListPage() {
     }
   }
 
-  const locationIds = Array.from(new Set(list.map((r: any) => r.location_id).filter(Boolean)));
-  let locationsById: Record<string, any> = {};
-  if (locationIds.length) {
-    const { data: locs } = await db.from('locations').select('id, name').in('id', locationIds);
-    for (const l of locs || []) locationsById[(l as any).id] = l;
-  }
+  // locations joined in main query
 
   return (
     <main className="max-w-4xl mx-auto p-6">
@@ -47,7 +42,7 @@ export default async function ChakaiListPage() {
       ) : (
         <div className="grid" style={{ gap: 8 }}>
           {list.map((c: any) => {
-            const loc = c.location_id ? locationsById[c.location_id] : null;
+            const loc = (c as any).locations || null;
             const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
             const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
             const title = c.name_en || c.name_ja || c.local_number || date;

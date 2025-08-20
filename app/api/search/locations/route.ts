@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
     .order('name', { ascending: true })
     .limit(SEARCH_RESULT_LIMIT);
   if (error) {
-    console.error('[search/locations] error', error);
-    return NextResponse.json({ error: 'Failed to search locations' }, { status: 500 });
+    console.error('[search/locations] error', { message: error.message, details: error.details });
+    return NextResponse.json({ code: 'SEARCH_LOCATIONS_FAILED', message: 'Failed to search locations' }, { status: 500 });
   }
   return NextResponse.json(data || []);
 }

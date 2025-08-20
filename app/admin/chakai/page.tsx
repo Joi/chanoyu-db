@@ -20,7 +20,7 @@ export default async function ChakaiAdminList() {
   const db = supabaseAdmin();
   const { data: rows, error } = await db
     .from('chakai')
-    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, locations(id, name)')
+    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, locations:locations(id, name)')
     .order('event_date', { ascending: false })
     .limit(500);
   if (error) console.error('[admin/chakai] query error', error.message || error);

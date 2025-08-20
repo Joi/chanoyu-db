@@ -97,11 +97,13 @@ export default function SearchSelect({
             const value = String(row[valueKey]);
             const labelText = getLabel(row) || '(unnamed)';
             const disabled = selected.some((s) => s.value === value);
+            const isSelected = disabled;
             return (
               <button
                 key={value + ':' + idx}
                 type="button"
                 role="option"
+                aria-selected={isSelected}
                 className={`block w-full text-left px-2 py-1 rounded ${disabled ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                 onClick={() => {
                   if (disabled) return;
