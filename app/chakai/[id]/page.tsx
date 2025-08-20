@@ -5,17 +5,24 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 export default async function ChakaiDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+  const raw = params.id;
+  const isUuid = /^[0-9a-fA-F-]{36}$/.test(raw);
   const db = supabaseAdmin();
   const email = await currentUserEmail();
   const isPrivileged = await requireAdmin();
   const isOwner = await requireOwner();
 
-  const { data: c, error } = await db
-    .from('chakai')
-    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, notes, location_id')
-    .eq('id', id)
-    .maybeSingle();
+  const { data: c, error } = await (isUuid
+    ? db
+        .from('chakai')
+        .select('id, token, name_en, name_ja, local_number, event_date, start_time, visibility, notes, location_id')
+        .eq('id', raw)
+        .maybeSingle()
+    : db
+        .from('chakai')
+        .select('id, token, name_en, name_ja, local_number, event_date, start_time, visibility, notes, location_id')
+        .eq('token', raw)
+        .maybeSingle());
   if (error) console.error('[chakai detail] query error', error.message || error);
   if (!c) return notFound();
 
@@ -48,6 +55,23 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
         .eq('accounts.email', email)
         .eq('chakai.location_id', loc.id);
       canShowTeaRoom = !!(attendedAtLocation && attendedAtLocation.length);
+    }
+  }
+  // Primary image for tea room (lowest sort_order)
+  let teaRoomThumb: string | null = null;
+  if (loc && canShowTeaRoom) {
+    const { data: linkRows } = await db
+      .from('location_media_links')
+      .select('media_id')
+      .eq('location_id', (loc as any).id);
+    const mediaIds = Array.from(new Set((linkRows || []).map((r: any) => r.media_id))).filter(Boolean);
+    if (mediaIds.length) {
+      const { data: m } = await db
+        .from('media')
+        .select('id, uri, sort_order')
+        .in('id', mediaIds);
+      const sorted = (m || []).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+      teaRoomThumb = sorted[0]?.uri || null;
     }
   }
   const { data: attendees } = await db
@@ -99,6 +123,11 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       {loc && canShowTeaRoom ? (
         <section className="mb-6">
           <h2 className="font-medium">Tea Room <span className="text-sm text-gray-700" lang="ja">/ 茶室</span></h2>
+          {teaRoomThumb ? (
+            <div className="relative" style={{ position: 'relative', width: '33%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee', marginTop: 8, marginBottom: 8 }}>
+              <Image src={teaRoomThumb} alt={(loc as any).name_ja || (loc as any).name_en || (loc as any).name || 'Tea room'} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+            </div>
+          ) : null}
           {(() => {
             const ja = (loc as any).name_ja || '';
             const en = (loc as any).name_en || (loc as any).name || '';

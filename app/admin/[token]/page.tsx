@@ -275,7 +275,14 @@ async function autoTranslate(field: string, formData: FormData) {
   console.log('[autoTranslate] updates', Object.keys(updates));
 
   if (Object.keys(updates).length > 0) {
-    await db.from('objects').update(updates).eq('id', data.id);
+    const res = await db.from('objects').update(updates).eq('id', data.id).select('id');
+    if ((res as any)?.error) {
+      console.log('[autoTranslate] update error', (res as any).error?.message || (res as any).error);
+    } else {
+      console.log('[autoTranslate] update ok for', data.id);
+    }
+  } else {
+    console.log('[autoTranslate] no updates to apply');
   }
   revalidatePath(`/admin/${token}`);
   redirect(`/admin/${token}?saved=translate${field ? `&field=${encodeURIComponent(field)}` : ''}`);
@@ -615,7 +622,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
                 const title = c.name_ja || c.name_en || '(untitled)';
                 return (
                   <div key={c.id} className="text-sm">
-                    <a className="underline" href={`/chakai/${c.id}`}>{title}{c.local_number ? ` (${c.local_number})` : ''}</a>
+                    <a className="underline" href={`/chakai/${(c as any).token || c.id}`}>{title}{c.local_number ? ` (${c.local_number})` : ''}</a>
                     <a className="underline ml-2 text-xs" href={`/admin/chakai/${c.id}`}>Edit</a>
                   </div>
                 );
