@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { currentUserEmail, requireAdmin, requireOwner } from '@/lib/auth';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default async function ChakaiDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -33,16 +34,44 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
   }
 
   const { data: loc } = c.location_id
-    ? await db.from('locations').select('id, name, address, url, local_number').eq('id', c.location_id).maybeSingle()
+    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, url, local_number, visibility, lat, lng, google_maps_url').eq('id', c.location_id).maybeSingle()
     : { data: null } as any;
+
+  let canShowTeaRoom = false;
+  if (loc) {
+    if (loc.visibility === 'public' || isPrivileged || isOwner) {
+      canShowTeaRoom = true;
+    } else if (email) {
+      const { data: attendedAtLocation } = await db
+        .from('chakai_attendees')
+        .select('chakai_id, accounts!inner(email), chakai:chakai!inner(location_id)')
+        .eq('accounts.email', email)
+        .eq('chakai.location_id', loc.id);
+      canShowTeaRoom = !!(attendedAtLocation && attendedAtLocation.length);
+    }
+  }
   const { data: attendees } = await db
     .from('chakai_attendees')
     .select('accounts(id, full_name_en, full_name_ja, email)')
     .eq('chakai_id', c.id);
-  const { data: items } = await db
+  const { data: itemRows } = await db
     .from('chakai_items')
     .select('objects(id, token, title, title_ja, local_number)')
     .eq('chakai_id', c.id);
+  const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
+  let thumbByObject: Record<string, string | null> = {};
+  if (itemObjects.length) {
+    const ids = itemObjects.map((o: any) => o.id);
+    const { data: mediaRows } = await db
+      .from('media')
+      .select('object_id, uri, sort_order')
+      .in('object_id', ids);
+    const sorted = (mediaRows || []).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+    for (const m of sorted) {
+      const oid = (m as any).object_id as string;
+      if (!thumbByObject[oid]) thumbByObject[oid] = (m as any).uri || null;
+    }
+  }
 
   const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
   const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
@@ -67,11 +96,49 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       </div>
       <div className="text-sm text-gray-700 mb-4">{date}{time ? ` ${time}` : ''}{loc ? ` · ${loc.name}` : ''}{c.local_number ? ` · ${c.local_number}` : ''}</div>
       {c.notes ? <p className="mb-4 whitespace-pre-wrap" aria-label="Notes">{c.notes}</p> : null}
-      {loc ? (
+      {loc && canShowTeaRoom ? (
         <section className="mb-6">
-          <h2 className="font-medium">Location</h2>
-          <div className="text-sm">{loc.name}{loc.local_number ? ` (${loc.local_number})` : ''}</div>
-          {loc.address ? <div className="text-sm">{loc.address}</div> : null}
+          <h2 className="font-medium">Tea Room <span className="text-sm text-gray-700" lang="ja">/ 茶室</span></h2>
+          {(() => {
+            const ja = (loc as any).name_ja || '';
+            const en = (loc as any).name_en || (loc as any).name || '';
+            const primary = ja || en || (loc as any).name || '';
+            return (
+              <div className="text-sm">
+                <a href={`/tea-rooms/${(loc as any).id}`} className="underline">{primary}</a>
+                {(ja && en) ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {en}</span> : null}
+                {loc.local_number ? ` (${loc.local_number})` : ''}
+              </div>
+            );
+          })()}
+          {(loc as any).address_en || (loc as any).address_ja || (loc as any).address ? (
+            <div className="text-sm">{(loc as any).address_en || (loc as any).address_ja || (loc as any).address}</div>
+          ) : null}
+          {(() => {
+            const lat = (loc as any).lat;
+            const lng = (loc as any).lng;
+            let src: string | null = null;
+            if (lat != null && lng != null) {
+              src = `https://www.google.com/maps?q=${encodeURIComponent(String(lat)+','+String(lng))}&hl=en&z=18&output=embed`;
+            } else if ((loc as any).google_maps_url) {
+              try {
+                const u = new URL(String((loc as any).google_maps_url));
+                const center = u.searchParams.get('center');
+                if (center && center.includes(',')) {
+                  src = `https://www.google.com/maps?q=${encodeURIComponent(center)}&hl=en&z=18&output=embed`;
+                }
+              } catch {}
+            }
+            return src ? (
+              <iframe
+                title="Map"
+                className="w-full h-40 rounded border mt-2"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={src}
+              />
+            ) : null;
+          })()}
           {loc.url ? <a className="text-sm underline" href={loc.url} target="_blank" rel="noreferrer">Website</a> : null}
         </section>
       ) : null}
@@ -89,14 +156,27 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       </section>
       <section className="mb-6">
         <h2 className="font-medium">Items used</h2>
-        {!items?.length ? <div className="text-sm">—</div> : (
-          <ul className="list-disc pl-5 text-sm">
-            {items!.map((r: any, i: number) => {
-              const o = (r as any).objects;
-              const name = o.title || o.title_ja || o.local_number || o.token;
-              return <li key={i}><a className="underline" href={`/id/${o.token}`}>{name}</a></li>;
+        {!itemObjects?.length ? <div className="text-sm">—</div> : (
+          <div className="grid" style={{ gap: 8 }}>
+            {itemObjects!.map((o: any, i: number) => {
+              const ja = o.title_ja || '';
+              const en = o.title || '';
+              const label = ja || en || o.local_number || o.token;
+              const secondary = ja && en ? en : '';
+              const thumb = thumbByObject[o.id] || null;
+              return (
+                <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', alignItems: 'center', gap: 8 }}>
+                  <div style={{ position: 'relative', width: 64, height: 64, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
+                    {thumb ? <Image src={thumb} alt={label} fill sizes="64px" style={{ objectFit: 'cover' }} /> : null}
+                  </div>
+                  <div className="text-sm">
+                    <a className="underline" href={`/id/${o.token}`}>{label}</a>{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}
+                  </div>
+                  <a className="text-xs underline" href={`/id/${o.token}`}>View</a>
+                </div>
+              );
             })}
-          </ul>
+          </div>
         )}
       </section>
     </main>

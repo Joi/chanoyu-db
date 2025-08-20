@@ -10,8 +10,8 @@ export async function GET(req: NextRequest) {
   const like = `%${q}%`;
   const { data, error } = await db
     .from('locations')
-    .select('id, name, address, url, local_number')
-    .or(`name.ilike.${like},address.ilike.${like},url.ilike.${like},local_number.ilike.${like}`)
+    .select('id, name, name_en, name_ja, address, address_en, address_ja, url, local_number, visibility, contained_in, contained_in_en, contained_in_ja')
+    .or(`name.ilike.${like},name_en.ilike.${like},name_ja.ilike.${like},address.ilike.${like},address_en.ilike.${like},address_ja.ilike.${like},contained_in.ilike.${like},contained_in_en.ilike.${like},contained_in_ja.ilike.${like},url.ilike.${like},local_number.ilike.${like}`)
     .order('name', { ascending: true })
     .limit(SEARCH_RESULT_LIMIT);
   if (error) {

@@ -23,7 +23,7 @@
         "./*"
       ]
     },
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "google.maps"],
     "plugins": [
       {
         "name": "next"

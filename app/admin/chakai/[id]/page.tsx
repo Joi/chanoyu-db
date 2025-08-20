@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation';
+import Image from 'next/image';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
 import { requireAdmin } from '@/lib/auth';
@@ -18,7 +19,7 @@ async function updateChakai(formData: FormData) {
     const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Invalid input.';
     throw new Error(`Invalid input. ${msg}`);
   }
-  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name, location_address, location_url, attendee_ids, item_ids } = parsed.data as any;
+  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name_en, location_name_ja, location_address_en, location_address_ja, location_url, attendee_ids, item_ids } = parsed.data as any;
   const payload: any = {
     name_en: name_en || null,
     name_ja: name_ja || null,
@@ -29,10 +30,18 @@ async function updateChakai(formData: FormData) {
   };
   // Handle location select-or-create
   let locationId: string | null = (location_id as string) || null;
-  if (!locationId && location_name) {
+  if (!locationId && (location_name_en || location_name_ja)) {
     const { data: loc } = await db
       .from('locations')
-      .insert({ name: location_name, address: location_address || null, url: location_url || null })
+      .insert({
+        name: location_name_en || location_name_ja,
+        name_en: location_name_en || null,
+        name_ja: location_name_ja || null,
+        address: location_address_en || location_address_ja || null,
+        address_en: location_address_en || null,
+        address_ja: location_address_ja || null,
+        url: location_url || null,
+      })
       .select('id')
       .single();
     locationId = (loc as any)?.id || null;
@@ -92,15 +101,38 @@ export default async function EditChakai({ params }: { params: { id: string } })
     .from('chakai_items')
     .select('objects(id, token, title, title_ja, local_number)')
     .eq('chakai_id', c.id);
-  const items = (itemRows || []).map((r: any) => ({ value: r.objects.id, label: r.objects.title || r.objects.title_ja || r.objects.local_number || r.objects.token }));
+  const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
+  const items = itemObjects.map((o: any) => ({ value: o.id, label: o.title || o.title_ja || o.local_number || o.token }));
+
+  // Thumbnails for selected items (primary image = lowest sort_order)
+  let thumbByObject: Record<string, string | null> = {};
+  if (itemObjects.length) {
+    const ids = itemObjects.map((o: any) => o.id);
+    const { data: mediaRows } = await db
+      .from('media')
+      .select('object_id, uri, sort_order')
+      .in('object_id', ids);
+    const sorted = (mediaRows || []).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+    for (const m of sorted) {
+      const oid = (m as any).object_id as string;
+      if (!thumbByObject[oid]) thumbByObject[oid] = (m as any).uri || null;
+    }
+  }
 
   const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
   const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
 
   // For initial location display
   const { data: loc } = c.location_id
-    ? await db.from('locations').select('id, name, address, local_number').eq('id', c.location_id).maybeSingle()
+    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, local_number, visibility, lat, lng, google_maps_url').eq('id', c.location_id).maybeSingle()
     : { data: null } as any;
+
+  // For dropdown list of tea rooms
+  const { data: rooms } = await db
+    .from('locations')
+    .select('id, name, name_en, name_ja, local_number')
+    .order('name', { ascending: true })
+    .limit(1000);
 
   return (
     <main className="max-w-xl mx-auto p-6">
@@ -136,13 +168,47 @@ export default async function EditChakai({ params }: { params: { id: string } })
           <textarea name="notes" className="input w-full" rows={3} defaultValue={c.notes || ''} />
         </div>
         <fieldset className="border p-3 rounded">
-          <legend className="text-sm font-medium">Location</legend>
+          <legend className="text-sm font-medium">Tea Room</legend>
           <div className="grid gap-3">
-            <SearchSelect name="location_id" label="Select existing location" searchPath="/api/search/locations" labelFields={["name","local_number","address"]} valueKey="id" initial={loc ? [{ value: loc.id, label: `${loc.name}${loc.local_number ? ` (${loc.local_number})` : ''}` }] : []} />
-            <div className="text-xs text-gray-600">Or create a new location:</div>
-            <input name="location_name" className="input w-full" placeholder="Name" />
-            <input name="location_address" className="input w-full" placeholder="Address" />
-            <input name="location_url" className="input w-full" placeholder="URL" />
+            <div className="grid gap-1">
+              <label className="text-sm">Select tea room</label>
+              <select name="location_id" className="input w-full" defaultValue={c.location_id || ''}>
+                <option value="">— Select —</option>
+                {(rooms || []).map((r: any) => {
+                  const title = r.name_ja || r.name_en || r.name || '';
+                  const en = r.name_en || r.name || '';
+                  const label = en && r.name_ja ? `${title} / ${en}` : title;
+                  return <option key={r.id} value={r.id}>{label}{r.local_number ? ` (${r.local_number})` : ''}</option>;
+                })}
+              </select>
+              <div className="text-xs">
+                <a className="underline" href="/admin/tea-rooms/new" target="_blank" rel="noreferrer">Add a new tea room</a>
+              </div>
+            </div>
+
+            {loc ? (
+              <div className="card grid gap-1">
+                <div className="text-sm font-medium">
+                  {((loc as any).name_ja || (loc as any).name_en || (loc as any).name) || '(unnamed)'}
+                  {((loc as any).name_ja && ((loc as any).name_en || (loc as any).name)) ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {(loc as any).name_en || (loc as any).name}</span> : null}
+                  {(loc as any).local_number ? ` (${(loc as any).local_number})` : ''}
+                  {` · ${(loc as any).visibility}`}
+                </div>
+                <div className="text-xs text-gray-700">
+                  {(loc as any).address_en || (loc as any).address || '—'}{(loc as any).address_ja ? <span lang="ja"> / {(loc as any).address_ja}</span> : null}
+                </div>
+                {((loc as any).lat != null && (loc as any).lng != null) ? (
+                  <iframe
+                    title="Map"
+                    className="w-full h-40 rounded border"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(String((loc as any).lat)+','+String((loc as any).lng))}&hl=en&z=18&output=embed`}
+                  />
+                ) : null}
+                {(loc as any).google_maps_url ? <a className="text-xs underline" href={(loc as any).google_maps_url} target="_blank" rel="noreferrer">Open in Google Maps</a> : null}
+              </div>
+            ) : null}
           </div>
         </fieldset>
         <section className="grid gap-3">
@@ -152,6 +218,28 @@ export default async function EditChakai({ params }: { params: { id: string } })
         <section className="grid gap-3">
           <h2 className="font-medium">Items used</h2>
           <SearchSelect name="item_ids" label="Items used" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={items} />
+          {itemObjects.length ? (
+            <div className="grid" style={{ gap: 8 }}>
+              {itemObjects.map((o: any) => {
+                const ja = o.title_ja || '';
+                const en = o.title || '';
+                const label = ja || en || o.local_number || o.token;
+                const secondary = ja && en ? en : '';
+                const thumb = thumbByObject[o.id] || null;
+                return (
+                  <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', alignItems: 'center', gap: 8 }}>
+                    <div style={{ position: 'relative', width: 64, height: 64, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
+                      {thumb ? <Image src={thumb} alt={label} fill sizes="64px" style={{ objectFit: 'cover' }} /> : null}
+                    </div>
+                    <div className="text-sm">
+                      <div>{label}{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}</div>
+                    </div>
+                    <a className="text-xs underline" href={`/admin/${o.token}`}>Edit item</a>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </section>
         <div className="flex gap-3 mt-2">
           <button className="button" type="submit">Save</button>
