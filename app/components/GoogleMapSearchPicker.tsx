@@ -13,7 +13,7 @@ type Props = {
 };
 
 // Minimal, map-first picker with a Google-provided search box on the map
-export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Locate on Google Maps', defaultLat = 35.6809591, defaultLng = 139.7673068, defaultPlaceId = null, defaultQuery = '' }: Props) {
+export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Locate on Google Maps', defaultLat, defaultLng, defaultPlaceId = null, defaultQuery = '' }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -68,9 +68,13 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     }
     if (!containerRef.current) return;
 
+    // Compute safe center (handle nulls coming from server)
+    const centerLat = typeof lat === 'number' ? lat : (typeof defaultLat === 'number' ? defaultLat : 35.6809591);
+    const centerLng = typeof lng === 'number' ? lng : (typeof defaultLng === 'number' ? defaultLng : 139.7673068);
+
     // Initialize map
     const map = new gm.Map(containerRef.current, {
-      center: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! },
+      center: { lat: centerLat, lng: centerLng },
       zoom: 14,
       mapTypeControl: false,
       streetViewControl: false,
@@ -82,8 +86,8 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     let marker: any;
     try {
       marker = gm.marker?.AdvancedMarkerElement
-        ? new gm.marker.AdvancedMarkerElement({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map })
-        : new gm.Marker({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map });
+        ? new gm.marker.AdvancedMarkerElement({ position: { lat: centerLat, lng: centerLng }, map })
+        : new gm.Marker({ position: { lat: centerLat, lng: centerLng }, map });
     } catch (e) {
       // Fallback to classic Marker if AdvancedMarker fails for any reason
       marker = new gm.Marker({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map });
