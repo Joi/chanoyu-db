@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "installCommand": "npm install --no-audit --no-fund",
+  "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "NEXT_DISABLE_LIGHTNINGCSS=1 next build",
   "redirects": [
     {
