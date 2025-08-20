@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { currentUserEmail, requireAdmin, requireOwner } from '@/lib/auth';
+import Image from 'next/image';
 
 export default async function TeaRoomDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -16,6 +17,20 @@ export default async function TeaRoomDetailPage({ params }: { params: { id: stri
     .maybeSingle();
   if (error) console.error('[tea-room detail] query error', error.message || error);
   if (!loc) return notFound();
+  // Fetch linked images
+  const { data: linkRows } = await db
+    .from('location_media_links')
+    .select('media_id')
+    .eq('location_id', (loc as any).id);
+  const mediaIds = Array.from(new Set((linkRows || []).map((r: any) => r.media_id).filter(Boolean)));
+  let media: any[] = [];
+  if (mediaIds.length) {
+    const { data: rows } = await db
+      .from('media')
+      .select('id, uri, kind, sort_order')
+      .in('id', mediaIds);
+    media = (rows || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }
 
   if (!isPrivileged && loc.visibility === 'private') {
     if (!email) return notFound();
@@ -55,6 +70,18 @@ export default async function TeaRoomDetailPage({ params }: { params: { id: stri
           </div>
         );
       })()}
+
+      {media.length ? (
+        <div className="grid mb-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+          {media.map((m: any) => (
+            <div key={m.id} className="relative" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
+              <a href={m.uri} target="_blank" rel="noreferrer">
+                <Image src={m.uri} alt={(loc as any).name || 'Image'} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
+              </a>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {(() => {
         const ciEn = (loc as any).contained_in_en || (loc as any).contained_in || '';
         const ciJa = (loc as any).contained_in_ja || '';

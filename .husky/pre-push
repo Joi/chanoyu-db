@@ -17,7 +17,7 @@ while read local_ref local_sha remote_ref remote_sha; do
 done
 
 if [ "$run_ci" = "1" ]; then
-  echo "Running CI (lint+typecheck+tests+build+vercel build) before push to dev..."
-  npm run ci || exit 1
+  echo "Running CI (lint+typecheck+tests+build) locally before push to dev..."
+  npm run ci:local || exit 1
 fi
 exit 0

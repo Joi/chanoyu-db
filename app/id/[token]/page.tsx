@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
 import RevealPrice from '@/app/components/RevealPrice';
@@ -25,7 +25,28 @@ export default async function ObjectPage({ params }: Props) {
     .eq('token', token)
     .single();
 
-  if (error || !data || data.visibility !== 'public') return notFound();
+  // If not an object token, try locations (tea rooms) or chakai and redirect
+  if (error || !data || data.visibility !== 'public') {
+    // Tea room by token → redirect to tea room page
+    const { data: loc } = await db
+      .from('locations')
+      .select('id, token')
+      .eq('token', token)
+      .maybeSingle();
+    if (loc?.id) {
+      return redirect(`/tea-rooms/${loc.id}`);
+    }
+    // Chakai by token → redirect to chakai page
+    const { data: ck } = await db
+      .from('chakai')
+      .select('id, token')
+      .eq('token', token)
+      .maybeSingle();
+    if (ck?.id) {
+      return redirect(`/chakai/${ck.id}`);
+    }
+    return notFound();
+  }
 
   const [isOwner, isAdmin] = await Promise.all([requireOwner(), requireAdmin()]);
 

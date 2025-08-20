@@ -70,6 +70,15 @@ do $$ begin
   end if;
 end $$;
 
+-- Optional: backfill media.local_number for existing rows missing it
+do $$ begin
+  update media
+  set local_number = 'ITO-M-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('media_local_seq')::text, 5, '0')
+  where local_number is null;
+exception when others then
+  null;
+end $$;
+
 -- Simple accounts table managed by owner via admin UI
 create table if not exists accounts (
   id uuid primary key default gen_random_uuid(),
@@ -182,10 +191,33 @@ alter table media add column if not exists storage_path text; -- e.g., media/<ob
 alter table media add column if not exists visibility text default 'public' check (visibility in ('public','private'));
 alter table media add column if not exists local_number text; -- e.g., ITO-YYYY-M-NNNNN
 alter table media add column if not exists created_at timestamptz not null default now();
+alter table media add column if not exists token text;
 
 -- Uniqueness for human IDs (case-insensitive) when present
 create unique index if not exists objects_local_number_ci on objects (lower(local_number)) where local_number is not null;
 create unique index if not exists media_local_number_ci on media (lower(local_number)) where local_number is not null;
+create unique index if not exists media_token_unique on media (token) where token is not null;
+
+-- Auto-generate local_number for media if missing (idempotent)
+create sequence if not exists media_local_seq;
+create or replace function set_media_local_number() returns trigger as $$
+begin
+  if new.local_number is null then
+    new.local_number := 'ITO-M-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('media_local_seq')::text, 5, '0');
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_trigger where tgname = 'trg_media_local_number'
+  ) then
+    create trigger trg_media_local_number
+      before insert on media
+      for each row execute function set_media_local_number();
+  end if;
+end $$;
 
 -- Many-to-many linkage between objects and media (optional; supports multi-item media)
 create table if not exists object_media_links (
@@ -209,6 +241,8 @@ create table if not exists locations (
   updated_at timestamptz not null default now()
 );
 create unique index if not exists locations_local_number_ci on locations (lower(local_number)) where local_number is not null;
+alter table locations add column if not exists token text;
+create unique index if not exists locations_token_unique on locations (token) where token is not null;
 
 alter table locations enable row level security;
 do $$ begin
@@ -232,3 +266,55 @@ alter table locations add column if not exists google_maps_url text;
 alter table locations add column if not exists contained_in text;
 alter table locations add column if not exists contained_in_en text;
 alter table locations add column if not exists contained_in_ja text;
+
+-- Many-to-many linkage between locations and media (supports multi-location media)
+create table if not exists location_media_links (
+  location_id uuid references locations(id) on delete cascade,
+  media_id uuid references media(id) on delete cascade,
+  role text default 'related',
+  created_at timestamptz not null default now(),
+  primary key (location_id, media_id)
+);
+create index if not exists lml_media_idx on location_media_links(media_id);
+
+-- Allow public read of media when linked to public locations (in addition to objects policy)
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'media' and policyname = 'media_public_read_locations'
+  ) then
+    create policy media_public_read_locations on media for select using (
+      exists (
+        select 1 from location_media_links lml
+        join locations l on l.id = lml.location_id
+        where lml.media_id = id and l.visibility = 'public'
+      )
+    );
+  end if;
+end $$;
+
+-- Chakai tokens and indexes (idempotent, guarded if table exists)
+do $$ begin
+  if exists (
+    select 1 from information_schema.tables where table_schema = 'public' and table_name = 'chakai'
+  ) then
+    -- token column
+    begin
+      alter table if exists chakai add column if not exists token text;
+    exception when others then
+      null;
+    end;
+    -- local_number unique (case-insensitive)
+    begin
+      create unique index if not exists chakai_local_number_ci on chakai (lower(local_number)) where local_number is not null;
+    exception when others then
+      null;
+    end;
+    -- token unique
+    begin
+      create unique index if not exists chakai_token_unique on chakai (token) where token is not null;
+    exception when others then
+      null;
+    end;
+  end if;
+end $$;

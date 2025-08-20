@@ -4,7 +4,7 @@ import { buildLinkedArtJSONLD } from '@/lib/jsonld';
 
 export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
   const db = supabaseAdmin();
-  const { data } = await db
+  const { data, error } = await db
     .from('objects')
     .select(
       `
@@ -19,7 +19,10 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     .eq('token', params.token)
     .single();
 
-  if (!data || data.visibility !== 'public') return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (error || !data || data.visibility !== 'public') {
+    // For now, return 404 for non-objects; later we could emit JSON-LD for tea rooms / chakai
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const baseId = `https://collection.ito.com/id/${params.token}`;
   const media = (data.media ?? []);

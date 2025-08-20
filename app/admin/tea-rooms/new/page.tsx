@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 import GoogleMapSearchPicker from '@/app/components/GoogleMapSearchPicker';
+import { mintToken } from '@/lib/id';
 
 async function createTeaRoom(formData: FormData) {
   'use server';
@@ -28,7 +29,8 @@ async function createTeaRoom(formData: FormData) {
   const effectiveAddress = addressEn || addressJa || suggestedAddress || queryText;
   if (!effectiveName) throw new Error('Name (EN or JA) is required');
   const db = supabaseAdmin();
-  const { error } = await db
+  const token = mintToken();
+  const { data: inserted, error } = await db
     .from('locations')
     .insert({
       name: effectiveName,
@@ -47,10 +49,13 @@ async function createTeaRoom(formData: FormData) {
       contained_in: containedInEn || containedInJa || null,
       contained_in_en: containedInEn || null,
       contained_in_ja: containedInJa || null,
-    });
+      token,
+    })
+    .select('id')
+    .single();
   if (error) throw error;
   revalidatePath('/admin/tea-rooms');
-  return redirect('/admin/tea-rooms');
+  return redirect(`/admin/tea-rooms/${(inserted as any).id}`);
 }
 
 export default async function NewTeaRoomPage() {
