@@ -107,8 +107,15 @@ export default async function EditChakai({ params }: { params: { id: string } })
 
   // For initial location display
   const { data: loc } = c.location_id
-    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, local_number').eq('id', c.location_id).maybeSingle()
+    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, local_number, visibility, lat, lng, google_maps_url').eq('id', c.location_id).maybeSingle()
     : { data: null } as any;
+
+  // For dropdown list of tea rooms
+  const { data: rooms } = await db
+    .from('locations')
+    .select('id, name, name_en, name_ja, local_number')
+    .order('name', { ascending: true })
+    .limit(1000);
 
   return (
     <main className="max-w-xl mx-auto p-6">
@@ -146,13 +153,45 @@ export default async function EditChakai({ params }: { params: { id: string } })
         <fieldset className="border p-3 rounded">
           <legend className="text-sm font-medium">Tea Room</legend>
           <div className="grid gap-3">
-            <SearchSelect name="location_id" label="Select existing tea room" searchPath="/api/search/locations" labelFields={["name_en","name_ja","name","local_number","address_en","address_ja","address"]} valueKey="id" initial={loc ? [{ value: loc.id, label: `${(loc as any).name_en || (loc as any).name_ja || (loc as any).name || ''}${loc.local_number ? ` (${loc.local_number})` : ''}` }] : []} />
-            <div className="text-xs text-gray-600">Or create a new tea room:</div>
-            <input name="location_name_en" className="input w-full" placeholder="Name (EN)" />
-            <input name="location_name_ja" className="input w-full" placeholder="Name (JA)" />
-            <input name="location_address_en" className="input w-full" placeholder="Address (EN)" />
-            <input name="location_address_ja" className="input w-full" placeholder="Address (JA)" />
-            <input name="location_url" className="input w-full" placeholder="URL" />
+            <div className="grid gap-1">
+              <label className="text-sm">Select tea room</label>
+              <select name="location_id" className="input w-full" defaultValue={c.location_id || ''}>
+                <option value="">— Select —</option>
+                {(rooms || []).map((r: any) => {
+                  const title = r.name_ja || r.name_en || r.name || '';
+                  const en = r.name_en || r.name || '';
+                  const label = en && r.name_ja ? `${title} / ${en}` : title;
+                  return <option key={r.id} value={r.id}>{label}{r.local_number ? ` (${r.local_number})` : ''}</option>;
+                })}
+              </select>
+              <div className="text-xs">
+                <a className="underline" href="/admin/tea-rooms/new" target="_blank" rel="noreferrer">Add a new tea room</a>
+              </div>
+            </div>
+
+            {loc ? (
+              <div className="card grid gap-1">
+                <div className="text-sm font-medium">
+                  {((loc as any).name_ja || (loc as any).name_en || (loc as any).name) || '(unnamed)'}
+                  {((loc as any).name_ja && ((loc as any).name_en || (loc as any).name)) ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {(loc as any).name_en || (loc as any).name}</span> : null}
+                  {(loc as any).local_number ? ` (${(loc as any).local_number})` : ''}
+                  {` · ${(loc as any).visibility}`}
+                </div>
+                <div className="text-xs text-gray-700">
+                  {(loc as any).address_en || (loc as any).address || '—'}{(loc as any).address_ja ? <span lang="ja"> / {(loc as any).address_ja}</span> : null}
+                </div>
+                {((loc as any).lat != null && (loc as any).lng != null) ? (
+                  <iframe
+                    title="Map"
+                    className="w-full h-40 rounded border"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(String((loc as any).lat)+','+String((loc as any).lng))}&hl=en&z=18&output=embed`}
+                  />
+                ) : null}
+                {(loc as any).google_maps_url ? <a className="text-xs underline" href={(loc as any).google_maps_url} target="_blank" rel="noreferrer">Open in Google Maps</a> : null}
+              </div>
+            ) : null}
           </div>
         </fieldset>
         <section className="grid gap-3">
