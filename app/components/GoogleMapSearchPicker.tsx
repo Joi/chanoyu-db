@@ -35,6 +35,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const [savedLng, setSavedLng] = useState<number | null>(typeof defaultLng === 'number' ? defaultLng : null);
   const [savedPlaceId, setSavedPlaceId] = useState<string | null>(defaultPlaceId || null);
   const [savedMapsUrl, setSavedMapsUrl] = useState<string | null>(defaultMapsUrl || null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
 
   // Load Maps JS API with places library
   const resolvedKey = apiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -194,17 +195,23 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       <div className="flex items-center gap-2 text-xs text-gray-700">
         <button type="button" className="button secondary" onClick={() => { if (mapRef.current) { mapRef.current.setZoom(18); setCurrentZoom(18); if (lat != null && lng != null) setMapsUrl(`https://www.google.com/maps/@?api=1&map_action=map&center=${lat},${lng}&zoom=18`); } }}>Zoom to building</button>
         <span>Zoom: {currentZoom}</span>
-        {(savedLat !== lat || savedLng !== lng || savedMapsUrl !== mapsUrl) ? <span className="text-amber-600">(Not saved)</span> : <span className="text-green-600">(Saved)</span>}
+        {(savedLat !== lat || savedLng !== lng || savedMapsUrl !== mapsUrl) ? <span className="text-amber-600">Not saved</span> : <span className="text-green-600">Saved</span>}
         <button
           type="button"
           className="button"
+          disabled={!(savedLat !== lat || savedLng !== lng || savedMapsUrl !== mapsUrl)}
           onClick={() => {
             setSavedLat(lat);
             setSavedLng(lng);
             setSavedPlaceId(placeId);
             setSavedMapsUrl(mapsUrl);
+            setSaveStatus('saved');
+            window.setTimeout(() => setSaveStatus('idle'), 2000);
           }}
-        >Save map selection</button>
+        >{saveStatus === 'saved' ? 'Saved ✔' : 'Save map selection'}</button>
+      </div>
+      <div className="text-xs text-gray-600" aria-live="polite">
+        {saveStatus === 'saved' ? 'Map selection saved. Click the page Save button to persist changes.' : ''}
       </div>
       {(mapsUrl && lat != null && lng != null) ? (
         <div className="grid gap-1">
