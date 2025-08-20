@@ -34,7 +34,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
   }
 
   const { data: loc } = c.location_id
-    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, url, local_number, visibility').eq('id', c.location_id).maybeSingle()
+    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, url, local_number, visibility, lat, lng, google_maps_url').eq('id', c.location_id).maybeSingle()
     : { data: null } as any;
 
   let canShowTeaRoom = false;
@@ -99,19 +99,46 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       {loc && canShowTeaRoom ? (
         <section className="mb-6">
           <h2 className="font-medium">Tea Room <span className="text-sm text-gray-700" lang="ja">/ 茶室</span></h2>
-          <div className="text-sm">{(loc as any).name_en || (loc as any).name_ja || (loc as any).name}{loc.local_number ? ` (${loc.local_number})` : ''}</div>
+          {(() => {
+            const ja = (loc as any).name_ja || '';
+            const en = (loc as any).name_en || (loc as any).name || '';
+            const primary = ja || en || (loc as any).name || '';
+            return (
+              <div className="text-sm">
+                <a href={`/tea-rooms/${(loc as any).id}`} className="underline">{primary}</a>
+                {(ja && en) ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {en}</span> : null}
+                {loc.local_number ? ` (${loc.local_number})` : ''}
+              </div>
+            );
+          })()}
           {(loc as any).address_en || (loc as any).address_ja || (loc as any).address ? (
             <div className="text-sm">{(loc as any).address_en || (loc as any).address_ja || (loc as any).address}</div>
           ) : null}
-          {(loc as any).lat != null && (loc as any).lng != null ? (
-            <iframe
-              title="Map"
-              className="w-full h-40 rounded border mt-2"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              src={`https://www.google.com/maps?q=${encodeURIComponent(String((loc as any).lat)+','+String((loc as any).lng))}&hl=en&z=15&output=embed`}
-            />
-          ) : null}
+          {(() => {
+            const lat = (loc as any).lat;
+            const lng = (loc as any).lng;
+            let src: string | null = null;
+            if (lat != null && lng != null) {
+              src = `https://www.google.com/maps?q=${encodeURIComponent(String(lat)+','+String(lng))}&hl=en&z=18&output=embed`;
+            } else if ((loc as any).google_maps_url) {
+              try {
+                const u = new URL(String((loc as any).google_maps_url));
+                const center = u.searchParams.get('center');
+                if (center && center.includes(',')) {
+                  src = `https://www.google.com/maps?q=${encodeURIComponent(center)}&hl=en&z=18&output=embed`;
+                }
+              } catch {}
+            }
+            return src ? (
+              <iframe
+                title="Map"
+                className="w-full h-40 rounded border mt-2"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={src}
+              />
+            ) : null;
+          })()}
           {loc.url ? <a className="text-sm underline" href={loc.url} target="_blank" rel="noreferrer">Website</a> : null}
         </section>
       ) : null}
