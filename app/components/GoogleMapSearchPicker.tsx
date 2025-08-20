@@ -32,11 +32,15 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const resolvedKey = apiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const missingKey = !resolvedKey;
   const [loadError, setLoadError] = useState<string | null>(null);
+  function logError(msg: string) {
+    try { console.error('[GoogleMapSearchPicker]', msg); } catch {}
+  }
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const key = resolvedKey;
     if (!key) {
       setLoadError('Google Maps API key is not configured');
+      logError('Google Maps API key is not configured');
       return;
     }
     const existing = document.querySelector('script[data-maps-loader]') as HTMLScriptElement | null;
@@ -46,7 +50,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
         return;
       }
       existing.addEventListener('load', () => setLoaded(true));
-      existing.addEventListener('error', () => setLoadError('Failed to load Google Maps script'));
+      existing.addEventListener('error', () => { setLoadError('Failed to load Google Maps script'); logError('Failed to load Google Maps script'); });
       return;
     }
     const s = document.createElement('script');
@@ -55,7 +59,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     s.defer = true;
     s.setAttribute('data-maps-loader', 'true');
     s.onload = () => setLoaded(true);
-    s.onerror = () => setLoadError('Failed to load Google Maps script');
+    s.onerror = () => { setLoadError('Failed to load Google Maps script'); logError('Failed to load Google Maps script'); };
     document.head.appendChild(s);
   }, [resolvedKey]);
 
@@ -64,6 +68,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     const gm = (window as any).google?.maps;
     if (!gm) {
       setLoadError('Google Maps not available in this environment');
+      logError('Google Maps not available in this environment');
       return;
     }
     if (!containerRef.current) return;
@@ -92,6 +97,10 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     input.placeholder = 'Search Google Maps...';
     input.className = 'input';
     input.style.width = '280px';
+    // Prevent Enter from submitting the parent form
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') e.preventDefault();
+    });
     inputRef.current = input as any;
     map.controls[gm.ControlPosition.TOP_LEFT].push(input);
 
@@ -100,6 +109,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       searchBox = new gm.places.SearchBox(input);
     } catch (e) {
       setLoadError('Google Places SearchBox failed to initialize');
+      logError('Google Places SearchBox failed to initialize');
       return;
     }
     searchBox.addListener('places_changed', () => {
