@@ -108,6 +108,7 @@ export default async function EditTeaRoomPage({ params }: { params: { id: string
           defaultLat={(loc as any).lat ?? null}
           defaultLng={(loc as any).lng ?? null}
           defaultPlaceId={(loc as any).google_place_id ?? null}
+          defaultMapsUrl={(loc as any).google_maps_url ?? null}
         />
         <div>
           <label className="block text-sm font-medium">Contained in (EN)</label>

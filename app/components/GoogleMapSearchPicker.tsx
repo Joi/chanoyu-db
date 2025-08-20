@@ -10,10 +10,11 @@ type Props = {
   defaultLng?: number | null;
   defaultPlaceId?: string | null;
   defaultQuery?: string;
+  defaultMapsUrl?: string | null;
 };
 
 // Minimal, map-first picker with a Google-provided search box on the map
-export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Locate on Google Maps', defaultLat, defaultLng, defaultPlaceId = null, defaultQuery = '' }: Props) {
+export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Locate on Google Maps', defaultLat, defaultLng, defaultPlaceId = null, defaultQuery = '', defaultMapsUrl = null }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -26,8 +27,14 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const [query, setQuery] = useState<string>(defaultQuery || '');
   const [suggestedName, setSuggestedName] = useState<string | null>(null);
   const [suggestedAddress, setSuggestedAddress] = useState<string | null>(null);
-  const [mapsUrl, setMapsUrl] = useState<string | null>(null);
+  // Draft (what user is currently positioning)
+  const [mapsUrl, setMapsUrl] = useState<string | null>(defaultMapsUrl);
   const [currentZoom, setCurrentZoom] = useState<number>(14);
+  // Committed (written to hidden inputs only after explicit Save)
+  const [savedLat, setSavedLat] = useState<number | null>(typeof defaultLat === 'number' ? defaultLat : null);
+  const [savedLng, setSavedLng] = useState<number | null>(typeof defaultLng === 'number' ? defaultLng : null);
+  const [savedPlaceId, setSavedPlaceId] = useState<string | null>(defaultPlaceId || null);
+  const [savedMapsUrl, setSavedMapsUrl] = useState<string | null>(defaultMapsUrl || null);
 
   // Load Maps JS API with places library
   const resolvedKey = apiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -187,6 +194,17 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       <div className="flex items-center gap-2 text-xs text-gray-700">
         <button type="button" className="button secondary" onClick={() => { if (mapRef.current) { mapRef.current.setZoom(18); setCurrentZoom(18); if (lat != null && lng != null) setMapsUrl(`https://www.google.com/maps/@?api=1&map_action=map&center=${lat},${lng}&zoom=18`); } }}>Zoom to building</button>
         <span>Zoom: {currentZoom}</span>
+        {(savedLat !== lat || savedLng !== lng || savedMapsUrl !== mapsUrl) ? <span className="text-amber-600">(Not saved)</span> : <span className="text-green-600">(Saved)</span>}
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            setSavedLat(lat);
+            setSavedLng(lng);
+            setSavedPlaceId(placeId);
+            setSavedMapsUrl(mapsUrl);
+          }}
+        >Save map selection</button>
       </div>
       {(mapsUrl && lat != null && lng != null) ? (
         <div className="grid gap-1">
@@ -199,10 +217,10 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
         </div>
       ) : null}
       <input type="hidden" name={`${namePrefix}_query`} value={query ?? ''} readOnly />
-      <input type="hidden" name={`${namePrefix}_lat`} value={lat ?? ''} readOnly />
-      <input type="hidden" name={`${namePrefix}_lng`} value={lng ?? ''} readOnly />
-      <input type="hidden" name={`${namePrefix}_google_place_id`} value={placeId ?? ''} readOnly />
-      <input type="hidden" name={`${namePrefix}_google_maps_url`} value={mapsUrl ?? ''} readOnly />
+      <input type="hidden" name={`${namePrefix}_lat`} value={savedLat ?? ''} readOnly />
+      <input type="hidden" name={`${namePrefix}_lng`} value={savedLng ?? ''} readOnly />
+      <input type="hidden" name={`${namePrefix}_google_place_id`} value={savedPlaceId ?? ''} readOnly />
+      <input type="hidden" name={`${namePrefix}_google_maps_url`} value={savedMapsUrl ?? ''} readOnly />
       <input type="hidden" name={`${namePrefix}_suggested_name`} value={suggestedName ?? ''} readOnly />
       <input type="hidden" name={`${namePrefix}_suggested_address`} value={suggestedAddress ?? ''} readOnly />
     </div>
