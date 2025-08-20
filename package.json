@@ -11,6 +11,7 @@
     "build:prod": "NODE_ENV=production next build",
     "test": "vitest run --environment=jsdom",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build:prod && vercel build --yes",
+    "ci:local": "npm run lint && npm run typecheck && npm run test && NEXT_DISABLE_LIGHTNINGCSS=1 npm run build:prod",
     "prepare": "husky",
     "seed": "ts-node scripts/seed-object.ts",
     "ingest:notion": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/ingest-notion.ts",
@@ -51,8 +52,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "vitest": "^3.2.4",
-    "lightningcss": "^1.25.1",
-    "lightningcss-linux-x64-gnu": "^1.25.1",
-    "@rollup/rollup-linux-x64-gnu": "^4.21.0"
+    "lightningcss": "^1.25.1"
   }
 }
