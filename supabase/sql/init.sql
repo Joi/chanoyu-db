@@ -61,7 +61,14 @@ create table if not exists tea_schools (
 alter table accounts add column if not exists tea_school_id uuid references tea_schools(id);
 
 alter table tea_schools enable row level security;
-create policy tea_schools_public_read on tea_schools for select using (true);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'tea_schools' and policyname = 'tea_schools_public_read'
+  ) then
+    create policy tea_schools_public_read on tea_schools for select using (true);
+  end if;
+end $$;
 
 -- Simple accounts table managed by owner via admin UI
 create table if not exists accounts (
@@ -76,27 +83,76 @@ create table if not exists accounts (
 
 -- Basic RLS (adapt to your project needs)
 alter table objects enable row level security;
-create policy objects_public_read on objects for select using (visibility = 'public');
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'objects' and policyname = 'objects_public_read'
+  ) then
+    create policy objects_public_read on objects for select using (visibility = 'public');
+  end if;
+end $$;
 
 alter table classifications enable row level security;
-create policy classifications_public_read on classifications for select using (true);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'classifications' and policyname = 'classifications_public_read'
+  ) then
+    create policy classifications_public_read on classifications for select using (true);
+  end if;
+end $$;
 
 alter table object_classifications enable row level security;
-create policy oc_public_read on object_classifications for select using (
-  exists (select 1 from objects o where o.id = object_id and o.visibility = 'public')
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'object_classifications' and policyname = 'oc_public_read'
+  ) then
+    create policy oc_public_read on object_classifications for select using (
+      exists (select 1 from objects o where o.id = object_id and o.visibility = 'public')
+    );
+  end if;
+end $$;
 
 alter table media enable row level security;
-create policy media_public_read on media for select using (
-  exists (select 1 from objects o where o.id = object_id and o.visibility = 'public')
-);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'media' and policyname = 'media_public_read'
+  ) then
+    create policy media_public_read on media for select using (
+      exists (select 1 from objects o where o.id = object_id and o.visibility = 'public')
+    );
+  end if;
+end $$;
 
 alter table licenses enable row level security;
-create policy licenses_public_read on licenses for select using (true);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'licenses' and policyname = 'licenses_public_read'
+  ) then
+    create policy licenses_public_read on licenses for select using (true);
+  end if;
+end $$;
 
 alter table accounts enable row level security;
-create policy accounts_read_owner_only on accounts for select using (false);
-create policy accounts_write_owner_only on accounts for all using (false) with check (false);
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'accounts' and policyname = 'accounts_read_owner_only'
+  ) then
+    create policy accounts_read_owner_only on accounts for select using (false);
+  end if;
+end $$;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'accounts' and policyname = 'accounts_write_owner_only'
+  ) then
+    create policy accounts_write_owner_only on accounts for all using (false) with check (false);
+  end if;
+end $$;
 
 -- Note: We enforce account and price visibility at the API level (server routes)
 
@@ -140,3 +196,39 @@ create table if not exists object_media_links (
   primary key (object_id, media_id)
 );
 create index if not exists oml_media_idx on object_media_links(media_id);
+
+-- Tea rooms (locations)
+create table if not exists locations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  address text,
+  url text,
+  local_number text,
+  visibility text not null default 'public' check (visibility in ('public','private')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists locations_local_number_ci on locations (lower(local_number)) where local_number is not null;
+
+alter table locations enable row level security;
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'locations' and policyname = 'locations_public_read'
+  ) then
+    create policy locations_public_read on locations for select using (visibility = 'public');
+  end if;
+end $$;
+
+-- Bilingual columns for tea rooms (idempotent)
+alter table locations add column if not exists name_en text;
+alter table locations add column if not exists name_ja text;
+alter table locations add column if not exists address_en text;
+alter table locations add column if not exists address_ja text;
+alter table locations add column if not exists lat double precision;
+alter table locations add column if not exists lng double precision;
+alter table locations add column if not exists google_place_id text;
+alter table locations add column if not exists google_maps_url text;
+alter table locations add column if not exists contained_in text;
+alter table locations add column if not exists contained_in_en text;
+alter table locations add column if not exists contained_in_ja text;

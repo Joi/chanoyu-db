@@ -26,6 +26,7 @@ export default async function AdminHome() {
         <li><Link href="/admin/classifications" className="underline">Classifications</Link></li>
         <li><Link href="/admin/tea-schools" className="underline">Tea Schools</Link></li>
         <li><Link href="/admin/chakai" className="underline">Chakai</Link></li>
+        <li><Link href="/admin/tea-rooms" className="underline">Tea Rooms</Link></li>
         <li><Link href="/admin/new" className="underline">Create object</Link></li>
         <li><Link href="/lookup" className="underline">Category Lookup (AAT + Wikidata)</Link></li>
         {/* Accounts merged into Members */}

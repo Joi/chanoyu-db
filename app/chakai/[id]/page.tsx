@@ -33,8 +33,22 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
   }
 
   const { data: loc } = c.location_id
-    ? await db.from('locations').select('id, name, address, url, local_number').eq('id', c.location_id).maybeSingle()
+    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, url, local_number, visibility').eq('id', c.location_id).maybeSingle()
     : { data: null } as any;
+
+  let canShowTeaRoom = false;
+  if (loc) {
+    if (loc.visibility === 'public' || isPrivileged || isOwner) {
+      canShowTeaRoom = true;
+    } else if (email) {
+      const { data: attendedAtLocation } = await db
+        .from('chakai_attendees')
+        .select('chakai_id, accounts!inner(email), chakai:chakai!inner(location_id)')
+        .eq('accounts.email', email)
+        .eq('chakai.location_id', loc.id);
+      canShowTeaRoom = !!(attendedAtLocation && attendedAtLocation.length);
+    }
+  }
   const { data: attendees } = await db
     .from('chakai_attendees')
     .select('accounts(id, full_name_en, full_name_ja, email)')
@@ -67,11 +81,22 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       </div>
       <div className="text-sm text-gray-700 mb-4">{date}{time ? ` ${time}` : ''}{loc ? ` · ${loc.name}` : ''}{c.local_number ? ` · ${c.local_number}` : ''}</div>
       {c.notes ? <p className="mb-4 whitespace-pre-wrap" aria-label="Notes">{c.notes}</p> : null}
-      {loc ? (
+      {loc && canShowTeaRoom ? (
         <section className="mb-6">
-          <h2 className="font-medium">Location</h2>
-          <div className="text-sm">{loc.name}{loc.local_number ? ` (${loc.local_number})` : ''}</div>
-          {loc.address ? <div className="text-sm">{loc.address}</div> : null}
+          <h2 className="font-medium">Tea Room <span className="text-sm text-gray-700" lang="ja">/ 茶室</span></h2>
+          <div className="text-sm">{(loc as any).name_en || (loc as any).name_ja || (loc as any).name}{loc.local_number ? ` (${loc.local_number})` : ''}</div>
+          {(loc as any).address_en || (loc as any).address_ja || (loc as any).address ? (
+            <div className="text-sm">{(loc as any).address_en || (loc as any).address_ja || (loc as any).address}</div>
+          ) : null}
+          {(loc as any).lat != null && (loc as any).lng != null ? (
+            <iframe
+              title="Map"
+              className="w-full h-40 rounded border mt-2"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(String((loc as any).lat)+','+String((loc as any).lng))}&hl=en&z=15&output=embed`}
+            />
+          ) : null}
           {loc.url ? <a className="text-sm underline" href={loc.url} target="_blank" rel="noreferrer">Website</a> : null}
         </section>
       ) : null}

@@ -45,6 +45,7 @@ export default function NavBar() {
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications">Classifications</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
+          <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-rooms">Tea Rooms</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/new">Create object</a>
         </div>

@@ -35,6 +35,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: { [ke
           <form action="/logout" method="post" className="mt-3">
             <button className="button" type="submit">Sign out</button>
           </form>
+          <p className="mt-2 text-xs text-gray-500">If you are logged in and having difficulty seeing protected items, try signing out and logging in again to clear the cookie.</p>
         </div>
       </main>
     );

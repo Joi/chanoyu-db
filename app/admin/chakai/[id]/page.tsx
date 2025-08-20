@@ -18,7 +18,7 @@ async function updateChakai(formData: FormData) {
     const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Invalid input.';
     throw new Error(`Invalid input. ${msg}`);
   }
-  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name, location_address, location_url, attendee_ids, item_ids } = parsed.data as any;
+  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name_en, location_name_ja, location_address_en, location_address_ja, location_url, attendee_ids, item_ids } = parsed.data as any;
   const payload: any = {
     name_en: name_en || null,
     name_ja: name_ja || null,
@@ -29,10 +29,18 @@ async function updateChakai(formData: FormData) {
   };
   // Handle location select-or-create
   let locationId: string | null = (location_id as string) || null;
-  if (!locationId && location_name) {
+  if (!locationId && (location_name_en || location_name_ja)) {
     const { data: loc } = await db
       .from('locations')
-      .insert({ name: location_name, address: location_address || null, url: location_url || null })
+      .insert({
+        name: location_name_en || location_name_ja,
+        name_en: location_name_en || null,
+        name_ja: location_name_ja || null,
+        address: location_address_en || location_address_ja || null,
+        address_en: location_address_en || null,
+        address_ja: location_address_ja || null,
+        url: location_url || null,
+      })
       .select('id')
       .single();
     locationId = (loc as any)?.id || null;
@@ -99,7 +107,7 @@ export default async function EditChakai({ params }: { params: { id: string } })
 
   // For initial location display
   const { data: loc } = c.location_id
-    ? await db.from('locations').select('id, name, address, local_number').eq('id', c.location_id).maybeSingle()
+    ? await db.from('locations').select('id, name, name_en, name_ja, address, address_en, address_ja, local_number').eq('id', c.location_id).maybeSingle()
     : { data: null } as any;
 
   return (
@@ -136,12 +144,14 @@ export default async function EditChakai({ params }: { params: { id: string } })
           <textarea name="notes" className="input w-full" rows={3} defaultValue={c.notes || ''} />
         </div>
         <fieldset className="border p-3 rounded">
-          <legend className="text-sm font-medium">Location</legend>
+          <legend className="text-sm font-medium">Tea Room</legend>
           <div className="grid gap-3">
-            <SearchSelect name="location_id" label="Select existing location" searchPath="/api/search/locations" labelFields={["name","local_number","address"]} valueKey="id" initial={loc ? [{ value: loc.id, label: `${loc.name}${loc.local_number ? ` (${loc.local_number})` : ''}` }] : []} />
-            <div className="text-xs text-gray-600">Or create a new location:</div>
-            <input name="location_name" className="input w-full" placeholder="Name" />
-            <input name="location_address" className="input w-full" placeholder="Address" />
+            <SearchSelect name="location_id" label="Select existing tea room" searchPath="/api/search/locations" labelFields={["name_en","name_ja","name","local_number","address_en","address_ja","address"]} valueKey="id" initial={loc ? [{ value: loc.id, label: `${(loc as any).name_en || (loc as any).name_ja || (loc as any).name || ''}${loc.local_number ? ` (${loc.local_number})` : ''}` }] : []} />
+            <div className="text-xs text-gray-600">Or create a new tea room:</div>
+            <input name="location_name_en" className="input w-full" placeholder="Name (EN)" />
+            <input name="location_name_ja" className="input w-full" placeholder="Name (JA)" />
+            <input name="location_address_en" className="input w-full" placeholder="Address (EN)" />
+            <input name="location_address_ja" className="input w-full" placeholder="Address (JA)" />
             <input name="location_url" className="input w-full" placeholder="URL" />
           </div>
         </fieldset>

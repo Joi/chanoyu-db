@@ -17,21 +17,29 @@ async function createChakai(formData: FormData) {
     const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Invalid input.';
     throw new Error(`Invalid input. ${msg}`);
   }
-  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name, location_address, location_url } = parsed.data as any;
+  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name_en, location_name_ja, location_address_en, location_address_ja, location_url } = parsed.data as any;
 
   const db = supabaseAdmin();
 
   let locationId: string | null = (location_id as string) || null;
-  if (!locationId && location_name) {
+  if (!locationId && (location_name_en || location_name_ja)) {
     const { data: loc } = await db
       .from('locations')
-      .insert({ name: location_name, address: location_address || null, url: location_url || null })
+      .insert({
+        name: location_name_en || location_name_ja,
+        name_en: location_name_en || null,
+        name_ja: location_name_ja || null,
+        address: location_address_en || location_address_ja || null,
+        address_en: location_address_en || null,
+        address_ja: location_address_ja || null,
+        url: location_url || null,
+      })
       .select('id')
       .single();
     locationId = (loc as any)?.id || null;
   }
   if (!locationId) {
-    throw new Error('Location is required. Select an existing location or create a new one.');
+    throw new Error('Tea Room is required. Select an existing tea room or create a new one.');
   }
 
   const payload: any = {
@@ -102,12 +110,14 @@ export default async function NewChakaiPage() {
           <textarea name="notes" className="input w-full" rows={3} />
         </div>
         <fieldset className="border p-3 rounded">
-          <legend className="text-sm font-medium">Location</legend>
+          <legend className="text-sm font-medium">Tea Room</legend>
           <div className="grid gap-3">
-            <SearchSelect name="location_id" label="Select existing location" searchPath="/api/search/locations" labelFields={["name","local_number","address"]} valueKey="id" />
-            <div className="text-xs text-gray-600">Or create a new location:</div>
-            <input name="location_name" className="input w-full" placeholder="Name" />
-            <input name="location_address" className="input w-full" placeholder="Address" />
+            <SearchSelect name="location_id" label="Select existing tea room" searchPath="/api/search/locations" labelFields={["name_en","name_ja","name","local_number","address_en","address_ja","address"]} valueKey="id" />
+            <div className="text-xs text-gray-600">Or create a new tea room:</div>
+            <input name="location_name_en" className="input w-full" placeholder="Name (EN)" />
+            <input name="location_name_ja" className="input w-full" placeholder="Name (JA)" />
+            <input name="location_address_en" className="input w-full" placeholder="Address (EN)" />
+            <input name="location_address_ja" className="input w-full" placeholder="Address (JA)" />
             <input name="location_url" className="input w-full" placeholder="URL" />
           </div>
         </fieldset>
