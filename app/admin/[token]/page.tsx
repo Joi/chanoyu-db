@@ -11,6 +11,7 @@ import RevealPrice from '@/app/components/RevealPrice';
 import PriceInput from '@/app/components/PriceInput';
 import SubmitButton from '@/app/components/SubmitButton';
 import PendingProgress from '@/app/components/PendingProgress';
+import { z } from 'zod';
 
 // Server action to save a classification for the current object token
 async function saveClassificationAction(formData: FormData) {
@@ -97,8 +98,14 @@ async function deleteMediaAction(formData: FormData) {
 
 async function addMediaUrlAction(formData: FormData) {
   'use server';
-  const token = String(formData.get('object_token') || '');
-  const url = String(formData.get('image_url') || '').trim();
+  const parse = z
+    .object({ object_token: z.string().min(1), image_url: z.string().url().min(1).max(2048) })
+    .safeParse({
+      object_token: String(formData.get('object_token') || ''),
+      image_url: String(formData.get('image_url') || '').trim(),
+    });
+  const token = parse.success ? parse.data.object_token : '';
+  const url = parse.success ? parse.data.image_url : '';
   const db = supabaseAdmin();
   try {
     console.log('[media:url] start', { token, url });
@@ -128,14 +135,9 @@ async function uploadMediaFileAction(formData: FormData) {
     if (eObj || !obj) throw eObj || new Error('object not found');
     // Ensure public storage bucket exists (first upload on a fresh project)
     try {
-      // @ts-ignore
       const b = await (db as any).storage.getBucket('media');
-      if (!b || (b && b.error) || (b && b.data == null)) {
-        // @ts-ignore
-        const created = await (db as any).storage.createBucket('media', { public: true });
-        if (created?.error) throw created.error;
-        console.log('[media:upload] bucket created: media');
-      }
+      const exists = b && !b.error && b.data != null;
+      if (!exists) throw new Error('media bucket missing');
     } catch (e: any) {
       console.error('[media:upload] ensure bucket error', e?.message || e);
       throw new Error('media bucket missing');

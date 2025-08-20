@@ -30,7 +30,9 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const [suggestedAddress, setSuggestedAddress] = useState<string | null>(null);
   // Draft (what user is currently positioning)
   const [mapsUrl, setMapsUrl] = useState<string | null>(defaultMapsUrl);
-  const [currentZoom, setCurrentZoom] = useState<number>(14);
+  const DEFAULT_ZOOM = 14;
+  const FOCUS_ZOOM = 18;
+  const [currentZoom, setCurrentZoom] = useState<number>(DEFAULT_ZOOM);
   // Committed (written to hidden inputs only after explicit Save)
   const [savedLat, setSavedLat] = useState<number | null>(typeof defaultLat === 'number' ? defaultLat : null);
   const [savedLng, setSavedLng] = useState<number | null>(typeof defaultLng === 'number' ? defaultLng : null);
@@ -40,7 +42,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
 
   const computedDraftUrl = React.useMemo(() => {
     if (lat == null || lng == null) return null;
-    const z = currentZoom || 17;
+    const z = currentZoom || FOCUS_ZOOM;
     return `https://www.google.com/maps/@?api=1&map_action=map&center=${encodeURIComponent(String(lat))},${encodeURIComponent(String(lng))}&zoom=${encodeURIComponent(String(z))}`;
   }, [lat, lng, currentZoom]);
 
@@ -50,13 +52,15 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const [loadError, setLoadError] = useState<string | null>(null);
   function logError(msg: string) {
     // Visible console log and async beacon for later aggregation (non-blocking)
-    try { console.error('[GoogleMapSearchPicker]', msg); } catch {}
+    console.error('[GoogleMapSearchPicker]', msg);
     try {
       if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
         const blob = new Blob([JSON.stringify({ ts: Date.now(), msg, component: 'GoogleMapSearchPicker' })], { type: 'application/json' });
         navigator.sendBeacon('/api/log', blob);
       }
-    } catch {}
+    } catch (e) {
+      // Intentionally swallow beacon errors to avoid impacting UX
+    }
   }
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -103,16 +107,16 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     // Initialize map
     const map = new gm.Map(containerRef.current, {
       center: { lat: centerLat, lng: centerLng },
-      zoom: 14,
+      zoom: DEFAULT_ZOOM,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
     });
     mapRef.current = map;
-    setCurrentZoom(map.getZoom() || 14);
+    setCurrentZoom(map.getZoom() || DEFAULT_ZOOM);
 
     function computeMapsUrl(latValue: number, lngValue: number, zoomValue?: number): string {
-      const z = typeof zoomValue === 'number' ? zoomValue : (map.getZoom() || 17);
+      const z = typeof zoomValue === 'number' ? zoomValue : (map.getZoom() || FOCUS_ZOOM);
       return `https://www.google.com/maps/@?api=1&map_action=map&center=${encodeURIComponent(String(latValue))},${encodeURIComponent(String(lngValue))}&zoom=${encodeURIComponent(String(z))}`;
     }
 
@@ -157,14 +161,14 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
         setLat(newLat);
         setLng(newLng);
         map.panTo({ lat: newLat, lng: newLng });
-        map.setZoom(18);
-        setCurrentZoom(18);
+        map.setZoom(FOCUS_ZOOM);
+        setCurrentZoom(FOCUS_ZOOM);
         if ('position' in (marker as any)) {
           (marker as any).setPosition({ lat: newLat, lng: newLng });
         } else if ('position' in (marker as any)) {
           (marker as any).position = { lat: newLat, lng: newLng };
         }
-        setMapsUrl(computeMapsUrl(newLat, newLng, 18));
+        setMapsUrl(computeMapsUrl(newLat, newLng, FOCUS_ZOOM));
       }
     });
 
@@ -176,14 +180,14 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       setLat(newLat);
       setLng(newLng);
       setPlaceId(null);
-      map.setZoom(18);
-      setCurrentZoom(18);
-      setMapsUrl(computeMapsUrl(newLat, newLng, 18));
+      map.setZoom(FOCUS_ZOOM);
+      setCurrentZoom(FOCUS_ZOOM);
+      setMapsUrl(computeMapsUrl(newLat, newLng, FOCUS_ZOOM));
       if ('setPosition' in (marker as any)) (marker as any).setPosition({ lat: newLat, lng: newLng });
     });
 
     map.addListener('zoom_changed', () => {
-      const z = map.getZoom() || 14;
+      const z = map.getZoom() || DEFAULT_ZOOM;
       setCurrentZoom(z);
       if (lat != null && lng != null) {
         setMapsUrl(computeMapsUrl(lat, lng, z));
@@ -207,7 +211,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
         </div>
       ) : null}
       <div className="flex items-center gap-2 text-xs text-gray-700">
-        <button type="button" className="button secondary" onClick={() => { if (mapRef.current) { mapRef.current.setZoom(18); setCurrentZoom(18); if (lat != null && lng != null) setMapsUrl(`https://www.google.com/maps/@?api=1&map_action=map&center=${lat},${lng}&zoom=18`); } }}>Zoom to building</button>
+        <button type="button" className="button secondary" onClick={() => { if (mapRef.current) { mapRef.current.setZoom(FOCUS_ZOOM); setCurrentZoom(FOCUS_ZOOM); if (lat != null && lng != null) setMapsUrl(`https://www.google.com/maps/@?api=1&map_action=map&center=${lat},${lng}&zoom=${FOCUS_ZOOM}`); } }}>Zoom to building</button>
         <span>Zoom: {currentZoom}</span>
         {(savedLat !== lat || savedLng !== lng || savedMapsUrl !== mapsUrl) ? <span className="text-amber-600">Not saved</span> : <span className="text-green-600">Saved</span>}
         <button
