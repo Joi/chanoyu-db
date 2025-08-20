@@ -20,8 +20,8 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | google.maps.Marker | null>(null);
 
   const [loaded, setLoaded] = useState(false);
-  const [lat, setLat] = useState<number | null>(defaultLat);
-  const [lng, setLng] = useState<number | null>(defaultLng);
+  const [lat, setLat] = useState<number | null>(typeof defaultLat === 'number' ? defaultLat : null);
+  const [lng, setLng] = useState<number | null>(typeof defaultLng === 'number' ? defaultLng : null);
   const [placeId, setPlaceId] = useState<string | null>(defaultPlaceId);
   const [query, setQuery] = useState<string>(defaultQuery || '');
   const [suggestedName, setSuggestedName] = useState<string | null>(null);
