@@ -11,7 +11,7 @@ export default async function TeaRoomDetailPage({ params }: { params: { id: stri
 
   const { data: loc, error } = await db
     .from('locations')
-    .select('id, name, name_en, name_ja, address, address_en, address_ja, url, local_number, visibility')
+    .select('id, name, name_en, name_ja, address, address_en, address_ja, url, local_number, visibility, contained_in, contained_in_en, contained_in_ja, lat, lng, google_maps_url')
     .eq('id', id)
     .maybeSingle();
   if (error) console.error('[tea-room detail] query error', error.message || error);
@@ -42,10 +42,13 @@ export default async function TeaRoomDetailPage({ params }: { params: { id: stri
           className="w-full h-80 rounded border mb-6"
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
-          src={`https://www.google.com/maps?q=${encodeURIComponent(String((loc as any).lat)+','+String((loc as any).lng))}&hl=en&z=15&output=embed`}
+          src={`https://www.google.com/maps?q=${encodeURIComponent(String((loc as any).lat)+','+String((loc as any).lng))}&hl=en&z=18&output=embed`}
         />
       ) : null}
-      {loc.url ? <a className="text-sm underline" href={loc.url} target="_blank" rel="noreferrer">Website</a> : null}
+      <div className="flex items-center gap-4">
+        {loc.url ? <a className="text-sm underline" href={loc.url} target="_blank" rel="noreferrer">Website</a> : null}
+        {(loc as any).google_maps_url ? <a className="text-sm underline" href={(loc as any).google_maps_url} target="_blank" rel="noreferrer">Google Map</a> : null}
+      </div>
     </main>
   );
 }
