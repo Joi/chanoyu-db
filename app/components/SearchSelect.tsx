@@ -74,17 +74,25 @@ export default function SearchSelect({
 
   return (
     <div ref={containerRef} className="grid gap-2 relative">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm font-medium" htmlFor={`${name}-search`}>{label}</label>
       <input
+        id={`${name}-search`}
         className="input"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={`${name}-listbox`}
+        aria-autocomplete="list"
         placeholder={placeholder || `Search ${label.toLowerCase()}...`}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length && setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setOpen(false);
+        }}
       />
       <input type="hidden" name={name} value={hiddenValue} readOnly />
       {open && results.length ? (
-        <div className="card absolute left-0 right-0 bg-white border mt-1 p-2 max-h-64 overflow-auto z-30">
+        <div id={`${name}-listbox`} role="listbox" className="card absolute left-0 right-0 bg-white border mt-1 p-2 max-h-64 overflow-auto z-30">
           {results.map((row: any, idx: number) => {
             const value = String(row[valueKey]);
             const labelText = getLabel(row) || '(unnamed)';
@@ -93,6 +101,7 @@ export default function SearchSelect({
               <button
                 key={value + ':' + idx}
                 type="button"
+                role="option"
                 className={`block w-full text-left px-2 py-1 rounded ${disabled ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                 onClick={() => {
                   if (disabled) return;

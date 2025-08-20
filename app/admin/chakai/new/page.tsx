@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
+import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth';
 
 async function createChakai(formData: FormData) {
@@ -9,25 +10,31 @@ async function createChakai(formData: FormData) {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
 
-  const name_en = String(formData.get('name_en') || '').trim();
-  const name_ja = String(formData.get('name_ja') || '').trim();
-  const eventDate = String(formData.get('event_date') || '');
-  const startTime = String(formData.get('start_time') || '');
-  const visibility = String(formData.get('visibility') || 'open');
-  const notes = String(formData.get('notes') || '');
-
-  const locationIdExisting = String(formData.get('location_id') || '').trim();
-  const locationName = String(formData.get('location_name') || '').trim();
-  const locationAddress = String(formData.get('location_address') || '').trim();
-  const locationUrl = String(formData.get('location_url') || '').trim();
+  const schema = z.object({
+    name_en: z.string().trim().max(200).optional(),
+    name_ja: z.string().trim().max(200).optional(),
+    event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
+    visibility: z.enum(['open','members','closed']).default('open'),
+    notes: z.string().max(4000).optional(),
+    location_id: z.string().uuid().optional().or(z.literal('')),
+    location_name: z.string().trim().max(200).optional(),
+    location_address: z.string().trim().max(400).optional(),
+    location_url: z.string().url().optional().or(z.literal('')),
+  });
+  const parsed = schema.safeParse(Object.fromEntries(formData as any));
+  if (!parsed.success) {
+    throw new Error('Invalid input. Please check the form fields.');
+  }
+  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name, location_address, location_url } = parsed.data as any;
 
   const db = supabaseAdmin();
 
-  let locationId: string | null = locationIdExisting || null;
-  if (!locationId && locationName) {
+  let locationId: string | null = (location_id as string) || null;
+  if (!locationId && location_name) {
     const { data: loc } = await db
       .from('locations')
-      .insert({ name: locationName, address: locationAddress || null, url: locationUrl || null })
+      .insert({ name: location_name, address: location_address || null, url: location_url || null })
       .select('id')
       .single();
     locationId = (loc as any)?.id || null;
@@ -39,9 +46,9 @@ async function createChakai(formData: FormData) {
   const payload: any = {
     name_en: name_en || null,
     name_ja: name_ja || null,
-    event_date: eventDate || null,
-    start_time: startTime || null,
-    visibility: ['open','members','closed'].includes(visibility) ? visibility : 'open',
+    event_date,
+    start_time: start_time || null,
+    visibility,
     notes: notes || null,
     location_id: locationId,
   };

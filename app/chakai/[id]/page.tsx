@@ -66,7 +66,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
         ) : null}
       </div>
       <div className="text-sm text-gray-700 mb-4">{date}{time ? ` ${time}` : ''}{loc ? ` · ${loc.name}` : ''}{c.local_number ? ` · ${c.local_number}` : ''}</div>
-      {c.notes ? <p className="mb-4 whitespace-pre-wrap">{c.notes}</p> : null}
+      {c.notes ? <p className="mb-4 whitespace-pre-wrap" aria-label="Notes">{c.notes}</p> : null}
       {loc ? (
         <section className="mb-6">
           <h2 className="font-medium">Location</h2>

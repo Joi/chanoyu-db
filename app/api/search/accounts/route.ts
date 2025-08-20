@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
+const SEARCH_RESULT_LIMIT = 12;
+
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') || '').trim();
   if (!q) return NextResponse.json([]);
@@ -10,8 +12,11 @@ export async function GET(req: NextRequest) {
     .from('accounts')
     .select('id, full_name_en, full_name_ja, email')
     .or(`full_name_en.ilike.${like},full_name_ja.ilike.${like},email.ilike.${like}`)
-    .limit(12);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    .limit(SEARCH_RESULT_LIMIT);
+  if (error) {
+    console.error('[search/accounts] error', error);
+    return NextResponse.json({ error: 'Failed to search accounts' }, { status: 500 });
+  }
   return NextResponse.json(data || []);
 }
 

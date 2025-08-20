@@ -70,6 +70,7 @@ vercel logs <deployment-url> --since 15m | cat
 Preferred (via PR):
 ```bash
 # open PR dev → main in GitHub UI, merge when green
+# never commit directly to main; prefer PRs for traceability
 ```
 Direct (CLI merge):
 ```bash

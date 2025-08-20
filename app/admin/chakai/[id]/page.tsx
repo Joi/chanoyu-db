@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
 import { requireAdmin } from '@/lib/auth';
+import { z } from 'zod';
 
 async function updateChakai(formData: FormData) {
   'use server';
@@ -10,25 +11,38 @@ async function updateChakai(formData: FormData) {
   const id = String(formData.get('id') || '');
   if (!id) return notFound();
   const db = supabaseAdmin();
+  const schema = z.object({
+    id: z.string().uuid(),
+    name_en: z.string().trim().max(200).optional(),
+    name_ja: z.string().trim().max(200).optional(),
+    event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
+    visibility: z.enum(['open','members','closed']).default('open'),
+    notes: z.string().max(4000).optional(),
+    location_id: z.string().uuid().optional().or(z.literal('')),
+    location_name: z.string().trim().max(200).optional(),
+    location_address: z.string().trim().max(400).optional(),
+    location_url: z.string().url().optional().or(z.literal('')),
+    attendee_ids: z.string().optional().or(z.literal('')),
+    item_ids: z.string().optional().or(z.literal('')),
+  });
+  const parsed = schema.safeParse(Object.fromEntries(formData as any));
+  if (!parsed.success) throw new Error('Invalid input.');
+  const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name, location_address, location_url, attendee_ids, item_ids } = parsed.data as any;
   const payload: any = {
-    name_en: String(formData.get('name_en') || '') || null,
-    name_ja: String(formData.get('name_ja') || '') || null,
-    event_date: String(formData.get('event_date') || '') || null,
-    start_time: String(formData.get('start_time') || '') || null,
-    visibility: String(formData.get('visibility') || 'open'),
-    notes: String(formData.get('notes') || '') || null,
+    name_en: name_en || null,
+    name_ja: name_ja || null,
+    event_date,
+    start_time: start_time || null,
+    visibility,
+    notes: notes || null,
   };
   // Handle location select-or-create
-  const locationIdExisting = String(formData.get('location_id') || '').trim();
-  const locationName = String(formData.get('location_name') || '').trim();
-  const locationAddress = String(formData.get('location_address') || '').trim();
-  const locationUrl = String(formData.get('location_url') || '').trim();
-
-  let locationId: string | null = locationIdExisting || null;
-  if (!locationId && locationName) {
+  let locationId: string | null = (location_id as string) || null;
+  if (!locationId && location_name) {
     const { data: loc } = await db
       .from('locations')
-      .insert({ name: locationName, address: locationAddress || null, url: locationUrl || null })
+      .insert({ name: location_name, address: location_address || null, url: location_url || null })
       .select('id')
       .single();
     locationId = (loc as any)?.id || null;
@@ -37,12 +51,22 @@ async function updateChakai(formData: FormData) {
 
   await db.from('chakai').update(payload).eq('id', id);
   // Replace attendees/items
-  const attendeeIds = String(formData.get('attendee_ids') || '').split(',').map((s) => s.trim()).filter(Boolean);
-  await db.from('chakai_attendees').delete().eq('chakai_id', id);
-  if (attendeeIds.length) await db.from('chakai_attendees').insert(attendeeIds.map((aid) => ({ chakai_id: id, account_id: aid })));
-  const itemIds = String(formData.get('item_ids') || '').split(',').map((s) => s.trim()).filter(Boolean);
-  await db.from('chakai_items').delete().eq('chakai_id', id);
-  if (itemIds.length) await db.from('chakai_items').insert(itemIds.map((oid) => ({ chakai_id: id, object_id: oid })));
+  const attendeeIds = String(attendee_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const itemIds = String(item_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
+  // Use a transaction for consistency
+  const client = db; // supabase-js does not expose explicit tx; rely on sequential operations
+  const delAtt = await client.from('chakai_attendees').delete().eq('chakai_id', id);
+  if (delAtt.error) throw delAtt.error;
+  if (attendeeIds.length) {
+    const insAtt = await client.from('chakai_attendees').insert(attendeeIds.map((aid) => ({ chakai_id: id, account_id: aid })));
+    if (insAtt.error) throw insAtt.error;
+  }
+  const delItems = await client.from('chakai_items').delete().eq('chakai_id', id);
+  if (delItems.error) throw delItems.error;
+  if (itemIds.length) {
+    const insItems = await client.from('chakai_items').insert(itemIds.map((oid) => ({ chakai_id: id, object_id: oid })));
+    if (insItems.error) throw insItems.error;
+  }
   return redirect(`/chakai/${id}`);
 }
 

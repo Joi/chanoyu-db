@@ -2,6 +2,17 @@ import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 
+type ChakaiRow = {
+  id: string;
+  name_en?: string | null;
+  name_ja?: string | null;
+  local_number?: string | null;
+  event_date?: string | null;
+  start_time?: string | null;
+  visibility: 'open' | 'members' | 'closed';
+  locations?: { id: string; name?: string | null } | null;
+};
+
 export default async function ChakaiAdminList() {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
@@ -9,20 +20,11 @@ export default async function ChakaiAdminList() {
   const db = supabaseAdmin();
   const { data: rows, error } = await db
     .from('chakai')
-    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, location_id')
+    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, locations(id, name)')
     .order('event_date', { ascending: false })
     .limit(500);
   if (error) console.error('[admin/chakai] query error', error.message || error);
-  const list = Array.isArray(rows) ? rows : [];
-  const locationIds = Array.from(new Set(list.map((r: any) => r.location_id).filter(Boolean)));
-  let locationsById: Record<string, any> = {};
-  if (locationIds.length) {
-    const { data: locs } = await db
-      .from('locations')
-      .select('id, name')
-      .in('id', locationIds);
-    for (const l of locs || []) locationsById[(l as any).id] = l;
-  }
+  const list: ChakaiRow[] = Array.isArray(rows) ? (rows as unknown as ChakaiRow[]) : [];
 
   return (
     <main className="max-w-4xl mx-auto p-6">
@@ -34,8 +36,8 @@ export default async function ChakaiAdminList() {
         <div className="card">No chakai found.</div>
       ) : (
         <div className="grid" style={{ gap: 8 }}>
-          {list.map((c: any) => {
-            const loc = c.location_id ? locationsById[c.location_id] : null;
+          {list.map((c: ChakaiRow) => {
+            const loc = c.locations;
             const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
             const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
             const title = c.name_en || c.name_ja || c.local_number || date;

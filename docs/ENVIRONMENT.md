@@ -56,5 +56,20 @@ Notes:
 - Run all tests: `make test`
 - Generate merged data from Notion + Sheets: `make merge`
 
+### New admin selectors and RLS claims
+
+The admin UI uses client-side search selectors backed by small APIs:
+
+- `/api/search/accounts?q=` → `[{ id, full_name_en, full_name_ja, email }]`
+- `/api/search/objects?q=` → `[{ id, token, title, title_ja, local_number }]`
+- `/api/search/locations?q=` → `[{ id, name, address, url, local_number }]`
+
+These endpoints cap results with a small limit and log errors server-side.
+
+Row Level Security leverages JWT claims:
+
+- `sub` (email): matched against `accounts.email` to authorize `members` visibility for Chakai
+- `role` (admin|owner): grants privileged read for `members` and `closed` rows
+
 
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
+const SEARCH_RESULT_LIMIT = 12;
+
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') || '').trim();
   if (!q) return NextResponse.json([]);
@@ -11,8 +13,11 @@ export async function GET(req: NextRequest) {
     .select('id, name, address, url, local_number')
     .or(`name.ilike.${like},address.ilike.${like},url.ilike.${like},local_number.ilike.${like}`)
     .order('name', { ascending: true })
-    .limit(12);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    .limit(SEARCH_RESULT_LIMIT);
+  if (error) {
+    console.error('[search/locations] error', error);
+    return NextResponse.json({ error: 'Failed to search locations' }, { status: 500 });
+  }
   return NextResponse.json(data || []);
 }
 
