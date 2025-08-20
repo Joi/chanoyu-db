@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
 import { requireAdmin } from '@/lib/auth';
 import { z } from 'zod';
+import { updateChakaiSchema } from '@/lib/chakai';
 
 async function updateChakai(formData: FormData) {
   'use server';
@@ -11,23 +12,12 @@ async function updateChakai(formData: FormData) {
   const id = String(formData.get('id') || '');
   if (!id) return notFound();
   const db = supabaseAdmin();
-  const schema = z.object({
-    id: z.string().uuid(),
-    name_en: z.string().trim().max(200).optional(),
-    name_ja: z.string().trim().max(200).optional(),
-    event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
-    visibility: z.enum(['open','members','closed']).default('open'),
-    notes: z.string().max(4000).optional(),
-    location_id: z.string().uuid().optional().or(z.literal('')),
-    location_name: z.string().trim().max(200).optional(),
-    location_address: z.string().trim().max(400).optional(),
-    location_url: z.string().url().optional().or(z.literal('')),
-    attendee_ids: z.string().optional().or(z.literal('')),
-    item_ids: z.string().optional().or(z.literal('')),
-  });
-  const parsed = schema.safeParse(Object.fromEntries(formData as any));
-  if (!parsed.success) throw new Error('Invalid input.');
+  const parsed = updateChakaiSchema.safeParse(Object.fromEntries(formData as any));
+  if (!parsed.success) {
+    const first = parsed.error.issues?.[0];
+    const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Invalid input.';
+    throw new Error(`Invalid input. ${msg}`);
+  }
   const { name_en, name_ja, event_date, start_time, visibility, notes, location_id, location_name, location_address, location_url, attendee_ids, item_ids } = parsed.data as any;
   const payload: any = {
     name_en: name_en || null,

@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
 import { z } from 'zod';
+import { createChakaiSchema } from '@/lib/chakai';
 import { requireAdmin } from '@/lib/auth';
 
 async function createChakai(formData: FormData) {
@@ -10,19 +11,7 @@ async function createChakai(formData: FormData) {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
 
-  const schema = z.object({
-    name_en: z.string().trim().max(200).optional(),
-    name_ja: z.string().trim().max(200).optional(),
-    event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
-    visibility: z.enum(['open','members','closed']).default('open'),
-    notes: z.string().max(4000).optional(),
-    location_id: z.string().uuid().optional().or(z.literal('')),
-    location_name: z.string().trim().max(200).optional(),
-    location_address: z.string().trim().max(400).optional(),
-    location_url: z.string().url().optional().or(z.literal('')),
-  });
-  const parsed = schema.safeParse(Object.fromEntries(formData as any));
+  const parsed = createChakaiSchema.safeParse(Object.fromEntries(formData as any));
   if (!parsed.success) {
     const first = parsed.error.issues?.[0];
     const msg = first ? `${first.path.join('.')}: ${first.message}` : 'Invalid input.';

@@ -1,4 +1,18 @@
 {
   "version": 2,
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "collection.ito.com" }],
+      "destination": "https://chanoyu.ito.com/:path*",
+      "statusCode": 308
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "dev.collection.ito.com" }],
+      "destination": "https://dev.chanoyu.ito.com/:path*",
+      "statusCode": 308
+    }
+  ]
 }

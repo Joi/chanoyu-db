@@ -27,8 +27,22 @@ Optional:
 */
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
+function normalizeNotionId(raw: string): string {
+  const input = String(raw || '').trim();
+  if (!input) return '';
+  // If a full URL is provided, extract the 32-hex ID segment
+  const hexMatch = input.match(/[0-9a-fA-F]{32}/);
+  const compact = (hexMatch ? hexMatch[0] : input.replace(/-/g, ''));
+  if (/^[0-9a-fA-F]{32}$/.test(compact)) {
+    return compact
+      .toLowerCase()
+      .replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+  }
+  // Fallback: strip query string only (for backwards compatibility)
+  return input.replace(/\?.*$/, '');
+}
 const NOTION_DB_ID_RAW = (process.env.NOTION_DB_ID || process.env.NOTION_DATABASE_ID || '').trim();
-const NOTION_DB_ID = NOTION_DB_ID_RAW.replace(/\?.*$/, '');
+const NOTION_DB_ID = normalizeNotionId(NOTION_DB_ID_RAW);
 const BASE_URL = (process.env.COLLECTION_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const TOKEN_PROP = process.env.NOTION_TOKEN_PROP || 'Collection Token';
 const URL_PROP = process.env.NOTION_URL_PROP || 'Collection URL';
@@ -298,6 +312,11 @@ async function run() {
 
   const slice = pages; // already limited above
   await ensureBucket(db, 'media');
+  const total = slice.length;
+  let processed = 0;
+  if (total > 0) {
+    console.log(`Starting Notion ingest: ${total} page(s) to process...`);
+  }
 
   for (const page of slice) {
     const id = page.id as string;
@@ -487,6 +506,10 @@ async function run() {
       } catch (e) {
         console.warn('image mirror failed', e);
       }
+    }
+    processed++;
+    if (processed % 10 === 0 || processed === total) {
+      console.log(`Progress: ${processed}/${total}`);
     }
   }
 
