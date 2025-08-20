@@ -27,6 +27,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const [suggestedName, setSuggestedName] = useState<string | null>(null);
   const [suggestedAddress, setSuggestedAddress] = useState<string | null>(null);
   const [mapsUrl, setMapsUrl] = useState<string | null>(null);
+  const [currentZoom, setCurrentZoom] = useState<number>(14);
 
   // Load Maps JS API with places library
   const resolvedKey = apiKey || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -86,6 +87,12 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       fullscreenControl: false,
     });
     mapRef.current = map;
+    setCurrentZoom(map.getZoom() || 14);
+
+    function computeMapsUrl(latValue: number, lngValue: number, zoomValue?: number): string {
+      const z = typeof zoomValue === 'number' ? zoomValue : (map.getZoom() || 17);
+      return `https://www.google.com/maps/@?api=1&map_action=map&center=${encodeURIComponent(String(latValue))},${encodeURIComponent(String(lngValue))}&zoom=${encodeURIComponent(String(z))}`;
+    }
 
     // Marker (always classic Marker to avoid Map ID requirement)
     const marker: any = new gm.Marker({ position: { lat: centerLat, lng: centerLng }, map });
@@ -128,15 +135,14 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
         setLat(newLat);
         setLng(newLng);
         map.panTo({ lat: newLat, lng: newLng });
+        map.setZoom(18);
+        setCurrentZoom(18);
         if ('position' in (marker as any)) {
           (marker as any).setPosition({ lat: newLat, lng: newLng });
         } else if ('position' in (marker as any)) {
           (marker as any).position = { lat: newLat, lng: newLng };
         }
-        const url = pid
-          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${newLat},${newLng}`)}&query_place_id=${encodeURIComponent(pid)}`
-          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${newLat},${newLng}`)}`;
-        setMapsUrl(url);
+        setMapsUrl(computeMapsUrl(newLat, newLng, 18));
       }
     });
 
@@ -148,8 +154,18 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       setLat(newLat);
       setLng(newLng);
       setPlaceId(null);
-      setMapsUrl(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${newLat},${newLng}`)}`);
+      map.setZoom(18);
+      setCurrentZoom(18);
+      setMapsUrl(computeMapsUrl(newLat, newLng, 18));
       if ('setPosition' in (marker as any)) (marker as any).setPosition({ lat: newLat, lng: newLng });
+    });
+
+    map.addListener('zoom_changed', () => {
+      const z = map.getZoom() || 14;
+      setCurrentZoom(z);
+      if (lat != null && lng != null) {
+        setMapsUrl(computeMapsUrl(lat, lng, z));
+      }
     });
 
     return () => {
@@ -166,6 +182,20 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       {(missingKey || loadError) ? (
         <div className="text-xs text-red-600">
           {missingKey ? 'Google Maps key missing. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment.' : loadError}
+        </div>
+      ) : null}
+      <div className="flex items-center gap-2 text-xs text-gray-700">
+        <button type="button" className="button secondary" onClick={() => { if (mapRef.current) { mapRef.current.setZoom(18); setCurrentZoom(18); if (lat != null && lng != null) setMapsUrl(`https://www.google.com/maps/@?api=1&map_action=map&center=${lat},${lng}&zoom=18`); } }}>Zoom to building</button>
+        <span>Zoom: {currentZoom}</span>
+      </div>
+      {(mapsUrl && lat != null && lng != null) ? (
+        <div className="grid gap-1">
+          <label className="text-xs">Google Maps Link</label>
+          <div className="flex items-center gap-2">
+            <input className="input" readOnly value={mapsUrl} onFocus={(e) => e.currentTarget.select()} />
+            <button type="button" className="button secondary" onClick={async () => { try { await navigator.clipboard.writeText(mapsUrl || ''); } catch {} }}>Copy</button>
+            <a className="button" href={mapsUrl} target="_blank" rel="noreferrer">Open</a>
+          </div>
         </div>
       ) : null}
       <input type="hidden" name={`${namePrefix}_query`} value={query ?? ''} readOnly />
