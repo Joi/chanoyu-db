@@ -1,79 +1,83 @@
-# Cursor AI Rules for Chanoyu-DB
+# Cursor AI Rules and Context for Chanoyu-DB
 
-## Project Context
-You are working on a Next.js + Supabase application for managing tea ceremony (chanoyu) collections. The app supports bilingual content (EN/JA) and has both public and admin interfaces.
+## IMPORTANT PROJECT FILES TO REFERENCE
+Always check these files first:
+- CLAUDE.md - AI collaboration guidelines
+- TASKS.md - Current work items
+- README.md - Project overview
+- docs/ARCHITECTURE.md - System design
+- docs/WORKFLOW.md - Deployment process
 
-## Always Remember
-1. Check TASKS.md for current priorities
-2. Read CLAUDE.md for detailed guidelines
-3. TypeScript is strictly enforced - no 'any' types
-4. Test changes locally before suggesting commits
-5. Keep changes small and focused
+## PROJECT CONTEXT
+This is a Next.js + Supabase application for managing tea ceremony (chanoyu) collections with bilingual support (EN/JA).
 
-## Code Standards
-- Use Next.js App Router patterns (not Pages Router)
-- Follow existing file structure in /app directory
-- Use Supabase client for data fetching
-- Maintain RLS policies for security
-- Handle errors gracefully with proper logging
+Tech Stack:
+- Frontend: Next.js 14 (App Router)
+- Database: Supabase (Postgres with RLS)
+- Storage: Supabase Storage
+- Deployment: Vercel (dev branch → preview, main → production)
+- Language: TypeScript (strict mode)
 
-## Common Patterns
+## ALWAYS FOLLOW THESE RULES
+
+1. **Check TASKS.md first** to understand current priorities
+2. **Read CLAUDE.md** for detailed AI collaboration guidelines  
+3. **No 'any' types** - TypeScript must be strictly typed
+4. **Test locally first** with `npm run dev` before suggesting code
+5. **Keep changes small** - one feature/fix at a time
+
+## CODE PATTERNS TO FOLLOW
 
 ### Database Queries
 ```typescript
-// Always use typed queries
+// Client-side (public data only)
 const { data, error } = await supabase
-  .from('table_name')
+  .from('objects')
   .select('*')
-  .eq('field', value)
+  .eq('visibility', 'public')
 
-if (error) {
-  console.error('Error:', error)
-  return null
-}
+// Server-side (use service role)
+const { data, error } = await supabaseAdmin
+  .from('objects')
+  .select('*')
 ```
 
-### API Routes
-- Located in /app/api/*/route.ts
-- Use NextRequest and NextResponse
-- Check authentication when needed
-- Return proper HTTP status codes
+### File Structure
+- Pages: `/app/[feature]/page.tsx`
+- API Routes: `/app/api/[endpoint]/route.ts`
+- Components: `/app/components/[name].tsx`
+- Database: `/lib/supabase.ts`
+- Types: `/lib/types.ts`
 
-### Component Structure
-- Server components by default
-- Client components only when needed (use 'use client')
-- Keep components small and focused
-- Use TypeScript interfaces for props
+### Common Tasks
+- Before adding new features, check existing patterns in `/app`
+- For database changes, update both schema and TypeScript types
+- For images, use Supabase Storage (automatic HEIC→JPEG conversion)
 
-## File Locations
-- Pages: /app/*/page.tsx
-- API: /app/api/*/route.ts
-- Components: /app/components/*
-- Utilities: /lib/*
-- Types: /lib/types.ts
-- Database client: /lib/supabase.ts
+## DEVELOPMENT WORKFLOW
 
-## Testing Workflow
-1. npm run dev - Start local server
-2. npm run typecheck - Check types
-3. npm run lint - Check code style
-4. Test on localhost:3000
-5. Push to dev branch
-6. Verify on dev.collection.ito.com
+1. Work on `dev` branch
+2. Test locally: `npm run dev`
+3. Check types: `npm run typecheck`
+4. Push to dev: `git push origin dev`
+5. Test on: dev.collection.ito.com
+6. When ready: PR from dev → main
 
-## Branch Strategy
-- main: Production (collection.ito.com)
-- dev: Development (dev.collection.ito.com)
-- Work on dev, PR to main
+## KEY TABLES
+- `objects` - Tea utensils/items
+- `chakai` - Tea gatherings/events
+- `locations` - Venues
+- `media` - Images
+- `classifications` - Categories (AAT/Wikidata)
 
-## Environment Variables
-- NEXT_PUBLIC_* for client-side
-- Others for server-side only
-- Never commit .env files
+## WHEN WORKING ON TASKS
+1. Check TASKS.md for the specific task
+2. Find related files using the patterns above
+3. Keep changes focused on the task
+4. Update TASKS.md when complete
 
-## When Stuck
-1. Check existing patterns in codebase
-2. Refer to docs/ARCHITECTURE.md
-3. Test in Supabase dashboard first
-4. Keep changes minimal
-5. Ask for clarification if needed
+## IF YOU GET STUCK
+- Review existing code in `/app` for patterns
+- Check `docs/ARCHITECTURE.md` for system overview
+- Test queries in Supabase dashboard first
+- Keep changes minimal and focused
