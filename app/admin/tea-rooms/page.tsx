@@ -44,7 +44,11 @@ export default async function TeaRoomsAdminList() {
           {list.map((l) => (
             <div key={l.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
               <div>
-                <div className="font-medium">{l.name_en || l.name_ja || l.name}{l.local_number ? ` (${l.local_number})` : ''}</div>
+                <div className="font-medium">
+                  {(l.name_ja || l.name_en || l.name) || '(unnamed)'}
+                  {(l.name_ja && (l.name_en || l.name)) ? <span className="text-sm text-gray-700 ml-2" lang="en">/ {l.name_en || l.name}</span> : null}
+                  {l.local_number ? ` (${l.local_number})` : ''}
+                </div>
                 <div className="text-sm text-gray-700">{l.address_en || l.address_ja || l.address || '—'}{l.url ? ` · ${l.url}` : ''} · {l.visibility}</div>
                 {(l.contained_in_en || l.contained_in_ja || l.contained_in) ? (
                   <div className="text-xs text-gray-600">Contained in: {l.contained_in_en || l.contained_in_ja || l.contained_in}</div>
