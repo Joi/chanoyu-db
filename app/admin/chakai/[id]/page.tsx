@@ -88,7 +88,7 @@ export default async function EditChakai({ params }: { params: { id: string } })
   const db = supabaseAdmin();
   const { data: c } = await db
     .from('chakai')
-    .select('id, name_en, name_ja, event_date, start_time, visibility, notes, location_id')
+    .select('id, token, name_en, name_ja, event_date, start_time, visibility, notes, location_id')
     .eq('id', params.id)
     .maybeSingle();
   if (!c) return notFound();

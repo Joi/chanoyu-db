@@ -10,7 +10,7 @@ export default async function ChakaiListPage() {
   // We rely on RLS for defense in depth, but filter here for UX.
   let query = db
     .from('chakai')
-    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, locations(id, name)')
+    .select('id, token, name_en, name_ja, local_number, event_date, start_time, visibility, locations(id, name)')
     .order('event_date', { ascending: false })
     .limit(200);
 
@@ -49,7 +49,7 @@ export default async function ChakaiListPage() {
             return (
               <div key={c.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
                 <div>
-                  <div className="font-medium"><a className="underline" href={`/chakai/${c.id}`}>{title}</a>{c.name_en && c.name_ja ? <span className="text-sm text-gray-700 ml-2" lang="ja">/ {c.name_ja}</span> : null}</div>
+                  <div className="font-medium"><a className="underline" href={`/chakai/${c.token || c.id}`}>{title}</a>{c.name_en && c.name_ja ? <span className="text-sm text-gray-700 ml-2" lang="ja">/ {c.name_ja}</span> : null}</div>
                   <div className="text-sm text-gray-700">{date}{time ? ` ${time}` : ''}{loc ? ` · ${loc.name}` : ''}{c.local_number ? ` · ${c.local_number}` : ''}</div>
                 </div>
                 <div className="text-xs text-gray-600">{c.visibility}</div>

@@ -20,7 +20,7 @@ export default async function ChakaiAdminList() {
   const db = supabaseAdmin();
   const { data: rows, error } = await db
     .from('chakai')
-    .select('id, name_en, name_ja, local_number, event_date, start_time, visibility, locations:locations(id, name)')
+    .select('id, token, name_en, name_ja, local_number, event_date, start_time, visibility, locations:locations(id, name)')
     .order('event_date', { ascending: false })
     .limit(500);
   if (error) console.error('[admin/chakai] query error', error.message || error);
@@ -44,11 +44,11 @@ export default async function ChakaiAdminList() {
             return (
               <div key={c.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
                 <div>
-                  <div className="font-medium"><a className="underline" href={`/chakai/${c.id}`}>{title}</a>{c.name_en && c.name_ja ? <span className="text-sm text-gray-700 ml-2" lang="ja">/ {c.name_ja}</span> : null}</div>
+                  <div className="font-medium"><a className="underline" href={`/chakai/${(c as any).token || c.id}`}>{title}</a>{c.name_en && c.name_ja ? <span className="text-sm text-gray-700 ml-2" lang="ja">/ {c.name_ja}</span> : null}</div>
                   <div className="text-sm text-gray-700">{date}{time ? ` ${time}` : ''}{loc ? ` · ${loc.name}` : ''} · {c.visibility}{c.local_number ? ` · ${c.local_number}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <a className="text-sm underline leading-none" href={`/chakai/${c.id}`}>View</a>
+                  <a className="text-sm underline leading-none" href={`/chakai/${(c as any).token || c.id}`}>View</a>
                   <a className="text-sm underline leading-none" href={`/admin/chakai/${c.id}`}>Edit</a>
                 </div>
               </div>
