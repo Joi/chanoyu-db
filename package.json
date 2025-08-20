@@ -4,11 +4,11 @@
   "version": "1.2.1",
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "next build",
+    "build": "TAILWIND_DISABLE_OXIDE=1 NEXT_DISABLE_LIGHTNINGCSS=1 next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "build:prod": "NODE_ENV=production next build",
+    "build:prod": "NODE_ENV=production TAILWIND_DISABLE_OXIDE=1 NEXT_DISABLE_LIGHTNINGCSS=1 next build",
     "test": "vitest run --environment=jsdom",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build:prod && vercel build --yes",
     "ci:local": "npm run lint && npm run typecheck && npm run test && NEXT_DISABLE_LIGHTNINGCSS=1 npm run build:prod",
