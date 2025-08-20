@@ -1,6 +1,7 @@
 import './globals.css';
 import NavBar from './components/NavBar';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/branding';
+import Image from 'next/image';
 
 export const metadata = {
   title: APP_NAME,
@@ -35,9 +36,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 aria-label="Creative Commons Attribution 4.0 International (CC BY 4.0)"
                 title="Creative Commons Attribution 4.0 International (CC BY 4.0)"
               >
-                <img
+                <Image
                   src="https://licensebuttons.net/l/by/4.0/88x31.png"
                   alt="CC BY 4.0"
+                  width={88}
+                  height={31}
                   className="h-5 w-auto"
                 />
                 <span className="sr-only">Licensed under CC BY 4.0</span>

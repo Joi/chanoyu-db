@@ -11,6 +11,8 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.supabase.co' },
       // Allow Notion temporary S3 URLs in admin views
       { protocol: 'https', hostname: 'prod-files-secure.s3.us-west-2.amazonaws.com' },
+      // Creative Commons license buttons
+      { protocol: 'https', hostname: 'licensebuttons.net' },
     ],
   },
 };

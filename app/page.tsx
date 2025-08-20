@@ -31,7 +31,7 @@ export default function HomePage() {
           </a>
         </p>
 
-        <p className="mt-8 text-[10px] text-gray-500">"Soichi/宗一" is the tea name of Joichi Ito / 伊藤穰一</p>
+        <p className="mt-8 text-[10px] text-gray-500">&quot;Soichi/宗一&quot; is the tea name of Joichi Ito / 伊藤穰一</p>
       </section>
     </main>
   );
