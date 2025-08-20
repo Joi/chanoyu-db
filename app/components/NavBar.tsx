@@ -35,6 +35,7 @@ export default function NavBar() {
         <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/">Home</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/lookup">Category Lookup</a>
+          <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/chakai">Chakai</a>
         </div>
       </details>
       <details className="nav-group relative group" role="menu">
@@ -44,6 +45,7 @@ export default function NavBar() {
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications">Classifications</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
+          <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
           <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/new">Create object</a>
         </div>
       </details>

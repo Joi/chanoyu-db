@@ -54,6 +54,14 @@ Example token minter (Crockford base32, no vowels):
 **Tables (abridged):**
 - `objects` — one row per physical item  
   Fields: `id, token (unique), ark_name (null for now), local_number, title, title_ja, summary, summary_ja, visibility, created_at, updated_at`
+ - `chakai` — tea gatherings (茶会) with attendance and items used  
+   Fields: `id, local_number (ITO-K-YYYY-MMDDH), name_en, name_ja, event_date (date), start_time (time), location_id → locations(id), visibility ('open'|'members'|'closed'), notes, created_at, updated_at`
+ - `chakai_attendees` — join table of attendees  
+   Fields: `chakai_id → chakai(id), account_id → accounts(id)`
+ - `chakai_items` — items used in a gathering  
+   Fields: `chakai_id → chakai(id), object_id → objects(id)`
+ - `locations` — reusable venues  
+   Fields: `id, local_number (ITO-L-YYYY-NNNNN), name, address, url, created_at, updated_at`
 - `classifications` — authority terms (AAT / Wikidata / TGN, etc.)  
   Fields: `label, label_ja, kind, scheme, uri`
 - `object_classifications` — join (`role` = 'primary type' | 'material' | 'technique' | 'ware' | 'place')
@@ -64,11 +72,19 @@ Example token minter (Crockford base32, no vowels):
 **RLS policies**
 - Public can read only `visibility = 'public'` objects (and their public relations)  
 - Service role has full access (used by server routes and ingest scripts)
+ - Chakai RLS:
+   - `open`: anyone can read
+   - `members`: only attendees (by account email in JWT) and admin/owner
+   - `closed`: only admin/owner
 
 **Storage**
 - Public bucket `media` for published images; service role can write/update
 
 > SQL for schema + RLS lives in `/supabase/sql/init.sql` (or equivalent migration). Run once when setting up the project.
+
+For new Chakai/Locations tables and generators, see the migration snippet in the PR description or apply the SQL you used in Supabase. Local numbers:
+- Chakai: `ITO-K-YYYY-MMDDH` (date + hour from `start_time`, `00` if null)
+- Locations: `ITO-L-YYYY-NNNNN` (yearly counter)
 
 ---
 
@@ -105,6 +121,7 @@ Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
 - Human page — `GET /id/{token}` → HTML page (title, images, summaries, identifiers)
 - Machine data — `GET /id/{token}` with `Accept: application/ld+json`, or `GET /id/{token}.jsonld` → JSON-LD
 - Lookup — `GET /api/lookup?q=…` → normalized list of AAT and Wikidata hits (EN/JA labels where available)
+ - Search — `GET /api/search/accounts|objects|locations?q=…` → small result sets for admin selectors
 - ARK (placeholder until NAAN):  
   `GET /ark:/{NAAN}/{name}` → ARK landing page  
   `GET /ark:/{NAAN}/{name}?` → brief JSON metadata (ARK “?”)  
@@ -157,6 +174,14 @@ Run:
 
     pnpm dev
     # open http://localhost:3000
+
+Admin pages:
+- `/admin/chakai` — list, add via `/admin/chakai/new`, edit via `/admin/chakai/[id]`
+  - Add attendees and items via searchable selectors
+  - Location is required (search existing or create inline)
+Public pages:
+- `/chakai` — list of gatherings user can see (respects visibility)
+- `/chakai/[id]` — detail page (EN/JA names, date/time, location, attendees, items)
 
 ---
 
