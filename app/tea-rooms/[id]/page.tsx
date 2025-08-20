@@ -30,12 +30,41 @@ export default async function TeaRoomDetailPage({ params }: { params: { id: stri
   return (
     <main className="max-w-3xl mx-auto p-6">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-xl font-semibold">{(loc as any).name_en || (loc as any).name_ja || (loc as any).name}{loc.local_number ? ` (${loc.local_number})` : ''}</h1>
+        {(() => {
+          const titleEn = (loc as any).name_en || (loc as any).name || '';
+          const titleJa = (loc as any).name_ja || '';
+          const primary = titleEn || titleJa || (loc as any).name || '';
+          return (
+            <h1 className="text-xl font-semibold">
+              {primary}
+              {titleEn && titleJa ? <span className="text-sm text-gray-700 ml-2" lang="ja">/ {titleJa}</span> : null}
+              {loc.local_number ? ` (${loc.local_number})` : ''}
+            </h1>
+          );
+        })()}
       </div>
-      <div className="text-sm text-gray-700 mb-4">{(loc as any).address_en || (loc as any).address_ja || (loc as any).address || '—'}{loc.url ? ` · ${loc.url}` : ''}{loc.local_number ? ` · ${loc.local_number}` : ''}</div>
-      {(loc as any).contained_in_en || (loc as any).contained_in_ja || (loc as any).contained_in ? (
-        <div className="text-sm text-gray-700 mb-4">Contained in: {(loc as any).contained_in_en || (loc as any).contained_in_ja || (loc as any).contained_in}</div>
-      ) : null}
+      {(() => {
+        const addrEn = (loc as any).address_en || (loc as any).address || '';
+        const addrJa = (loc as any).address_ja || '';
+        return (
+          <div className="text-sm text-gray-700 mb-4">
+            {addrEn || '—'}
+            {addrJa ? <span lang="ja"> / {addrJa}</span> : null}
+            {loc.url ? ` · ${loc.url}` : ''}
+            {loc.local_number ? ` · ${loc.local_number}` : ''}
+          </div>
+        );
+      })()}
+      {(() => {
+        const ciEn = (loc as any).contained_in_en || (loc as any).contained_in || '';
+        const ciJa = (loc as any).contained_in_ja || '';
+        if (!(ciEn || ciJa)) return null;
+        return (
+          <div className="text-sm text-gray-700 mb-4">
+            Contained in: {ciEn || '—'}{ciJa ? <span lang="ja"> / {ciJa}</span> : null}
+          </div>
+        );
+      })()}
       {(loc as any).lat != null && (loc as any).lng != null ? (
         <iframe
           title="Map"
