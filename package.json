@@ -17,7 +17,9 @@
     "ingest:notion": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/ingest-notion.ts",
     "seed:licenses": "ts-node scripts/seed-licenses.ts",
     "sync:accounts-schema": "ts-node scripts/sync-accounts-schema.ts",
-    "backfill:tokens": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/backfill-tokens.ts"
+    "backfill:tokens": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/backfill-tokens.ts",
+    "migrate:location-media": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrate-location-media.ts",
+    "cleanup:location-folder": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/cleanup-location-folder.ts"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
