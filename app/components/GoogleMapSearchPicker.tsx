@@ -62,7 +62,11 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   useEffect(() => {
     if (!loaded) return;
     const gm = (window as any).google?.maps;
-    if (!gm || !containerRef.current) return;
+    if (!gm) {
+      setLoadError('Google Maps not available in this environment');
+      return;
+    }
+    if (!containerRef.current) return;
 
     // Initialize map
     const map = new gm.Map(containerRef.current, {
@@ -75,9 +79,15 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     mapRef.current = map;
 
     // Marker (AdvancedMarker if available)
-    const marker = gm.marker?.AdvancedMarkerElement
-      ? new gm.marker.AdvancedMarkerElement({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map })
-      : new gm.Marker({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map });
+    let marker: any;
+    try {
+      marker = gm.marker?.AdvancedMarkerElement
+        ? new gm.marker.AdvancedMarkerElement({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map })
+        : new gm.Marker({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map });
+    } catch (e) {
+      // Fallback to classic Marker if AdvancedMarker fails for any reason
+      marker = new gm.Marker({ position: { lat: lat ?? defaultLat!, lng: lng ?? defaultLng! }, map });
+    }
     markerRef.current = marker;
 
     // Search box control
@@ -89,7 +99,13 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     inputRef.current = input as any;
     map.controls[gm.ControlPosition.TOP_LEFT].push(input);
 
-    const searchBox = new gm.places.SearchBox(input);
+    let searchBox: any = null;
+    try {
+      searchBox = new gm.places.SearchBox(input);
+    } catch (e) {
+      setLoadError('Google Places SearchBox failed to initialize');
+      return;
+    }
     searchBox.addListener('places_changed', () => {
       const places = searchBox.getPlaces() || [];
       if (!places.length) return;
