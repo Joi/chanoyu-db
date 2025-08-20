@@ -33,11 +33,11 @@ export default async function TeaRoomDetailPage({ params }: { params: { id: stri
         {(() => {
           const titleEn = (loc as any).name_en || (loc as any).name || '';
           const titleJa = (loc as any).name_ja || '';
-          const primary = titleEn || titleJa || (loc as any).name || '';
+          const primary = titleJa || titleEn || (loc as any).name || '';
           return (
             <h1 className="text-xl font-semibold">
               {primary}
-              {titleEn && titleJa ? <span className="text-sm text-gray-700 ml-2" lang="ja">/ {titleJa}</span> : null}
+              {titleEn && titleJa ? <span className="text-sm text-gray-700 ml-2" lang="en">/ {titleEn}</span> : null}
               {loc.local_number ? ` (${loc.local_number})` : ''}
             </h1>
           );
