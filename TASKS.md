@@ -9,6 +9,7 @@
 - [ ] Review and test chakai attendee functionality
 - [ ] Implement location search improvements
 - [ ] Add image lazy loading for collection pages
+- [ ] JSON-LD: resolve external classification via Local Class preferred link
 
 ## Backlog
 <!-- Future tasks, not urgent -->
@@ -18,6 +19,7 @@
 - [ ] Add bulk import for chakai events
 
 ## Completed
+ - [ ] Local Classes admin UX: external link attach, top summary on item page, bottom change form, list items in class (2025-08-21)
 <!-- Move completed tasks here with date -->
 
 ---

@@ -5,7 +5,7 @@ Unified database to manage tea utensil items linking them to Wikilinks and Getty
 - **Frontend/API:** Next.js (App Router, TypeScript) on Vercel
 - **Data:** Supabase (Postgres + RLS, Storage for images)
 - **Identifiers:** Stable HTTPS IDs today (`/id/{token}`), ARK-ready (`/ark:/NAAN/{name}`)
-- **Interoperability:** Linked Art JSON-LD; categories via Getty AAT and Wikidata QIDs
+- **Interoperability:** Linked Art JSON-LD; categories via Local Classes (mapped to AAT/Wikidata)
 - **Ingest:** Notion (images/fields) + Google Sheets (valuations) → mirrored into Supabase
 
 > This software powers the public site for Ito Chanoyu: `https://chanoyu.ito.com/` (Ito Chanoyu DB). While built for our use, it is open source and designed to be portable so others can run their own instance. Please comment, open PRs, and contribute.
@@ -301,12 +301,12 @@ Notes:
 ## Editorial workflow
 
 1) Create/ingest an object (gets a stable `/id/{token}`)  
-2) Open **/lookup** → search for categories (“chawan”, “Raku”, “kintsugi”, etc.)  
-3) Save chosen **AAT** (primary) and **Wikidata** (secondary) entries to `classifications` and link via `object_classifications` with an appropriate `role`  
+2) Assign a Local Class on the item admin page (top shows current class with breadcrumb and external links; change via pulldown at bottom)  
+3) Optionally add authority links (AAT/Wikidata) to the Local Class itself; keep any extra per‑item `object_classifications` with a specific `role` as needed  
 4) Publish (ensure `visibility = 'public'`), confirm JSON-LD looks right
 
 Conventions
-- `role = "primary type"` → the object’s main category (e.g., tea bowl)  
+- `role = "primary type"` → the object’s main category (legacy; prefer Local Class)  
 - `role = "material"` → clay/wood/lacquer/gold, etc.  
 - `role = "technique"` → raku firing, kintsugi, maki-e, etc.  
 - `role = "ware"` → Raku ware / Hagi ware / Oribe ware

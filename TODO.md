@@ -18,18 +18,20 @@
 ### Server (APIs)
 - [x] New route `/api/search/local-classes` (search by `q`)
 - [x] Sanitize search input to mitigate injection and wildcard abuse
-- [ ] Admin actions to create/edit Local Classes
-- [ ] Admin actions to add/remove external links; set preferred
+- [x] Admin actions to create/edit Local Classes
+- [x] Admin actions to add/remove external links; set preferred
 
-### Admin UI
+- ### Admin UI
 - [x] Replace classification panel on `/admin/[token]` to search Local Classes only
 - [x] Display counts (direct and optionally total) in search results
 - [x] Show breadcrumb for selected Local Class on object page
 - [ ] Local Classes index page `/admin/local-classes`
-- [ ] Local Class detail page `/admin/local-classes/[token]`
-  - [ ] Edit labels/description/status/parent
-  - [ ] Manage external links (search AAT/Wikidata; add/remove; preferred)
-  - [ ] Show objects (direct) and aggregate count with descendants
+- [x] Local Class detail page `/admin/local-classes/[id]`
+  - [x] Edit labels/description/status/parent
+  - [x] Manage external links (attach existing pulldown; add new; preferred)
+  - [x] Show objects (direct) and aggregate count with descendants
+  - [x] Parent/child attach/detach
+- [x] Local Classes new page `/admin/local-classes/new` (parent pulldown, optional AAT/WD attach)
 
 ### JSON-LD / Data Resolution
 - [ ] Update `lib/jsonld.ts` to resolve external classification via Local Class preferred link
@@ -48,9 +50,9 @@
 - [ ] JSON-LD tests for preferred external resolution
 
 ### Documentation
-- [ ] Update `README.md` overview section
-- [ ] Add developer notes to `docs/ARCHITECTURE.md`
-- [ ] Add admin usage notes to `docs/WORKFLOW.md`
+- [x] Update `README.md` overview section
+- [x] Add developer notes to `docs/ARCHITECTURE.md`
+- [x] Add admin usage notes to `docs/WORKFLOW.md`
 
 ### Later (Phase 2+)
 - [ ] Tree UI improvements (drag-to-move, reorder)

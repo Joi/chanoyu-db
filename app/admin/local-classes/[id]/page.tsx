@@ -2,11 +2,17 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
+import type { LocalClass, Classification, LocalClassHierarchy, ObjectItem } from '@/lib/types/admin';
 import { 
-  updateLocalClassAction, 
-  detachChildServerAction, 
-  attachExistingChildServerAction, 
-  deleteLocalClassServerAction 
+  updateLocalClassAction,
+  addChildServerAction,
+  detachChildServerAction,
+  attachExistingChildServerAction,
+  deleteLocalClassServerAction,
+  addExistingExternalLinkAction,
+  addExternalLinkAction,
+  removeExternalLinkAction,
+  setPreferredExternalAction,
 } from './actions';
 // Using simple <select> pulldowns to avoid accidental creation; search widget remains available on the New page
 
@@ -20,7 +26,7 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
 
   const { data: cls } = await db
     .from('local_classes')
-    .select('id, token, local_number, label_en, label_ja, description, parent_id')
+    .select('id, token, local_number, label_en, label_ja, description, parent_id, preferred_classification_id')
     .eq('id', cid)
     .maybeSingle();
   if (!cls) return redirect('/admin/local-classes');
@@ -54,13 +60,34 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
   ]);
   const direct = Number((directC?.[0]?.object_count ?? 0) as any);
   const total = Number((totalC?.[0]?.object_count ?? 0) as any);
+  // Items directly in this class
+  const { data: classItems } = await db
+    .from('objects')
+    .select('id, token, local_number, title, title_ja')
+    .eq('primary_local_class_id', cid)
+    .order('local_number', { ascending: true })
+    .limit(500);
   // Load options for parent/attach pulldowns
   const { data: allClasses } = await db
     .from('local_classes')
     .select('id, label_en, label_ja, local_number')
     .order('local_number')
     .limit(1000);
-  const optionTitle = (r: any) => String(r.label_ja || r.label_en || r.local_number || r.id);
+  const optionTitle = (r: LocalClass) => String(r.label_ja || r.label_en || r.local_number || r.id);
+
+  // External links (AAT / Wikidata)
+  const { data: extLinks } = await db
+    .from('local_class_links')
+    .select('classification:classifications(id, scheme, uri, label, label_ja)')
+    .eq('local_class_id', cid);
+  const links = (extLinks || []).map((r: any) => r.classification).filter(Boolean);
+  // For attach-existing pulldown
+  const { data: allExt } = await db
+    .from('classifications')
+    .select('id, scheme, uri, label, label_ja')
+    .in('scheme', ['aat','wikidata'])
+    .order('scheme')
+    .order('label');
 
 
   return (
@@ -71,8 +98,8 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
           <> / {ordered.map((a: any, i: number) => (<span key={String(a.id)}>{i ? ' / ' : ''}<Link className="underline" href={`/admin/local-classes/${a.id}`}>{String(a.label_ja || a.label_en || a.local_number || a.id)}</Link></span>))}</>
         ) : null}
       </div>
-      <h1 className="text-xl font-semibold">{String((cls as any).label_ja || (cls as any).label_en || (cls as any).local_number || (cls as any).token || (cls as any).id)}</h1>
-      <div className="text-xs text-gray-600">{(cls as any).local_number || (cls as any).token}</div>
+      <h1 className="text-xl font-semibold">{String(cls.label_ja || cls.label_en || cls.local_number || cls.token || cls.id)}</h1>
+      <div className="text-xs text-gray-600">{cls.local_number || cls.token}</div>
 
       <div className="mt-4 grid gap-2">
         <div className="card text-sm">
@@ -81,23 +108,23 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
         </div>
         <div className="card text-sm">
           <div className="mb-1"><strong>Description</strong></div>
-          <div>{(cls as any).description || <span className="text-gray-500">(none)</span>}</div>
+          <div>{cls.description || <span className="text-gray-500">(none)</span>}</div>
         </div>
         <div className="card">
           <h2 className="text-sm font-semibold mb-2">Edit</h2>
           <form action={updateLocalClassAction} className="grid gap-2">
             <input type="hidden" name="class_id" value={cid} />
             <label className="label">Label (EN)</label>
-            <input name="label_en" className="input" defaultValue={(cls as any).label_en || ''} />
+            <input name="label_en" className="input" defaultValue={cls.label_en || ''} />
             <label className="label">Label (JA)</label>
-            <input name="label_ja" className="input" defaultValue={(cls as any).label_ja || ''} />
+            <input name="label_ja" className="input" defaultValue={cls.label_ja || ''} />
             <label className="label">Description</label>
-            <textarea name="description" className="textarea" defaultValue={(cls as any).description || ''} />
+            <textarea name="description" className="textarea" defaultValue={cls.description || ''} />
             <label className="label">Parent</label>
-            <select name="parent_local_class_id" className="input">
+            <select name="parent_local_class_id" className="input" defaultValue={String(cls.parent_id || '')}>
               <option value="">(none)</option>
               {(allClasses || []).filter((r: any) => String(r.id) !== cid).map((r: any) => (
-                <option key={String(r.id)} value={String(r.id)} selected={String((cls as any).parent_id || '') === String(r.id)}>
+                <option key={String(r.id)} value={String(r.id)}>
                   {optionTitle(r)}
                 </option>
               ))}
@@ -120,9 +147,81 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
         </div>
 
         <div className="card">
+          <h2 className="text-sm font-semibold mb-2">External Links (AAT / Wikidata)</h2>
+          {links.length ? (
+            <ul className="grid gap-1 mb-2">
+              {links.map((c: any) => {
+                const isPref = String(cls.preferred_classification_id || '') === String(c.id);
+                return (
+                  <li key={String(c.id)} className="flex items-center justify-between text-sm">
+                    <div>
+                      <div className="font-medium">{String(c.label_ja || c.label || c.uri)}</div>
+                      <div className="text-xs text-gray-600">{c.scheme} · <a className="underline" href={c.uri} target="_blank" rel="noreferrer">{c.uri}</a></div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isPref ? (
+                        <span className="text-xs">Preferred</span>
+                      ) : (
+                        <form action={setPreferredExternalAction}>
+                          <input type="hidden" name="class_id" value={cid} />
+                          <input type="hidden" name="classification_id" value={String(c.id)} />
+                          <button className="text-xs underline" type="submit">Set preferred</button>
+                        </form>
+                      )}
+                      <form action={removeExternalLinkAction}>
+                        <input type="hidden" name="class_id" value={cid} />
+                        <input type="hidden" name="classification_id" value={String(c.id)} />
+                        <button className="text-xs underline text-red-600" type="submit">Remove</button>
+                      </form>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="text-xs text-gray-600 mb-2">No external links yet.</div>
+          )}
+          <div className="grid gap-2 mb-2">
+            <form action={addExistingExternalLinkAction} className="grid gap-2">
+              <input type="hidden" name="class_id" value={cid} />
+              <label className="label">Attach existing</label>
+              <select name="classification_id" className="input">
+                <option value="">(select AAT/Wikidata)</option>
+                {(allExt || []).map((c: any) => (
+                  <option key={String(c.id)} value={String(c.id)}>{`${c.scheme}: ${String(c.label_ja || c.label || c.uri)}`}</option>
+                ))}
+              </select>
+              <button className="button" type="submit">Attach</button>
+            </form>
+          </div>
+          <AddExternalLinkForm classId={cid} />
+        </div>
+
+        <div className="card">
           <h2 className="text-sm font-semibold mb-2">Danger zone</h2>
           <DeleteLocalClass cid={cid} disable={direct > 0} />
           {direct > 0 ? <div className="text-xs text-gray-600 mt-1">Cannot delete: class has directly assigned objects.</div> : null}
+        </div>
+
+        <div className="card">
+          <h2 className="text-sm font-semibold mb-2">Items in this class</h2>
+          {direct > 0 ? (
+            <div className="text-xs text-gray-600 mb-2">{direct} direct item{direct === 1 ? '' : 's'}</div>
+          ) : null}
+          {(classItems || []).length ? (
+            <ul className="grid gap-1">
+              {(classItems || []).map((o: any) => (
+                <li key={String(o.id)} className="text-sm">
+                  <a className="underline" href={`/admin/${String(o.token || o.id)}`}>
+                    {String(o.title_ja || o.title || o.local_number || o.id)}
+                  </a>
+                  {o.local_number ? <span className="text-xs text-gray-600"> · {o.local_number}</span> : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-xs text-gray-600">No items directly assigned to this class.</div>
+          )}
         </div>
       </div>
     </main>
@@ -179,4 +278,20 @@ function DeleteLocalClass({ cid, disable }: { cid: string; disable: boolean }) {
   );
 }
 
-
+function AddExternalLinkForm({ classId }: { classId: string }) {
+  return (
+    <form action={addExternalLinkAction} className="grid gap-2">
+      <input type="hidden" name="class_id" value={classId} />
+      <div className="grid grid-cols-3 gap-2">
+        <select name="scheme" className="input">
+          <option value="aat">aat</option>
+          <option value="wikidata">wikidata</option>
+        </select>
+        <input name="uri" className="input" placeholder="http://vocab.getty.edu/aat/300266745 or https://www.wikidata.org/entity/Qxxx" />
+        <input name="label" className="input" placeholder="Label (EN)" />
+      </div>
+      <input name="label_ja" className="input" placeholder="Label (JA)" />
+      <button className="button" type="submit">Add link</button>
+    </form>
+  );
+}
