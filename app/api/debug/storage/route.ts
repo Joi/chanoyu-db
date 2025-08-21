@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
+  const ok = await requireAdmin();
+  if (!ok || process.env.NODE_ENV === 'production') {
     return NextResponse.json({ ok: false }, { status: 404 });
   }
   try {

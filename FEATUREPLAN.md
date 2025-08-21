@@ -57,6 +57,7 @@
 - New: `/api/search/local-classes`
   - Input: `q` (matches `label_en`, `label_ja`, `local_number`)
   - Output: `id`, `token`, `local_number`, `label_en`, `label_ja`, `parent_path` (for display), `object_count_direct`, `object_count_total`
+  - Security: sanitize/escape the search term to avoid PostgREST OR/LIKE injection
 - Keep `/api/lookup` for AAT/Wikidata to support admin reconciliation within Local Class detail pages.
 
 ### Admin UI Changes
@@ -92,6 +93,7 @@
 - Hierarchy complexity: use closure table + triggers to keep read paths fast and prevent cycles.
 - Dual systems during transition: keep `object_classifications` intact; resolve JSON-LD via Local Class only when safe.
 - Search performance: start with ILIKE; add trigram indexes if needed after usage data.
+- Debug endpoints: restrict to non-production and require admin to reduce info disclosure.
 
 ### Phased Rollout
 - Phase 1: Schema, search API, object admin switch to Local Classes, basic Local Classes admin (links + preferred).

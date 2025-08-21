@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
+  const ok = await requireAdmin();
+  if (!ok || process.env.NODE_ENV === 'production') {
     return NextResponse.json({ ok: false }, { status: 404 });
   }
   const email = (req.nextUrl.searchParams.get('email') || '').trim();
