@@ -24,6 +24,9 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
   const [loaded, setLoaded] = useState(false);
   const [lat, setLat] = useState<number | null>(typeof defaultLat === 'number' ? defaultLat : null);
   const [lng, setLng] = useState<number | null>(typeof defaultLng === 'number' ? defaultLng : null);
+  // Keep refs in sync to avoid re-initializing map on every state change
+  const latRef = useRef<number | null>(typeof defaultLat === 'number' ? defaultLat : null);
+  const lngRef = useRef<number | null>(typeof defaultLng === 'number' ? defaultLng : null);
   const [placeId, setPlaceId] = useState<string | null>(defaultPlaceId);
   const [query, setQuery] = useState<string>(defaultQuery || '');
   const [suggestedName, setSuggestedName] = useState<string | null>(null);
@@ -62,6 +65,9 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       // Intentionally swallow beacon errors to avoid impacting UX
     }
   }
+  // Keep latest coordinates in refs for event handlers without expanding deps
+  useEffect(() => { latRef.current = lat; }, [lat]);
+  useEffect(() => { lngRef.current = lng; }, [lng]);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const key = resolvedKey;
@@ -101,8 +107,8 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     if (!containerRef.current) return;
 
     // Compute safe center (handle nulls coming from server)
-    const centerLat = typeof lat === 'number' ? lat : (typeof defaultLat === 'number' ? defaultLat : 35.6809591);
-    const centerLng = typeof lng === 'number' ? lng : (typeof defaultLng === 'number' ? defaultLng : 139.7673068);
+    const centerLat = typeof latRef.current === 'number' ? latRef.current : (typeof defaultLat === 'number' ? defaultLat : 35.6809591);
+    const centerLng = typeof lngRef.current === 'number' ? lngRef.current : (typeof defaultLng === 'number' ? defaultLng : 139.7673068);
 
     // Initialize map
     const map = new gm.Map(containerRef.current, {
@@ -189,8 +195,8 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
     map.addListener('zoom_changed', () => {
       const z = map.getZoom() || DEFAULT_ZOOM;
       setCurrentZoom(z);
-      if (lat != null && lng != null) {
-        setMapsUrl(computeMapsUrl(lat, lng, z));
+      if (latRef.current != null && lngRef.current != null) {
+        setMapsUrl(computeMapsUrl(latRef.current, lngRef.current, z));
       }
     });
 
@@ -199,7 +205,7 @@ export default function GoogleMapSearchPicker({ apiKey, namePrefix, label = 'Loc
       markerRef.current = null as any;
       mapRef.current = null as any;
     };
-  }, [loaded]);
+  }, [loaded, defaultLat, defaultLng]);
 
   return (
     <div className="grid gap-2">
