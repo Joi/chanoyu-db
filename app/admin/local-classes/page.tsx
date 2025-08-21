@@ -11,13 +11,25 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   if (!ok) return redirect('/login');
   const db = supabaseAdmin();
 
-  const q = typeof searchParams?.q === 'string' ? String(searchParams!.q) : '';
+  // Sanitize search query using the same logic as the secure API to prevent SQL injection
+  const rawQuery = typeof searchParams?.q === 'string' ? String(searchParams!.q) : '';
+  const sanitizeSearchQuery = (raw: string): string => {
+    const trimmed = raw.slice(0, 64);
+    // Allow letters/numbers/space/basic punctuation; drop commas/parentheses which have meaning in PostgREST OR syntax
+    const safe = trimmed.replace(/[\t\n\r]/g, ' ').replace(/[(),"']/g, '');
+    // Escape LIKE special chars
+    const esc = safe.replace(/[\\%_]/g, (m) => `\\${m}`);
+    return esc;
+  };
+  const q = sanitizeSearchQuery(rawQuery.trim());
+
   let query = db
     .from('local_classes')
     .select('id, token, local_number, label_en, label_ja, parent_id')
     .order('local_number')
     .limit(1000);
   if (q) {
+    // Now safe to use in query since input has been sanitized
     query = query.or([
       `label_en.ilike.%${q}%`,
       `label_ja.ilike.%${q}%`,
