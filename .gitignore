@@ -19,6 +19,7 @@ coverage/
 # Env/secrets
 .env
 .env.local
+.env.production.local
 .env.*.local
 .env.*
 *.env
