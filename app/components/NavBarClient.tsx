@@ -46,6 +46,8 @@ export default function NavBarClient({ isLoggedIn }: { isLoggedIn: boolean }) {
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications">Classifications</a>
+            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes">Local Classes</a>
+            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes/new">Create Local Class</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-rooms">Tea Rooms</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
@@ -54,21 +56,19 @@ export default function NavBarClient({ isLoggedIn }: { isLoggedIn: boolean }) {
         </details>
       ) : null}
 
-      <details className="nav-group relative group" role="menu">
-        <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Users & Roles</summary>
-        <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
-          {isLoggedIn ? (
-            <>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
-              <form action="/logout" method="post">
-                <button className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-50 rounded" type="submit">Sign out</button>
-              </form>
-            </>
-          ) : (
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/login">Login</a>
-          )}
-        </div>
-      </details>
+      {isLoggedIn ? (
+        <details className="nav-group relative group" role="menu">
+          <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Account</summary>
+          <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
+            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
+            <form action="/logout" method="post">
+              <button className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-50 rounded" type="submit">Sign out</button>
+            </form>
+          </div>
+        </details>
+      ) : (
+        <a className="font-medium text-sm hover:underline" href="/login">Login</a>
+      )}
     </nav>
   );
 }
