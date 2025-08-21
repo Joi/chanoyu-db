@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
+import type { LocalClass, Classification, LocalClassHierarchy, ObjectItem } from '@/lib/types/admin';
 import { 
   updateLocalClassAction,
   addChildServerAction,
@@ -72,7 +73,7 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
     .select('id, label_en, label_ja, local_number')
     .order('local_number')
     .limit(1000);
-  const optionTitle = (r: any) => String(r.label_ja || r.label_en || r.local_number || r.id);
+  const optionTitle = (r: LocalClass) => String(r.label_ja || r.label_en || r.local_number || r.id);
 
   // External links (AAT / Wikidata)
   const { data: extLinks } = await db
@@ -97,8 +98,8 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
           <> / {ordered.map((a: any, i: number) => (<span key={String(a.id)}>{i ? ' / ' : ''}<Link className="underline" href={`/admin/local-classes/${a.id}`}>{String(a.label_ja || a.label_en || a.local_number || a.id)}</Link></span>))}</>
         ) : null}
       </div>
-      <h1 className="text-xl font-semibold">{String((cls as any).label_ja || (cls as any).label_en || (cls as any).local_number || (cls as any).token || (cls as any).id)}</h1>
-      <div className="text-xs text-gray-600">{(cls as any).local_number || (cls as any).token}</div>
+      <h1 className="text-xl font-semibold">{String(cls.label_ja || cls.label_en || cls.local_number || cls.token || cls.id)}</h1>
+      <div className="text-xs text-gray-600">{cls.local_number || cls.token}</div>
 
       <div className="mt-4 grid gap-2">
         <div className="card text-sm">
@@ -107,23 +108,23 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
         </div>
         <div className="card text-sm">
           <div className="mb-1"><strong>Description</strong></div>
-          <div>{(cls as any).description || <span className="text-gray-500">(none)</span>}</div>
+          <div>{cls.description || <span className="text-gray-500">(none)</span>}</div>
         </div>
         <div className="card">
           <h2 className="text-sm font-semibold mb-2">Edit</h2>
           <form action={updateLocalClassAction} className="grid gap-2">
             <input type="hidden" name="class_id" value={cid} />
             <label className="label">Label (EN)</label>
-            <input name="label_en" className="input" defaultValue={(cls as any).label_en || ''} />
+            <input name="label_en" className="input" defaultValue={cls.label_en || ''} />
             <label className="label">Label (JA)</label>
-            <input name="label_ja" className="input" defaultValue={(cls as any).label_ja || ''} />
+            <input name="label_ja" className="input" defaultValue={cls.label_ja || ''} />
             <label className="label">Description</label>
-            <textarea name="description" className="textarea" defaultValue={(cls as any).description || ''} />
+            <textarea name="description" className="textarea" defaultValue={cls.description || ''} />
             <label className="label">Parent</label>
-            <select name="parent_local_class_id" className="input">
+            <select name="parent_local_class_id" className="input" defaultValue={String(cls.parent_id || '')}>
               <option value="">(none)</option>
               {(allClasses || []).filter((r: any) => String(r.id) !== cid).map((r: any) => (
-                <option key={String(r.id)} value={String(r.id)} selected={String((cls as any).parent_id || '') === String(r.id)}>
+                <option key={String(r.id)} value={String(r.id)}>
                   {optionTitle(r)}
                 </option>
               ))}
@@ -150,7 +151,7 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
           {links.length ? (
             <ul className="grid gap-1 mb-2">
               {links.map((c: any) => {
-                const isPref = String((cls as any).preferred_classification_id || '') === String(c.id);
+                const isPref = String(cls.preferred_classification_id || '') === String(c.id);
                 return (
                   <li key={String(c.id)} className="flex items-center justify-between text-sm">
                     <div>

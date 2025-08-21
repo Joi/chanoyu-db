@@ -12,7 +12,43 @@ import PriceInput from '@/app/components/PriceInput';
 import SubmitButton from '@/app/components/SubmitButton';
 import PendingProgress from '@/app/components/PendingProgress';
 import SearchSelect from '@/app/components/SearchSelect';
+import type { LocalClass, SelectOption } from '@/lib/types/admin';
 import { z } from 'zod';
+
+// Proper UUID validation schema
+const uuidSchema = z.string().uuid();
+const optionalUuidSchema = z.string().uuid().optional().or(z.literal(''));
+
+// Form validation schemas
+const objectUpdateSchema = z.object({
+  object_token: z.string().min(1),
+  title: z.string().max(255).optional(),
+  title_ja: z.string().max(255).optional(),
+  local_number: z.string().max(50).optional(),
+  summary: z.string().max(2000).optional(),
+  summary_ja: z.string().max(2000).optional(),
+  craftsman: z.string().max(255).optional(),
+  craftsman_ja: z.string().max(255).optional(),
+  event_date: z.string().max(50).optional(),
+  notes: z.string().max(5000).optional(),
+  notes_ja: z.string().max(5000).optional(),
+  url: z.string().url().max(500).optional().or(z.literal('')),
+  tags: z.string().optional(),
+  store: z.string().max(255).optional(),
+  store_ja: z.string().max(255).optional(),
+  location: z.string().max(255).optional(),
+  location_ja: z.string().max(255).optional(),
+  price: z.string().optional(),
+});
+
+const classificationSchema = z.object({
+  object_token: z.string().min(1),
+  scheme: z.string().min(1).max(50),
+  uri: z.string().url().max(500),
+  label: z.string().max(255).optional(),
+  label_ja: z.string().max(255).optional(),
+  role: z.string().max(100),
+});
 
 // Server action to save a classification for the current object token
 async function savePrimaryLocalClassAction(formData: FormData) {
@@ -23,8 +59,8 @@ async function savePrimaryLocalClassAction(formData: FormData) {
   const rawHidden = String(formData.get('local_class_ids') || '');
   const raw = (rawPulldown || rawHidden) as string;
   const first = raw.split(',').map((s) => s.trim()).filter(Boolean)[0] || '';
-  const uuidRe = /^[0-9a-fA-F-]{36}$/;
-  const id: string | null = first ? (uuidRe.test(first) ? first : null) : null;
+  // Use proper UUID validation
+  const id: string | null = first ? (uuidSchema.safeParse(first).success ? first : null) : null;
   const db = supabaseAdmin();
   if (!token) {
     return redirect('/login');
@@ -35,7 +71,7 @@ async function savePrimaryLocalClassAction(formData: FormData) {
     const detail = process.env.NODE_ENV === 'production' ? '' : `&detail=${encodeURIComponent(msg).slice(0,200)}`;
     return redirect(`/admin/${token}?error=local-class${detail}`);
   }
-  if (id && uuidRe.test(id)) {
+  if (id && uuidSchema.safeParse(id).success) {
     const { data: exists, error: existsErr } = await db.from('local_classes').select('id').eq('id', id).maybeSingle();
     if (existsErr || !exists) {
       const msg = existsErr?.message || 'local class not found';
@@ -43,9 +79,19 @@ async function savePrimaryLocalClassAction(formData: FormData) {
       return redirect(`/admin/${token}?error=local-class${detail}`);
     }
   }
-  const { error } = await db.from('objects').update({ primary_local_class_id: id }).eq('id', obj.id);
-  if (error) {
-    const msg = (error as any)?.message || String(error);
+  // Check if primary_local_class_id column exists before updating
+  try {
+    const { error } = await db.from('objects').update({ primary_local_class_id: id }).eq('id', obj.id);
+    if (error) {
+      // Handle column does not exist error specifically
+      if (error.message?.includes('column "primary_local_class_id" of relation "objects" does not exist')) {
+        const detail = process.env.NODE_ENV === 'production' ? '' : `&detail=${encodeURIComponent('Column primary_local_class_id missing. Run migration: alter table objects add column if not exists primary_local_class_id uuid references local_classes(id);').slice(0,200)}`;
+        return redirect(`/admin/${token}?error=local-class${detail}`);
+      }
+      throw error;
+    }
+  } catch (error: any) {
+    const msg = error?.message || String(error);
     const detail = process.env.NODE_ENV === 'production' ? '' : `&detail=${encodeURIComponent(`update failed: ${msg}`).slice(0,200)}`;
     return redirect(`/admin/${token}?error=local-class${detail}`);
   }
@@ -55,16 +101,27 @@ async function savePrimaryLocalClassAction(formData: FormData) {
 
 async function saveClassificationAction(formData: FormData) {
   'use server';
-  const token = String(formData.get('object_token') || '');
-  const scheme = String(formData.get('scheme') || '');
-  const uri = String(formData.get('uri') || '');
-  const label = String(formData.get('label') || '');
-  const label_ja = String(formData.get('label_ja') || '');
-  const role = String(formData.get('role') || 'primary type');
+  
+  // Validate input data with Zod
+  const rawData = {
+    object_token: String(formData.get('object_token') || ''),
+    scheme: String(formData.get('scheme') || ''),
+    uri: String(formData.get('uri') || ''),
+    label: String(formData.get('label') || '') || undefined,
+    label_ja: String(formData.get('label_ja') || '') || undefined,
+    role: String(formData.get('role') || 'primary type'),
+  };
+  
+  const validation = classificationSchema.safeParse(rawData);
+  if (!validation.success) {
+    console.error('[classification] validation error', validation.error.flatten());
+    return redirect(`/admin/${rawData.object_token}?error=classification-validation`);
+  }
+  
+  const { object_token: token, scheme, uri, label, label_ja, role } = validation.data;
   const db = supabaseAdmin();
   try {
     console.log('[classification] start', { token, scheme, uri, role });
-    if (!token || !scheme || !uri) throw new Error('missing token|scheme|uri');
     const { data: obj, error: eObj } = await db.from('objects').select('id').eq('token', token).single();
     if (eObj || !obj) throw eObj || new Error('object not found');
 
