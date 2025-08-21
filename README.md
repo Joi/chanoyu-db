@@ -158,6 +158,7 @@ Create `.env.local` and set the same in Vercel → Project Settings → Environm
     NEXT_PUBLIC_SUPABASE_URL=...
     NEXT_PUBLIC_SUPABASE_ANON_KEY=...
     SUPABASE_SERVICE_ROLE_KEY=...        # server-only
+    AUTH_SECRET=...                      # 32+ chars; e.g., `openssl rand -base64 32`
     AAT_RECONCILE_URL=https://refine.getty.edu/reconcile/aat
 
     # existing envs for Notion/Sheets remain (if ingest runs here)
