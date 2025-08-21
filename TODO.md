@@ -3,27 +3,27 @@
 ## Branch: feature/local-classes
 
 ### Schema (Supabase/Postgres)
-- [ ] Create table `local_classes`
-- [ ] Create sequence `local_class_local_seq`
-- [ ] Create trigger/function `set_local_class_local_number()` → `ITO-C-00001`
-- [ ] Add column `objects.primary_local_class_id`
-- [ ] Create table `local_class_links`
-- [ ] Create table `local_class_hierarchy` (closure)
-- [ ] Triggers to maintain closure on insert/update of `parent_id`
-- [ ] Trigger/constraint to prevent cycles in hierarchy
-- [ ] RLS: public read on `local_classes`, `local_class_links`, `local_class_hierarchy`
-- [ ] Indexes: unique on `token`, case-insensitive unique on `local_number`, parent_id, closure indexes
-- [ ] Views: `local_class_object_counts_direct`, `local_class_object_counts_total`
+- [x] Create table `local_classes`
+- [x] Create sequence `local_class_local_seq`
+- [x] Create trigger/function `set_local_class_local_number()` → `ITO-C-00001`
+- [x] Add column `objects.primary_local_class_id`
+- [x] Create table `local_class_links`
+- [x] Create table `local_class_hierarchy` (closure)
+- [x] Triggers to maintain closure on insert/update of `parent_id`
+- [x] Trigger/constraint to prevent cycles in hierarchy
+- [x] RLS: public read on `local_classes`, `local_class_links`, `local_class_hierarchy`
+- [x] Indexes: unique on `token`, case-insensitive unique on `local_number`, parent_id, closure indexes
+- [x] Views: `local_class_object_counts_direct`, `local_class_object_counts_total`
 
 ### Server (APIs)
-- [ ] New route `/api/search/local-classes` (search by `q`)
+- [x] New route `/api/search/local-classes` (search by `q`)
 - [ ] Admin actions to create/edit Local Classes
 - [ ] Admin actions to add/remove external links; set preferred
 
 ### Admin UI
-- [ ] Replace classification panel on `/admin/[token]` to search Local Classes only
-- [ ] Display counts (direct and optionally total) in search results
-- [ ] Show breadcrumb for selected Local Class on object page
+- [x] Replace classification panel on `/admin/[token]` to search Local Classes only
+- [x] Display counts (direct and optionally total) in search results
+- [x] Show breadcrumb for selected Local Class on object page
 - [ ] Local Classes index page `/admin/local-classes`
 - [ ] Local Class detail page `/admin/local-classes/[token]`
   - [ ] Edit labels/description/status/parent

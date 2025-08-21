@@ -21,6 +21,8 @@ create table if not exists local_classes (
 
 -- Case-insensitive uniqueness for human IDs when present
 create unique index if not exists local_classes_local_number_ci on local_classes (lower(local_number)) where local_number is not null;
+-- Parent index for tree ops
+create index if not exists local_classes_parent_idx on local_classes(parent_id);
 
 -- Auto-generate local_number if missing on insert: ITO-C-00001
 create or replace function set_local_class_local_number() returns trigger as $$
