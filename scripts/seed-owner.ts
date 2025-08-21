@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+// Load base .env then override with .env.local if present
+config();
+config({ path: '.env.local', override: true });
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
