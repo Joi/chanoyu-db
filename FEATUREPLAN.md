@@ -99,4 +99,14 @@
 - Phase 1: Schema, search API, object admin switch to Local Classes, basic Local Classes admin (links + preferred).
 - Phase 2: Backfill, JSON-LD switch, improved tree UI (drag/move), merge/split tools, tests and docs.
 
+### Current status (dev → main PR)
+- Schema and RLS created (idempotent migrations committed)
+- Admin pages:
+  - Index: tree rendering, linkable nodes
+  - Detail: edit labels/description/parent; parent/child attach/detach; external links (AAT/Wikidata) attach existing via pulldown, add new by URI, set preferred
+  - New: create class with parent pulldown and optional attach of existing AAT/Wikidata
+- API: `/api/search/local-classes` with sanitized input
+- Security: Debug endpoints gated to admin in non‑prod
+- Next: JSON‑LD resolution to preferred external; tests; pagination for very large trees
+
 

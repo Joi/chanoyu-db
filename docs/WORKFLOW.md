@@ -72,6 +72,16 @@ Preferred (via PR):
 # open PR dev → main in GitHub UI, merge when green
 # never commit directly to main; prefer PRs for traceability
 ```
+
+### Local Classes rollout notes
+- After merging the Local Classes feature to `dev`, apply the SQL (idempotent) to the main dev Supabase project:
+  - Run the core schema block (tables, sequence, triggers, RLS)
+  - If `objects` exists, run the counts views block
+  - Then: `notify pgrst, 'reload schema'; notify pgrst, 'reload config';`
+- Verify:
+  - Admin → Local Classes: create/edit classes; attach AAT/Wikidata via pulldown; set preferred
+  - Admin → Object: assign “Local Class (Primary)”
+- When stable, open PR `dev → main` and repeat SQL on prod Supabase if needed
 Direct (CLI merge):
 ```bash
 git checkout main
