@@ -14,70 +14,60 @@ This is a Next.js + Supabase application for managing tea ceremony (chanoyu) col
 Tech Stack:
 - Frontend: Next.js 14 (App Router)
 - Database: Supabase (Postgres with RLS)
-- Storage: Supabase Storage
-- Deployment: Vercel (dev branch → preview, main → production)
-- Language: TypeScript (strict mode)
+- TypeScript: strict, no `any`
+- Deployment: Vercel
+- Integrations: Notion / Google Sheets for ingestion
 
-## ALWAYS FOLLOW THESE RULES
-
-1. **Check TASKS.md first** to understand current priorities
-2. **Read CLAUDE.md** for detailed AI collaboration guidelines  
-3. **No 'any' types** - TypeScript must be strictly typed
-4. **Test locally first** with `npm run dev` before suggesting code
-5. **Keep changes small** - one feature/fix at a time
+## GENERAL RULES
+1. Follow patterns in existing code (see `/app`, `/lib`, `/supabase`).
+2. Respect RLS and security boundaries; never propose bypasses.
+3. No `any` types — use strict, explicit typing.
+4. Test locally (`npm run dev`) before suggesting multi-file changes.
+5. Keep changes small and reviewable; one concern per change.
+6. When unsure, consult `CLAUDE.md`, `TASKS.md`, and `docs/ARCHITECTURE.md`.
 
 ## CODE PATTERNS TO FOLLOW
+- Prefer server components for data fetching unless client interactivity is required.
+- Use Supabase client patterns already present in `/lib/supabase`.
+- Keep UI consistent; follow existing Tailwind conventions.
+- For migrations/SQL, keep them idempotent and reference RLS expectations.
+- Write tests where applicable (unit/integration/e2e per `docs/TESTING.md` if present).
 
-### Database Queries
-```typescript
-// Client-side (public data only)
-const { data, error } = await supabase
-  .from('objects')
-  .select('*')
-  .eq('visibility', 'public')
-
-// Server-side (use service role)
-const { data, error } = await supabaseAdmin
-  .from('objects')
-  .select('*')
-```
-
-### File Structure
-- Pages: `/app/[feature]/page.tsx`
-- API Routes: `/app/api/[endpoint]/route.ts`
-- Components: `/app/components/[name].tsx`
-- Database: `/lib/supabase.ts`
-- Types: `/lib/types.ts`
-
-### Common Tasks
-- Before adding new features, check existing patterns in `/app`
-- For database changes, update both schema and TypeScript types
-- For images, use Supabase Storage (automatic HEIC→JPEG conversion)
-
-## DEVELOPMENT WORKFLOW
-
-1. Work on `dev` branch
-2. Test locally: `pnpm dev`
-3. Check types: `pnpm typecheck`
-4. Push to dev: `git push origin dev`
-5. Test on: dev.collection.ito.com
-6. When ready: PR from dev → main
-
-## KEY TABLES
-- `objects` - Tea utensils/items
-- `chakai` - Tea gatherings/events
-- `locations` - Venues
-- `media` - Images
-- `classifications` - Categories (AAT/Wikidata)
+## FILE/DOMAIN MAPPING (GUIDE)
+- `/app` — routes, server/client components
+- `/lib` — shared utils, data access, clients
+- `/supabase` — SQL, policies, seeds
+- `/scripts` — maintenance/ingestion tasks
+- `docs/*` — architecture, workflow, testing
+- Data domains: `objects`, `media`, `classifications` (AAT/Wikidata)
 
 ## WHEN WORKING ON TASKS
-1. Check TASKS.md for the specific task
-2. Find related files using the patterns above
-3. Keep changes focused on the task
-4. Update TASKS.md when complete
+1. Check `TASKS.md` for scope.
+2. Identify related code paths using the mappings above.
+3. Keep the diff focused on the task.
+4. Update `TASKS.md` upon completion when appropriate.
 
 ## IF YOU GET STUCK
-- Review existing code in `/app` for patterns
-- Check `docs/ARCHITECTURE.md` for system overview
-- Test queries in Supabase dashboard first
-- Keep changes minimal and focused
+- Review patterns in `/app` and `/lib`.
+- Re-read `docs/ARCHITECTURE.md`.
+- Test queries in the Supabase dashboard.
+- Prefer minimal, reversible changes.
+
+---
+
+## AI ROLE INSTRUCTIONS (REFERENCE)
+- Role-specific instructions (FeatureDesigner, Debugger, Documenter, Tester, Architect, Designer) are defined in **`cursor.json`** at the repo root.
+- To invoke: say “Act as X” or “You are the X”.
+- `.cursorrules` sets the guardrails; `cursor.json` defines roles. If there’s ever a conflict, `.cursorrules` takes precedence.
+
+## SECURITY & PRIVACY
+- Never paste secrets (Supabase keys, OAuth tokens). Redact `.env*`.
+- Treat PII and private URLs as confidential. Prefer examples or mocks.
+- Follow RLS expectations when proposing SQL or data access code.
+
+## REFERENCES
+- Roles: `cursor.json`
+- Guardrails: `.cursorrules` (this file)
+- Collaboration: `CLAUDE.md`
+- Tasks: `TASKS.md`
+- System design: `docs/ARCHITECTURE.md`
