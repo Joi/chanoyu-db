@@ -11,6 +11,11 @@ export default function HomePage() {
           Thesaurus (AAT) classifications, connecting items with people, tea gatherings (茶会/chakai), and tea room
           locations.
         </p>
+        <p lang="ja">
+          茶道具および関連資料を管理・記録するための総合データベースです。このプラットフォームでは、Wikidata へのリンクや
+          Getty Art &amp; Architecture Thesaurus（AAT）の分類とあわせて茶道具を整理し、道具と人物、茶会（茶会／chakai）、
+          茶室の所在地を相互に関連付けます。
+        </p>
 
         <h3>Features:</h3>
         <ul>
@@ -21,16 +26,15 @@ export default function HomePage() {
         </ul>
 
         <p>
-          <strong>For Members:</strong> <a href="/login">Login here</a> to access private collections and tea
+          <strong>For Members:</strong> <a href="/login">Login</a> to access private collections and tea
           gathering records.
         </p>
-        <p>
-          <strong>Open Source:</strong>{' '}
-          <a href="https://github.com/Joi/chanoyu-db" target="_blank" rel="noopener noreferrer">
-            View our codebase and contribute on GitHub
-          </a>
+        <p lang="ja">
+          <strong>メンバーの方へ：</strong> 非公開のコレクションや茶会記録にアクセスするには <a href="/login">Login</a> をご利用ください。
         </p>
-
+        <p>
+          <strong>Open Source:</strong> <a href="https://github.com/Joi/chanoyu-db" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </p>
         <p className="mt-8 text-[10px] text-gray-500">&quot;Soichi/宗一&quot; is the tea name of Joichi Ito / 伊藤穰一</p>
       </section>
     </main>
