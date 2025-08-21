@@ -1,8 +1,4 @@
 #!/bin/sh
-# Portable Husky hook that won't fail if helper script is missing
-if [ -f "$(dirname "$0")/_/husky.sh" ]; then
-  . "$(dirname "$0")/_/husky.sh"
-fi
 
 # Ensure we run from repo root
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -18,6 +14,6 @@ done
 
 if [ "$run_ci" = "1" ]; then
   echo "Running CI (lint+typecheck+tests+build) locally before push to dev..."
-  npm run ci:local || exit 1
+  pnpm ci:local || exit 1
 fi
 exit 0
