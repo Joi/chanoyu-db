@@ -38,7 +38,7 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
     .from('local_classes')
     .select('id, token, local_number, label_en, label_ja, parent_id')
     .order('local_number')
-    .limit(200);
+    .limit(1000);
   if (q) {
     query = query.or([
       `label_en.ilike.%${q}%`,
@@ -61,6 +61,58 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   for (const r of (directCountsRes?.data as any[]) || []) directCounts.set(String(r.local_class_id), Number(r.object_count || 0));
   const totalCounts = new Map<string, number>();
   for (const r of (totalCountsRes?.data as any[]) || []) totalCounts.set(String(r.local_class_id), Number(r.object_count || 0));
+
+  // Build maps for tree rendering when no search query
+  type RowT = { id: string; token: string | null; local_number: string | null; label_en: string | null; label_ja: string | null; parent_id: string | null };
+  const byId: Record<string, RowT> = Object.create(null);
+  const childrenOf: Record<string, string[]> = Object.create(null);
+  for (const r of list as RowT[]) {
+    byId[r.id] = r;
+    const pid = r.parent_id || '__root__';
+    if (!childrenOf[pid]) childrenOf[pid] = [];
+    childrenOf[pid].push(r.id);
+  }
+  const sortIds = (ids: string[]) => {
+    return ids.sort((a, b) => {
+      const ra = byId[a];
+      const rb = byId[b];
+      const la = String(ra.label_ja || ra.label_en || ra.local_number || '').toLowerCase();
+      const lb = String(rb.label_ja || rb.label_en || rb.local_number || '').toLowerCase();
+      return la.localeCompare(lb);
+    });
+  };
+
+  const renderTree = (ids: string[], depth = 0): any => {
+    if (!ids.length) return null;
+    const ordered = sortIds([...ids]);
+    return (
+      <ul className="grid gap-1" style={{ marginLeft: depth ? 12 : 0 }}>
+        {ordered.map((id) => {
+          const r = byId[id];
+          const title = String(r.label_ja || r.label_en || r.local_number || r.token || r.id);
+          const direct = directCounts.get(id) || 0;
+          const total = totalCounts.get(id) || direct;
+          const kids = childrenOf[id] || [];
+          return (
+            <li key={id} className="card">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">{title}</div>
+                  <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
+                </div>
+                <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
+              </div>
+              {kids.length ? (
+                <div className="mt-1">
+                  {renderTree(kids, depth + 1)}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   return (
     <main className="max-w-5xl mx-auto p-6">
@@ -91,24 +143,30 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
         </form>
       </div>
 
-      <ul className="grid gap-2">
-        {list.map((r: any) => {
-          const title = String(r.label_ja || r.label_en || r.local_number || r.token || r.id);
-          const direct = directCounts.get(String(r.id)) || 0;
-          const total = totalCounts.get(String(r.id)) || direct;
-          return (
-            <li key={r.id} className="card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium">{title}</div>
-                  <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
+      {q ? (
+        <ul className="grid gap-2">
+          {list.map((r: any) => {
+            const title = String(r.label_ja || r.label_en || r.local_number || r.token || r.id);
+            const direct = directCounts.get(String(r.id)) || 0;
+            const total = totalCounts.get(String(r.id)) || direct;
+            return (
+              <li key={r.id} className="card">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium">{title}</div>
+                    <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
+                  </div>
+                  <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                 </div>
-                <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div className="grid gap-2">
+          {renderTree(sortIds(childrenOf['__root__'] || []))}
+        </div>
+      )}
     </main>
   );
 }
