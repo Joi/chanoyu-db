@@ -18,26 +18,39 @@ import { z } from 'zod';
 async function savePrimaryLocalClassAction(formData: FormData) {
   'use server';
   const token = String(formData.get('object_token') || '');
-  const raw = String(formData.get('local_class_ids') || '');
-  const id = raw.split(',').map((s) => s.trim()).filter(Boolean)[0] || null;
+  // Accept either a single-select pulldown (local_class_id) or a comma-joined hidden input (local_class_ids)
+  const rawPulldown = String(formData.get('local_class_id') || '');
+  const rawHidden = String(formData.get('local_class_ids') || '');
+  const raw = (rawPulldown || rawHidden) as string;
+  const first = raw.split(',').map((s) => s.trim()).filter(Boolean)[0] || '';
+  const uuidRe = /^[0-9a-fA-F-]{36}$/;
+  const id: string | null = first ? (uuidRe.test(first) ? first : null) : null;
   const db = supabaseAdmin();
-  try {
-    if (!token) throw new Error('missing token');
-    const { data: obj } = await db.from('objects').select('id').eq('token', token).single();
-    if (!obj) throw new Error('object not found');
-    // Validate id exists if provided
-    if (id) {
-      const { data: exists } = await db.from('local_classes').select('id').eq('id', id).maybeSingle();
-      if (!exists) throw new Error('local class not found');
-    }
-    const { error } = await db.from('objects').update({ primary_local_class_id: id }).eq('id', obj.id);
-    if (error) throw error;
-    revalidatePath(`/admin/${token}`);
-    redirect(`/admin/${token}?saved=local-class`);
-  } catch (err: any) {
-    console.error('[local-class] error', err?.message || err);
-    redirect(`/admin/${token}?error=local-class`);
+  if (!token) {
+    return redirect('/login');
   }
+  const { data: obj, error: objErr } = await db.from('objects').select('id').eq('token', token).single();
+  if (objErr || !obj) {
+    const msg = objErr?.message || 'object not found';
+    const detail = process.env.NODE_ENV === 'production' ? '' : `&detail=${encodeURIComponent(msg).slice(0,200)}`;
+    return redirect(`/admin/${token}?error=local-class${detail}`);
+  }
+  if (id && uuidRe.test(id)) {
+    const { data: exists, error: existsErr } = await db.from('local_classes').select('id').eq('id', id).maybeSingle();
+    if (existsErr || !exists) {
+      const msg = existsErr?.message || 'local class not found';
+      const detail = process.env.NODE_ENV === 'production' ? '' : `&detail=${encodeURIComponent(msg).slice(0,200)}`;
+      return redirect(`/admin/${token}?error=local-class${detail}`);
+    }
+  }
+  const { error } = await db.from('objects').update({ primary_local_class_id: id }).eq('id', obj.id);
+  if (error) {
+    const msg = (error as any)?.message || String(error);
+    const detail = process.env.NODE_ENV === 'production' ? '' : `&detail=${encodeURIComponent(`update failed: ${msg}`).slice(0,200)}`;
+    return redirect(`/admin/${token}?error=local-class${detail}`);
+  }
+  revalidatePath(`/admin/${token}`);
+  redirect(`/admin/${token}?saved=local-class`);
 }
 
 async function saveClassificationAction(formData: FormData) {
@@ -412,6 +425,12 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   const object = objectCore?.data || null;
   const licenses = (licensesRes as any)?.data || [];
   if (!isAdmin) return redirect('/login');
+  // Load options for Local Class pulldown
+  const { data: allLocalClasses } = await db
+    .from('local_classes')
+    .select('id, label_en, label_ja, local_number')
+    .order('local_number')
+    .limit(1000);
   let media: any[] = [];
   if (object?.id) {
     const [direct, links] = await Promise.all([
@@ -445,10 +464,13 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   if (!object) return notFound();
   const saved = typeof searchParams?.saved === 'string' ? searchParams!.saved : undefined;
   const error = typeof searchParams?.error === 'string' ? searchParams!.error : undefined;
+  const detail = typeof searchParams?.detail === 'string' ? searchParams!.detail : undefined;
 
   // Local Class breadcrumb and initial selection
   let localClassInitial: { value: string; label: string }[] = [];
   let localClassBreadcrumb: string[] = [];
+  let localClassTitle: string = '';
+  let localClassExternal: any[] = [];
   if (object?.primary_local_class_id) {
     const plcId = object.primary_local_class_id as string;
     const [{ data: lc }, { data: chain }] = await Promise.all([
@@ -476,15 +498,51 @@ export default async function AdminObjectPage({ params, searchParams }: { params
       .filter(Boolean);
     const title = lc ? String(lc.label_ja || lc.label_en || lc.local_number || lc.id) : '';
     localClassInitial = lc ? [{ value: plcId, label: title }] : [];
+    localClassTitle = title;
+    // External links (AAT / Wikidata) for the selected Local Class
+    const { data: extRows } = await db
+      .from('local_class_links')
+      .select('classification:classifications(id, scheme, uri, label, label_ja)')
+      .eq('local_class_id', plcId);
+    localClassExternal = (extRows || []).map((r: any) => r.classification).filter(Boolean);
     localClassBreadcrumb = ordered.map((a: any) => String(a.label_ja || a.label_en || a.local_number || a.id));
   }
 
   return (
     <main className="max-w-4xl mx-auto p-6">
       {saved ? <div className="card" style={{ background: '#f0fff4', borderColor: '#bbf7d0', marginBottom: 12 }}>Saved {saved}</div> : null}
-      {error ? <div className="card" style={{ background: '#fff1f2', borderColor: '#fecdd3', marginBottom: 12 }}>Error: {error}</div> : null}
+      {error ? (
+        <div className="card" style={{ background: '#fff1f2', borderColor: '#fecdd3', marginBottom: 12 }}>
+          <div>Error: {error}</div>
+          {detail ? <div className="text-xs text-gray-700 mt-1">{detail}</div> : null}
+        </div>
+      ) : null}
       <h1 className="text-xl font-semibold mb-2">Admin: {object.title}</h1>
       {object.title_ja ? <p className="text-sm" lang="ja">{object.title_ja}</p> : null}
+      {/* Compact classification summary at top */}
+      <section className="card mb-3">
+        <h2 className="text-sm font-semibold mb-1">Classification</h2>
+        <div className="grid gap-2">
+          {localClassTitle ? (
+            <div className="text-sm">Current: <a className="underline" href={`/admin/local-classes/${String(object.primary_local_class_id)}`}>{localClassTitle}</a></div>
+          ) : (
+            <div className="text-xs text-gray-600">No local class selected</div>
+          )}
+          {localClassBreadcrumb.length ? (
+            <div className="text-xs text-gray-600">{localClassBreadcrumb.join(' / ')}</div>
+          ) : null}
+          {localClassExternal.length ? (
+            <div className="flex flex-wrap gap-2 text-xs">
+              {localClassExternal.map((c: any) => (
+                <a key={String(c.id)} href={c.uri} target="_blank" rel="noreferrer" className="underline">
+                  {c.scheme}: {String(c.label_ja || c.label || c.uri)}
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </section>
+
       <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
         <section>
           <h2 className="text-lg font-semibold mb-2">Images</h2>
@@ -632,25 +690,6 @@ export default async function AdminObjectPage({ params, searchParams }: { params
 
         <section>
           <h3 className="text-md font-semibold mt-4">Classifications</h3>
-          <div className="card mt-2">
-            <h4 className="text-sm font-semibold mb-2">Local Class (Primary)</h4>
-            {localClassBreadcrumb.length ? (
-              <div className="text-xs text-gray-600 mb-2">{localClassBreadcrumb.join(' / ')}</div>
-            ) : null}
-            <form action={savePrimaryLocalClassAction} className="grid gap-2">
-              <input type="hidden" name="object_token" value={token} />
-              <SearchSelect
-                name="local_class_ids"
-                label="Select Local Class"
-                searchPath="/api/search/local-classes"
-                valueKey="id"
-                labelFields={["display","label_ja","label_en","local_number"]}
-                initial={localClassInitial}
-                placeholder="Search local classes..."
-              />
-              <SubmitButton label="Save Local Class" pendingLabel="Saving..." />
-            </form>
-          </div>
 
           <ul className="space-y-2">
             {(object.object_classifications ?? []).map((oc: any, i: number) => (
@@ -710,6 +749,22 @@ export default async function AdminObjectPage({ params, searchParams }: { params
           ) : null}
         </section>
       </div>
+      <section className="card mt-4">
+        <h2 className="text-sm font-semibold mb-2">Change Local Class</h2>
+        <form action={savePrimaryLocalClassAction} className="grid gap-2">
+          <input type="hidden" name="object_token" value={token} />
+          <label className="label">Select Local Class</label>
+          <select name="local_class_id" className="input" defaultValue={String(object.primary_local_class_id || '')}>
+            <option value="">(none)</option>
+            {(allLocalClasses || []).map((c: any) => (
+              <option key={String(c.id)} value={String(c.id)}>
+                {String(c.label_ja || c.label_en || c.local_number || c.id)}
+              </option>
+            ))}
+          </select>
+          <SubmitButton small label="Save Local Class" pendingLabel="Saving..." />
+        </form>
+      </section>
     </main>
   );
 }
