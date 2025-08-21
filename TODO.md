@@ -50,9 +50,9 @@
 - [ ] JSON-LD tests for preferred external resolution
 
 ### Documentation
-- [ ] Update `README.md` overview section
-- [ ] Add developer notes to `docs/ARCHITECTURE.md`
-- [ ] Add admin usage notes to `docs/WORKFLOW.md`
+- [x] Update `README.md` overview section
+- [x] Add developer notes to `docs/ARCHITECTURE.md`
+- [x] Add admin usage notes to `docs/WORKFLOW.md`
 
 ### Later (Phase 2+)
 - [ ] Tree UI improvements (drag-to-move, reorder)

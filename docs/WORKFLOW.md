@@ -89,8 +89,8 @@ Preferred (via PR):
   - If `objects` exists, run the counts views block
   - Then: `notify pgrst, 'reload schema'; notify pgrst, 'reload config';`
 - Verify:
-  - Admin → Local Classes: create/edit classes; attach AAT/Wikidata via pulldown; set preferred
-  - Admin → Object: assign “Local Class (Primary)”
+  - Admin → Local Classes: create/edit classes; attach AAT/Wikidata via pulldown; set preferred; bottom shows items in class
+  - Admin → Object: top shows current Local Class (linked), breadcrumb, and external links; change Local Class via pulldown at bottom
 - When stable, open PR `dev → main` and repeat SQL on prod Supabase if needed
 Direct (CLI merge):
 

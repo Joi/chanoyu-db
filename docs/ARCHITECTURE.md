@@ -25,7 +25,10 @@ Main tables:
 - `chakai` - Tea gatherings
 - `locations` - Venues
 - `media` - Images and documents
-- `classifications` - Categories (AAT/Wikidata)
+- `classifications` - Authority concepts (AAT/Wikidata)
+- `local_classes` - Local-first category tree with optional links to authorities
+- `local_class_links` - Join between `local_classes` and `classifications`
+- `local_class_hierarchy` - Closure table for tree/breadcrumb
 
 ### 3. Storage (Supabase Storage)
 - Public bucket: `media`
@@ -38,7 +41,8 @@ Main tables:
 1. User visits `/id/abc123`
 2. Next.js fetches from Supabase
 3. Checks visibility permissions
-4. Renders page with images
+4. Resolves Local Class for admin views; authority labels derived from preferred link when present
+5. Renders page with images
 
 #### Adding via Notion:
 1. Run `scripts/ingest-notion.ts`
