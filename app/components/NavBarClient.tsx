@@ -46,6 +46,8 @@ export default function NavBarClient({ isLoggedIn }: { isLoggedIn: boolean }) {
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications">Classifications</a>
+            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes">Local Classes</a>
+            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes/new">Create Local Class</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-rooms">Tea Rooms</a>
             <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
