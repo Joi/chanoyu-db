@@ -499,7 +499,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
     const linkIds = (links.data || []).map((r: any) => r.media_id).filter((id: string) => !ids.has(id));
     let linked: any[] = [];
     if (linkIds.length) {
-      const { data: lm } = await db.from('media').select('id, token, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id').in('id', linkIds);
+      const { data: lm } = await db.from('media').select('id, token, kind, uri, sort_order, copyright_owner, rights_note, license_id, object_id, local_number').in('id', linkIds);
       linked = lm || [];
     }
     media = ([...(direct.data || []), ...linked]).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
