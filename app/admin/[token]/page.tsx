@@ -15,6 +15,31 @@ import SearchSelect from '@/app/components/SearchSelect';
 import { z } from 'zod';
 
 // Server action to save a classification for the current object token
+async function savePrimaryLocalClassAction(formData: FormData) {
+  'use server';
+  const token = String(formData.get('object_token') || '');
+  const raw = String(formData.get('local_class_ids') || '');
+  const id = raw.split(',').map((s) => s.trim()).filter(Boolean)[0] || null;
+  const db = supabaseAdmin();
+  try {
+    if (!token) throw new Error('missing token');
+    const { data: obj } = await db.from('objects').select('id').eq('token', token).single();
+    if (!obj) throw new Error('object not found');
+    // Validate id exists if provided
+    if (id) {
+      const { data: exists } = await db.from('local_classes').select('id').eq('id', id).maybeSingle();
+      if (!exists) throw new Error('local class not found');
+    }
+    const { error } = await db.from('objects').update({ primary_local_class_id: id }).eq('id', obj.id);
+    if (error) throw error;
+    revalidatePath(`/admin/${token}`);
+    redirect(`/admin/${token}?saved=local-class`);
+  } catch (err: any) {
+    console.error('[local-class] error', err?.message || err);
+    redirect(`/admin/${token}?error=local-class`);
+  }
+}
+
 async function saveClassificationAction(formData: FormData) {
   'use server';
   const token = String(formData.get('object_token') || '');
@@ -375,7 +400,8 @@ export default async function AdminObjectPage({ params, searchParams }: { params
         `id, token, local_number, title, title_ja, summary, summary_ja, price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility,
          object_classifications:object_classifications(role,
            classification:classifications(id, scheme, uri, label, label_ja)
-         )`
+         ),
+         primary_local_class_id`
       )
       .eq('token', token)
       .single(),
@@ -419,6 +445,39 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   if (!object) return notFound();
   const saved = typeof searchParams?.saved === 'string' ? searchParams!.saved : undefined;
   const error = typeof searchParams?.error === 'string' ? searchParams!.error : undefined;
+
+  // Local Class breadcrumb and initial selection
+  let localClassInitial: { value: string; label: string }[] = [];
+  let localClassBreadcrumb: string[] = [];
+  if (object?.primary_local_class_id) {
+    const plcId = object.primary_local_class_id as string;
+    const [{ data: lc }, { data: chain }] = await Promise.all([
+      db.from('local_classes').select('id, token, local_number, label_en, label_ja').eq('id', plcId).maybeSingle(),
+      db
+        .from('local_class_hierarchy')
+        .select('ancestor_id, descendant_id, depth')
+        .eq('descendant_id', plcId),
+    ]);
+    const ancestorIds = Array.from(new Set(((chain || []) as any[]).map((r: any) => String(r.ancestor_id)).filter((aid) => aid !== plcId)));
+    let ancestors: any[] = [];
+    if (ancestorIds.length) {
+      const { data: rows } = await db
+        .from('local_classes')
+        .select('id, local_number, label_en, label_ja')
+        .in('id', ancestorIds);
+      ancestors = rows || [];
+    }
+    const byId: Record<string, any> = Object.create(null);
+    for (const a of ancestors) byId[String(a.id)] = a;
+    const ordered = ((chain || []) as any[])
+      .filter((r: any) => String(r.ancestor_id) !== plcId)
+      .sort((a: any, b: any) => (a.depth - b.depth))
+      .map((r: any) => byId[String(r.ancestor_id)])
+      .filter(Boolean);
+    const title = lc ? String(lc.label_ja || lc.label_en || lc.local_number || lc.id) : '';
+    localClassInitial = lc ? [{ value: plcId, label: title }] : [];
+    localClassBreadcrumb = ordered.map((a: any) => String(a.label_ja || a.label_en || a.local_number || a.id));
+  }
 
   return (
     <main className="max-w-4xl mx-auto p-6">
@@ -573,6 +632,26 @@ export default async function AdminObjectPage({ params, searchParams }: { params
 
         <section>
           <h3 className="text-md font-semibold mt-4">Classifications</h3>
+          <div className="card mt-2">
+            <h4 className="text-sm font-semibold mb-2">Local Class (Primary)</h4>
+            {localClassBreadcrumb.length ? (
+              <div className="text-xs text-gray-600 mb-2">{localClassBreadcrumb.join(' / ')}</div>
+            ) : null}
+            <form action={savePrimaryLocalClassAction} className="grid gap-2">
+              <input type="hidden" name="object_token" value={token} />
+              <SearchSelect
+                name="local_class_ids"
+                label="Select Local Class"
+                searchPath="/api/search/local-classes"
+                valueKey="id"
+                labelFields={["display","label_ja","label_en","local_number"]}
+                initial={localClassInitial}
+                placeholder="Search local classes..."
+              />
+              <SubmitButton label="Save Local Class" pendingLabel="Saving..." />
+            </form>
+          </div>
+
           <ul className="space-y-2">
             {(object.object_classifications ?? []).map((oc: any, i: number) => (
               <li key={i} className="card">

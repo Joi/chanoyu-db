@@ -24,6 +24,7 @@ export default async function AdminHome() {
         <li><Link href="/admin/items" className="underline">Items</Link></li>
         <li><Link href="/admin/media" className="underline">Media</Link></li>
         <li><Link href="/admin/classifications" className="underline">Classifications</Link></li>
+        <li><Link href="/admin/local-classes" className="underline">Local Classes</Link></li>
         <li><Link href="/admin/tea-schools" className="underline">Tea Schools</Link></li>
         <li><Link href="/admin/chakai" className="underline">Chakai</Link></li>
         <li><Link href="/admin/tea-rooms" className="underline">Tea Rooms</Link></li>
