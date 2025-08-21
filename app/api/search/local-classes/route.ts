@@ -11,7 +11,14 @@ type Row = {
 };
 
 export async function GET(req: NextRequest) {
-  const q = (req.nextUrl.searchParams.get('q') || '').trim();
+  const raw = (req.nextUrl.searchParams.get('q') || '').trim();
+  // Sanitize search term to mitigate PostgREST OR param injection and wildcard abuse
+  const trimmed = raw.slice(0, 64);
+  // Allow letters/numbers/space/basic punctuation; drop commas/parentheses which have meaning in PostgREST OR syntax
+  const safe = trimmed.replace(/[\t\n\r]/g, ' ').replace(/[(),"']/g, '');
+  // Escape LIKE special chars
+  const esc = safe.replace(/[\\%_]/g, (m) => `\\${m}`);
+  const q = esc;
   if (!q) return NextResponse.json([]);
   const db = supabaseAdmin();
 
@@ -19,15 +26,9 @@ export async function GET(req: NextRequest) {
   const { data: classes } = await db
     .from('local_classes')
     .select('id, token, local_number, label_en, label_ja, parent_id')
-    .or(
-      [
-        `label_en.ilike.%${q}%`,
-        `label_ja.ilike.%${q}%`,
-        `local_number.ilike.%${q}%`,
-      ].join(',')
-    )
+    .or(`label_en.ilike.%${q}%,label_ja.ilike.%${q}%,local_number.ilike.%${q}%`)
     .order('local_number', { ascending: true })
-    .limit(30);
+    .limit(50);
 
   const list: Row[] = Array.isArray(classes) ? (classes as any) : [];
   if (!list.length) return NextResponse.json([]);

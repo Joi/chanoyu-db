@@ -17,6 +17,7 @@
 
 ### Server (APIs)
 - [x] New route `/api/search/local-classes` (search by `q`)
+- [x] Sanitize search input to mitigate injection and wildcard abuse
 - [ ] Admin actions to create/edit Local Classes
 - [ ] Admin actions to add/remove external links; set preferred
 
@@ -42,6 +43,7 @@
 ### Testing
 - [ ] Unit tests for closure maintenance and cycle prevention
 - [ ] API tests for `/api/search/local-classes`
+- [ ] Security test: search input sanitization
 - [ ] Integration tests for object admin flow
 - [ ] JSON-LD tests for preferred external resolution
 
