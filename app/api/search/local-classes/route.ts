@@ -112,7 +112,10 @@ export async function GET(req: NextRequest) {
 
   // Prefer those with more usage
   results.sort((a, b) => (b.object_count_total - a.object_count_total) || (a.display.localeCompare(b.display)));
-  return NextResponse.json(results);
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, max-age=30, s-maxage=30');
+  headers.set('CDN-Cache-Control', 'public, max-age=30, s-maxage=30');
+  return NextResponse.json(results, { headers });
 }
 
 

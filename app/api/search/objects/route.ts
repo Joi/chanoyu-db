@@ -17,7 +17,10 @@ export async function GET(req: NextRequest) {
     console.error('[search/objects] error', { message: error.message, details: error.details });
     return NextResponse.json({ code: 'SEARCH_OBJECTS_FAILED', message: 'Failed to search objects' }, { status: 500 });
   }
-  return NextResponse.json(data || []);
+  const headers = new Headers();
+  headers.set('Cache-Control', 'public, max-age=30, s-maxage=30');
+  headers.set('CDN-Cache-Control', 'public, max-age=30, s-maxage=30');
+  return NextResponse.json(data || [], { headers });
 }
 
 

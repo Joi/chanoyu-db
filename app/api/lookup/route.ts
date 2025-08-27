@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Cache this route handler's responses for a long time (1 year)
+export const revalidate = 60 * 60 * 24 * 365;
+
 // Simple in-memory cache to speed up repeated lookups during a session
 const memoryCache = new Map<string, { expires: number; data: any }>();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+// Keep process memory cache hot for a day (CDN/browser caches will hold longer)
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 1 day
+
+function jsonWithLongCache(body: any, init?: ResponseInit) {
+  const headers = new Headers(init?.headers);
+  // One year cache; immutable since AAT/Wikidata labels change rarely
+  headers.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+  headers.set('CDN-Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+  return NextResponse.json(body, { ...init, headers });
+}
 
 type Normalized = {
   scheme: 'aat' | 'wikidata';
@@ -17,7 +29,13 @@ async function fetchJSON(url: string, timeoutMs = 4000) {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
-    const r = await fetch(url, { cache: 'no-store', headers: { accept: 'application/json' }, signal: ctrl.signal });
+    const r = await fetch(url, {
+      // Allow Next.js to cache these upstream requests by URL for a long time
+      cache: 'force-cache',
+      next: { revalidate: 60 * 60 * 24 * 365 },
+      headers: { accept: 'application/json' },
+      signal: ctrl.signal,
+    });
     clearTimeout(t);
     if (!r.ok) return null;
     return (await r.json()) as any;
@@ -78,11 +96,11 @@ function curatedFallbacks(q: string): { id: string; uri: string; label_en?: stri
 export async function GET(req: NextRequest) {
   const qRaw = (req.nextUrl.searchParams.get('q') || '').trim();
   const q = qRaw;
-  if (!q) return NextResponse.json([]);
+  if (!q) return jsonWithLongCache([]);
 
   const cached = memoryCache.get(q);
   if (cached && cached.expires > Date.now()) {
-    return NextResponse.json(cached.data);
+    return jsonWithLongCache(cached.data);
   }
 
   const urlMatch = q.match(/vocab\.getty\.edu\/aat\/(\d+)/i) as RegExpMatchArray | null;
@@ -98,7 +116,7 @@ export async function GET(req: NextRequest) {
       label_ja = labels.ja || label_en;
     }
     const one: Normalized = { scheme: 'aat', uri, id: aatId, label_en, label_ja };
-    return NextResponse.json([one]);
+    return jsonWithLongCache([one]);
   }
 
   // Use the official Getty AAT reconciliation endpoint. The "refine.getty.edu" host
@@ -181,5 +199,5 @@ export async function GET(req: NextRequest) {
 
   const result = [...aatMerged, ...wikidata];
   memoryCache.set(q, { expires: Date.now() + CACHE_TTL_MS, data: result });
-  return NextResponse.json(result);
+  return jsonWithLongCache(result);
 }

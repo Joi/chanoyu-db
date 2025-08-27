@@ -8,6 +8,8 @@ import { requireAdmin, requireOwner } from '@/lib/auth';
 
 type Props = { params: { token: string } };
 
+export const revalidate = 60 * 60 * 6; // 6 hours
+
 export default async function ObjectPage({ params }: Props) {
   const { token } = params;
 

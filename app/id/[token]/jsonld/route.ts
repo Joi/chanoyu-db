@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
 
+export const revalidate = 60 * 60 * 24 * 365;
+
 export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
   const db = supabaseAdmin();
   const { data, error } = await db
@@ -28,5 +30,8 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
   const media = (data.media ?? []);
   const classifications = (data.object_classifications ?? []).map((oc: any) => oc.classification).filter(Boolean);
   const jsonld = buildLinkedArtJSONLD(data, media, classifications, baseId);
-  return NextResponse.json(jsonld, { headers: { 'content-type': 'application/ld+json' } });
+  const headers = new Headers({ 'content-type': 'application/ld+json' });
+  headers.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+  headers.set('CDN-Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');
+  return NextResponse.json(jsonld, { headers });
 }

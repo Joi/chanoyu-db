@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
-import GoogleMapSearchPicker from '@/app/components/GoogleMapSearchPicker';
+import dynamic from 'next/dynamic';
 import { mintToken } from '@/lib/id';
 
 async function createTeaRoom(formData: FormData) {
@@ -61,6 +61,10 @@ async function createTeaRoom(formData: FormData) {
 export default async function NewTeaRoomPage() {
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
+  const GoogleMapSearchPicker = dynamic(() => import('@/app/components/GoogleMapSearchPicker'), {
+    ssr: false,
+    loading: () => <div className="border rounded h-40 bg-gray-50" />,
+  });
   return (
     <main className="max-w-xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Add Tea Room</h1>

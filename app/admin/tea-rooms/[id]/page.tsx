@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import Image from 'next/image';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
-import GoogleMapSearchPicker from '@/app/components/GoogleMapSearchPicker';
+import dynamic from 'next/dynamic';
 import { mintToken } from '@/lib/id';
 import SubmitButton from '@/app/components/SubmitButton';
 import PendingProgress from '@/app/components/PendingProgress';
@@ -191,6 +191,10 @@ async function deleteTeaRoom(formData: FormData) {
 export default async function EditTeaRoomPage({ params }: { params: { id: string } }) {
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
+  const GoogleMapSearchPicker = dynamic(() => import('@/app/components/GoogleMapSearchPicker'), {
+    ssr: false,
+    loading: () => <div className="border rounded h-40 bg-gray-50" />,
+  });
   const db = supabaseAdmin();
   const { data: loc } = await db
     .from('locations')
