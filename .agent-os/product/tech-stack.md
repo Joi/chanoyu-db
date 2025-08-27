@@ -13,3 +13,5 @@
 - asset_hosting: Supabase Storage (public bucket: media)
 - deployment_solution: Vercel (Preview on dev, Production on main)
 - code_repository_url: https://github.com/Joi/chanoyu-db
+- node_package_manager: pnpm
+- python_version_control: venv
