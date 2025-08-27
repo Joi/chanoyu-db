@@ -15,3 +15,13 @@
 - code_repository_url: https://github.com/Joi/chanoyu-db
 - node_package_manager: pnpm
 - python_version_control: venv
+- ts_test_runner: Vitest (jsdom)
+- ts_test_libs: @testing-library/react, @testing-library/dom
+- ts_test_paths: tests/*.test.ts, tests/*.test.tsx, app/**/[name].test.tsx
+- python_test_runner: pytest
+- python_test_paths: tests/test_*.py (configured via pytest.ini)
+- ci_cd_provider: GitHub Actions
+- ci_workflows: .github/workflows/ci.yml (main), .github/workflows/vercel-preview.yml (dev)
+- preview_builds: Vercel CLI build on push to dev (vercel-preview.yml)
+- production_deploy: Vercel Git integration on pushes to main (auto-deploy)
+- github_cli: gh
