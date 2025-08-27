@@ -152,10 +152,18 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
             <ul className="grid gap-1 mb-2">
               {links.map((c: any) => {
                 const isPref = String(cls.preferred_classification_id || '') === String(c.id);
+                const labelJa = String(c.label_ja || '').trim();
+                const labelEn = String(c.label || '').trim();
+                const hasJa = !!labelJa;
+                const hasEn = !!labelEn;
+                const showBoth = hasJa && hasEn && labelJa !== labelEn;
                 return (
                   <li key={String(c.id)} className="flex items-center justify-between text-sm">
                     <div>
-                      <div className="font-medium">{String(c.label_ja || c.label || c.uri)}</div>
+                      <div className="font-medium">{hasJa ? labelJa : (hasEn ? labelEn : String(c.uri))}</div>
+                      {showBoth ? (
+                        <div className="text-xs text-gray-600">{labelEn}</div>
+                      ) : null}
                       <div className="text-xs text-gray-600">{c.scheme} · <a className="underline" href={c.uri} target="_blank" rel="noreferrer">{c.uri}</a></div>
                     </div>
                     <div className="flex items-center gap-2">

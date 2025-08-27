@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { naan: string
     .from('objects')
     .select(
       `
-      id, token, local_number, title, title_ja, summary, summary_ja, visibility,
+      id, token, local_number, title, title_ja, visibility,
       media ( id, kind, uri, sort_order ),
       object_classifications (
         role,

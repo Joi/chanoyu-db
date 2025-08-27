@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     .from('objects')
     .select(
       `
-      id, token, local_number, title, title_ja, summary, summary_ja, visibility,
+      id, token, local_number, title, title_ja, visibility,
       media ( id, kind, uri, sort_order ),
       object_classifications (
         role,

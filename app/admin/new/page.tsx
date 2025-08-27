@@ -8,8 +8,6 @@ async function createObject(formData: FormData): Promise<void> {
   const title = String(formData.get('title') || '').trim();
   const title_ja = String(formData.get('title_ja') || '').trim() || null;
   const local_number = String(formData.get('local_number') || '').trim() || null;
-  const summary = String(formData.get('summary') || '').trim() || null;
-  const summary_ja = String(formData.get('summary_ja') || '').trim() || null;
 
   if (!title) return;
 
@@ -20,8 +18,6 @@ async function createObject(formData: FormData): Promise<void> {
     title,
     title_ja,
     local_number,
-    summary,
-    summary_ja,
     visibility: 'public',
   });
   if (error) return;
@@ -46,14 +42,7 @@ export default function NewObjectPage() {
           <label className="block text-sm">Local Number</label>
           <input name="local_number" className="border rounded p-2 w-full" />
         </div>
-        <div>
-          <label className="block text-sm">Summary (EN)</label>
-          <textarea name="summary" className="border rounded p-2 w-full" rows={3} />
-        </div>
-        <div>
-          <label className="block text-sm">Summary (JA)</label>
-          <textarea name="summary_ja" className="border rounded p-2 w-full" rows={3} />
-        </div>
+        
         <p className="text-xs text-gray-600">After saving, use <a className="underline" href="/lookup">Lookup</a> to find AAT/Wikidata and attach in DB (next step).</p>
         <button className="bg-black text-white px-4 py-2 rounded" type="submit">Create</button>
       </form>

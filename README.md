@@ -100,7 +100,7 @@ For new Chakai/Locations tables and generators, see the migration snippet in the
 
 - JSON-LD (Linked Art flavor): every object page embeds machine data and serves it via content negotiation  
 - AAT & Wikidata: stored per object; AAT URIs emitted first, QIDs included for extra connectivity  
-- Bilingual fields: `title_ja`, `summary_ja` for Japanese rendering and labels
+- Bilingual fields: `title_ja`, `notes_ja` for Japanese rendering and labels
 
 Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
 
@@ -115,10 +115,6 @@ Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
       "classified_as": [
         { "type": "Type", "id": "http://vocab.getty.edu/aat/300193015", "_label": "tea bowls" },
         { "type": "Type", "id": "https://www.wikidata.org/entity/Q798625", "_label": "chawan" }
-      ],
-      "referred_to_by": [
-        { "type": "LinguisticObject", "content": "…EN summary…" },
-        { "type": "LinguisticObject", "content": "…JA summary…", "language": { "id": "ja" } }
       ]
     }
 
@@ -126,7 +122,7 @@ Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
 
 ## API & routes
 
-- Human page — `GET /id/{token}` → HTML page (title, images, summaries, identifiers)
+- Human page — `GET /id/{token}` → HTML page (title, images, notes, identifiers)
 - Machine data — `GET /id/{token}` with `Accept: application/ld+json`, or `GET /id/{token}.jsonld` → JSON-LD
 - Lookup — `GET /api/lookup?q=…` → normalized list of AAT and Wikidata hits (EN/JA labels where available)
  - Search — `GET /api/search/accounts|objects|locations?q=…` → small result sets for admin selectors

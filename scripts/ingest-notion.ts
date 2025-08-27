@@ -343,18 +343,6 @@ async function run() {
     if (!local_number) local_number = propText(getProp(props, ['Local Number', 'Local number', '番号', 'No.', 'ID']) || {});
     const summaryEnExplicit = propText(props[SUMMARY_EN_PROP]);
     const summaryJaExplicit = propText(props[SUMMARY_JA_PROP]);
-    let summary = '';
-    let summary_ja = '';
-    if (summaryEnExplicit || summaryJaExplicit) {
-      summary = summaryEnExplicit;
-      summary_ja = summaryJaExplicit;
-    } else {
-      const genericSummary = propText(props['Summary'] || props['Description'] || props['Notes']);
-      if (genericSummary) {
-        const lang = guessLanguage(genericSummary);
-        if (lang === 'ja') summary_ja = genericSummary; else summary = genericSummary;
-      }
-    }
     const craftsmanRaw = propText(getProp(props, ['Craftsman', 'Maker', 'Artist', '作者', '作家']) || {});
     let craftsman: string | null = null;
     let craftsman_ja: string | null = null;
@@ -371,6 +359,9 @@ async function run() {
     const notesRaw = propText(getProp(props, ['Notes', 'Note', '備考']) || {});
     let notes: string | null = null, notes_ja: string | null = null;
     if (notesRaw) { const l = guessLanguage(notesRaw); if (l === 'ja') notes_ja = notesRaw; else notes = notesRaw; }
+    // Map explicit Notion Summary fields into notes only when notes are empty
+    if (!notes && summaryEnExplicit) notes = summaryEnExplicit;
+    if (!notes_ja && summaryJaExplicit) notes_ja = summaryJaExplicit;
     const url = propText(getProp(props, ['URL', 'Url']) || {});
     const tagsCsv = propText(getProp(props, ['Tags', 'タグ']) || {});
     const tags = tagsCsv ? tagsCsv.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
@@ -426,8 +417,6 @@ async function run() {
       if (local_number) upsert.local_number = local_number;
       // Resolve title last so it can fall back to Collection ID if needed
       upsert.title = title || local_number || '(untitled)';
-      if (summary) upsert.summary = summary;
-      if (summary_ja) upsert.summary_ja = summary_ja;
       if (craftsman) upsert.craftsman = craftsman;
       if (craftsman_ja) upsert.craftsman_ja = craftsman_ja;
       if (store) upsert.store = store;

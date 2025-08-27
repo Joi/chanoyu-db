@@ -60,12 +60,12 @@ localhost:3000 → local Next.js → Supabase Cloud
 
 ### Preview (dev branch)
 ```
-dev.collection.ito.com → Vercel Preview → Supabase Cloud
+dev.chanoyu.ito.com → Vercel Preview → Supabase Cloud
 ```
 
 ### Production (main branch)
 ```
-collection.ito.com → Vercel Production → Supabase Cloud
+chanoyu.ito.com → Vercel Production → Supabase Cloud
 ```
 
 ## Security Model
