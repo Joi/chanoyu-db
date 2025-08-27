@@ -79,7 +79,12 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
       <ul className="grid gap-1" style={{ marginLeft: depth ? 12 : 0 }}>
         {ordered.map((id) => {
           const r = byId[id];
-          const title = String(r.label_ja || r.label_en || r.local_number || r.token || r.id);
+          const labelJa = String(r.label_ja || '').trim();
+          const labelEn = String(r.label_en || '').trim();
+          const hasJa = !!labelJa;
+          const hasEn = !!labelEn;
+          const showBoth = hasJa && hasEn && labelJa !== labelEn;
+          const title = hasJa ? labelJa : (hasEn ? labelEn : String(r.local_number || r.token || r.id));
           const direct = directCounts.get(id) || 0;
           const total = totalCounts.get(id) || direct;
           const kids = childrenOf[id] || [];
@@ -88,6 +93,9 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
               <Link href={`/admin/local-classes/${id}`} className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-medium underline">{title}</div>
+                  {showBoth ? (
+                    <div className="text-xs text-gray-600">{labelEn}</div>
+                  ) : null}
                   <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
                 </div>
                 <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
@@ -119,7 +127,12 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
       {q ? (
         <ul className="grid gap-2">
           {list.map((r: any) => {
-            const title = String(r.label_ja || r.label_en || r.local_number || r.token || r.id);
+            const labelJa = String(r.label_ja || '').trim();
+            const labelEn = String(r.label_en || '').trim();
+            const hasJa = !!labelJa;
+            const hasEn = !!labelEn;
+            const showBoth = hasJa && hasEn && labelJa !== labelEn;
+            const title = hasJa ? labelJa : (hasEn ? labelEn : String(r.local_number || r.token || r.id));
             const direct = directCounts.get(String(r.id)) || 0;
             const total = totalCounts.get(String(r.id)) || direct;
             return (
@@ -127,6 +140,9 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                 <Link href={`/admin/local-classes/${r.id}`} className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium underline">{title}</div>
+                    {showBoth ? (
+                      <div className="text-xs text-gray-600">{labelEn}</div>
+                    ) : null}
                     <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
                   </div>
                   <div className="text-xs text-gray-700">{direct} direct · {total} total</div>

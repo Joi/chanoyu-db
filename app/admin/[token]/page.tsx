@@ -25,8 +25,6 @@ const objectUpdateSchema = z.object({
   title: z.string().max(255).optional(),
   title_ja: z.string().max(255).optional(),
   local_number: z.string().max(50).optional(),
-  summary: z.string().max(2000).optional(),
-  summary_ja: z.string().max(2000).optional(),
   craftsman: z.string().max(255).optional(),
   craftsman_ja: z.string().max(255).optional(),
   event_date: z.string().max(50).optional(),
@@ -281,7 +279,7 @@ async function autoTranslate(field: string, formData: FormData) {
   const db = supabaseAdmin();
   const { data } = await db
     .from('objects')
-    .select('id, title, title_ja, summary, summary_ja, craftsman, craftsman_ja, store, store_ja, location, location_ja, notes, notes_ja')
+    .select('id, title, title_ja, craftsman, craftsman_ja, store, store_ja, location, location_ja, notes, notes_ja')
     .eq('token', token)
     .single();
   if (!data) return;
@@ -311,14 +309,6 @@ async function autoTranslate(field: string, formData: FormData) {
     case 'title_ja':
       console.log('[autoTranslate] attempt pair', { src: 'title_ja', dst: 'title', srcHas: !!(data as any).title_ja, dstHas: !!(data as any).title });
       await translatePair('title_ja', 'title', 'ja', 'en');
-      break;
-    case 'summary':
-      console.log('[autoTranslate] attempt pair', { src: 'summary', dst: 'summary_ja', srcHas: !!(data as any).summary, dstHas: !!(data as any).summary_ja });
-      await translatePair('summary', 'summary_ja', 'en', 'ja');
-      break;
-    case 'summary_ja':
-      console.log('[autoTranslate] attempt pair', { src: 'summary_ja', dst: 'summary', srcHas: !!(data as any).summary_ja, dstHas: !!(data as any).summary });
-      await translatePair('summary_ja', 'summary', 'ja', 'en');
       break;
     case 'craftsman':
       console.log('[autoTranslate] attempt pair', { src: 'craftsman', dst: 'craftsman_ja', srcHas: !!(data as any).craftsman, dstHas: !!(data as any).craftsman_ja });
@@ -356,8 +346,6 @@ async function autoTranslate(field: string, formData: FormData) {
       // Fallback: try all pairs if no specific field provided
       await translatePair('title','title_ja','en','ja');
       await translatePair('title_ja','title','ja','en');
-      await translatePair('summary','summary_ja','en','ja');
-      await translatePair('summary_ja','summary','ja','en');
       await translatePair('craftsman','craftsman_ja','en','ja');
       await translatePair('craftsman_ja','craftsman','ja','en');
       await translatePair('store','store_ja','en','ja');
@@ -394,8 +382,6 @@ async function updateObjectAction(formData: FormData) {
   const title = String(formData.get('title') || '');
   const title_ja = String(formData.get('title_ja') || '');
   const local_number = String(formData.get('local_number') || '');
-  const summary = String(formData.get('summary') || '');
-  const summary_ja = String(formData.get('summary_ja') || '');
   const craftsman = String(formData.get('craftsman') || '');
   const craftsman_ja = String(formData.get('craftsman_ja') || '');
   const event_date = String(formData.get('event_date') || '');
@@ -417,8 +403,6 @@ async function updateObjectAction(formData: FormData) {
     title: toNull(title) ?? null,
     title_ja: toNull(title_ja),
     local_number: toNull(local_number),
-    summary: toNull(summary),
-    summary_ja: toNull(summary_ja),
     craftsman: toNull(craftsman),
     craftsman_ja: toNull(craftsman_ja),
     event_date: toNull(event_date),
@@ -467,7 +451,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
     db
       .from('objects')
       .select(
-        `id, token, local_number, title, title_ja, summary, summary_ja, price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility,
+        `id, token, local_number, title, title_ja, price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility,
          object_classifications:object_classifications(role,
            classification:classifications(id, scheme, uri, label, label_ja)
          ),
@@ -727,17 +711,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
               <button className="button secondary" formAction={autoTranslate.bind(null, 'notes_ja')} type="submit" style={{ padding: '2px 6px', fontSize: 12 }}>JA → EN</button>
             ) : null}
 
-            <label className="label">Summary (EN)</label>
-            <textarea name="summary" className="textarea" defaultValue={object.summary || ''} />
-            {object.summary && !object.summary_ja ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'summary')} type="submit" style={{ padding: '2px 6px', fontSize: 12, marginTop: 4 }}>E → JA</button>
-            ) : null}
-
-            <label className="label">Summary (JA)</label>
-            <textarea name="summary_ja" className="textarea" defaultValue={object.summary_ja || ''} />
-            {object.summary_ja && !object.summary ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'summary_ja')} type="submit" style={{ padding: '2px 6px', fontSize: 12, marginTop: 4 }}>JA → EN</button>
-            ) : null}
+            
 
             <div style={{ marginTop: 8 }}>
               <SubmitButton label="Save metadata" pendingLabel="Saving..." />

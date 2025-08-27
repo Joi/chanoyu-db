@@ -4,7 +4,7 @@ import { buildLinkedArtJSONLD } from '../lib/jsonld';
 describe('buildLinkedArtJSONLD', () => {
   it('includes AAT and Wikidata types when provided', () => {
     const obj: any = {
-      id: 'uuid', token: 'tok', title: 'Title', title_ja: null, summary: null, summary_ja: null, visibility: 'public'
+      id: 'uuid', token: 'tok', title: 'Title', title_ja: null, visibility: 'public'
     };
     const media: any[] = [];
     const classifications: any[] = [
@@ -16,5 +16,6 @@ describe('buildLinkedArtJSONLD', () => {
     const ids = (jsonld.classified_as || []).map((t: any) => t.id);
     expect(ids).toContain('http://vocab.getty.edu/aat/300123');
     expect(ids).toContain('https://www.wikidata.org/entity/Q42');
+    expect((jsonld as any).summary).toBeUndefined();
   });
 });

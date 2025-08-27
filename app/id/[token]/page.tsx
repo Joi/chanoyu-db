@@ -18,7 +18,7 @@ export default async function ObjectPage({ params }: Props) {
   const { data, error } = await db
     .from('objects')
     .select(
-      `id, token, local_number, title, title_ja, summary, summary_ja, visibility,
+      `id, token, local_number, title, title_ja, visibility,
        price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url,
        object_classifications:object_classifications(role,
          classification:classifications(id, scheme, uri, label, label_ja)
@@ -147,11 +147,8 @@ export default async function ObjectPage({ params }: Props) {
 
         <section>
           <h2 className="text-lg font-semibold mb-2">Description</h2>
-          {data.summary ? <p className="mb-2">{data.summary}</p> : null}
-          {data.summary_ja ? <p className="mb-2" lang="ja">{data.summary_ja}</p> : null}
-          {(isAdmin || isOwner) && (data.notes || data.notes_ja) ? (
+          {(data.notes || data.notes_ja) ? (
             <div className="mt-2">
-              <h3 className="text-md font-semibold mb-1">Notes</h3>
               {data.notes ? <p className="mb-1">{data.notes}</p> : null}
               {data.notes_ja ? <p className="mb-1" lang="ja">{data.notes_ja}</p> : null}
             </div>

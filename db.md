@@ -53,7 +53,7 @@ Example token minter (Crockford base32, no vowels):
 
 **Tables (abridged):**
 - `objects` — one row per physical item  
-  Fields: `id, token (unique), ark_name (null for now), local_number, title, title_ja, summary, summary_ja, visibility, created_at, updated_at`
+  Fields: `id, token (unique), ark_name (null for now), local_number, title, title_ja, visibility, created_at, updated_at`
 - `classifications` — authority terms (AAT / Wikidata / TGN, etc.)  
   Fields: `label, label_ja, kind, scheme, uri`
 - `object_classifications` — join (`role` = 'primary type' | 'material' | 'technique' | 'ware' | 'place')
@@ -76,7 +76,7 @@ Example token minter (Crockford base32, no vowels):
 
 - **JSON-LD (Linked Art flavor):** every object page embeds machine data and serves it via content negotiation  
 - **AAT & Wikidata:** stored per object; **AAT URIs** emitted first, **QIDs** included for extra connectivity  
-- **Bilingual fields:** `title_ja`, `summary_ja` for Japanese rendering and labels
+- **Bilingual fields:** `title_ja`, `notes_ja` for Japanese rendering and labels
 
 Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
 
@@ -102,7 +102,7 @@ Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
 
 ## API & routes
 
-- **Human page** — `GET /id/{token}` → HTML page (title, images, summaries, identifiers)
+- **Human page** — `GET /id/{token}` → HTML page (title, images, notes, identifiers)
 - **Machine data** — `GET /id/{token}` with `Accept: application/ld+json`, or `GET /id/{token}.jsonld` → JSON-LD
 - **Lookup** — `GET /api/lookup?q=…` → normalized list of AAT and Wikidata hits (EN/JA labels where available)
 - **ARK (placeholder until NAAN):**  

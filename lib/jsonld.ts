@@ -13,8 +13,6 @@ type ObjectRow = {
   local_number: string | null;
   title: string;
   title_ja: string | null;
-  summary: string | null;
-  summary_ja: string | null;
   visibility: 'public' | 'private';
 };
 
@@ -39,11 +37,6 @@ export function buildLinkedArtJSONLD(
   const identified_by: any[] = [{ type: 'Name', content: obj.title }];
   if (obj.local_number) identified_by.push({ type: 'Identifier', content: obj.local_number });
 
-  const summary = [
-    ...(obj.summary ? [{ language: 'en', value: obj.summary }] : []),
-    ...(obj.summary_ja ? [{ language: 'ja', value: obj.summary_ja }] : []),
-  ];
-
   const image = media.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
   const representation = image?.uri
     ? [{ id: image.uri, type: 'VisualItem', classified_as: [{ id: 'http://vocab.getty.edu/aat/300215302' }] }]
@@ -55,7 +48,6 @@ export function buildLinkedArtJSONLD(
     type: 'HumanMadeObject',
     identified_by,
     classified_as: types.length ? types : undefined,
-    summary: summary.length ? summary : undefined,
     representation,
   };
 }
