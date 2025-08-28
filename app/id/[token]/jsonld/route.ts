@@ -12,10 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       `
       id, token, local_number, title, title_ja, visibility,
       media ( id, kind, uri, sort_order ),
-      object_classifications (
-        role,
-        classification:classifications ( label, label_ja, scheme, uri )
-      )
+      primary_local_class_id
     `
     )
     .eq('token', params.token)
@@ -28,7 +25,25 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
 
   const baseId = `https://collection.ito.com/id/${params.token}`;
   const media = (data.media ?? []);
-  const classifications = (data.object_classifications ?? []).map((oc: any) => oc.classification).filter(Boolean);
+  // Resolve classifications via the object's primary Local Class preferred external link
+  let classifications: any[] = [];
+  const plcId = (data as any).primary_local_class_id as string | null;
+  if (plcId) {
+    const [{ data: lc }, { data: extLinks }] = await Promise.all([
+      db
+        .from('local_classes')
+        .select('id, preferred_classification_id')
+        .eq('id', plcId)
+        .maybeSingle(),
+      db
+        .from('local_class_links')
+        .select('classification:classifications(id, scheme, uri, label, label_ja)')
+        .eq('local_class_id', plcId),
+    ]);
+    const preferredId = lc?.preferred_classification_id ? String(lc.preferred_classification_id) : '';
+    const preferred = (extLinks || []).map((r: any) => r.classification).find((c: any) => String(c.id) === preferredId);
+    if (preferred) classifications = [preferred];
+  }
   const jsonld = buildLinkedArtJSONLD(data, media, classifications, baseId);
   const headers = new Headers({ 'content-type': 'application/ld+json' });
   headers.set('Cache-Control', 'public, max-age=31536000, s-maxage=31536000, immutable');

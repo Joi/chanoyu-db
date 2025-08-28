@@ -11,7 +11,6 @@ cursor TASKS.md
 cursor README.md
 cursor docs/ARCHITECTURE.md
 cursor CONTRIBUTING.md
-cursor TODO.md
 
 echo "✅ Key files opened!"
 echo ""

@@ -5,7 +5,6 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { mintToken } from '@/lib/id';
 import { parseSupabasePublicUrl } from '@/lib/storage';
 import { translateText } from '@/lib/translate';
-import LookupPanel from './lookup-panel';
 import { requireOwner, requireAdmin } from '@/lib/auth';
 import RevealPrice from '@/app/components/RevealPrice';
 import PriceInput from '@/app/components/PriceInput';
@@ -39,14 +38,7 @@ const objectUpdateSchema = z.object({
   price: z.string().optional(),
 });
 
-const classificationSchema = z.object({
-  object_token: z.string().min(1),
-  scheme: z.string().min(1).max(50),
-  uri: z.string().url().max(500),
-  label: z.string().max(255).optional(),
-  label_ja: z.string().max(255).optional(),
-  role: z.string().max(100),
-});
+// Removed direct classification add-on schema; classifications now attach to Local Classes
 
 // Server action to save a classification for the current object token
 async function savePrimaryLocalClassAction(formData: FormData) {
@@ -97,66 +89,7 @@ async function savePrimaryLocalClassAction(formData: FormData) {
   redirect(`/admin/${token}?saved=local-class`);
 }
 
-async function saveClassificationAction(formData: FormData) {
-  'use server';
-  
-  // Validate input data with Zod
-  const rawData = {
-    object_token: String(formData.get('object_token') || ''),
-    scheme: String(formData.get('scheme') || ''),
-    uri: String(formData.get('uri') || ''),
-    label: String(formData.get('label') || '') || undefined,
-    label_ja: String(formData.get('label_ja') || '') || undefined,
-    role: String(formData.get('role') || 'primary type'),
-  };
-  
-  const validation = classificationSchema.safeParse(rawData);
-  if (!validation.success) {
-    console.error('[classification] validation error', validation.error.flatten());
-    return redirect(`/admin/${rawData.object_token}?error=classification-validation`);
-  }
-  
-  const { object_token: token, scheme, uri, label, label_ja, role } = validation.data;
-  const db = supabaseAdmin();
-  try {
-    console.log('[classification] start', { token, scheme, uri, role });
-    const { data: obj, error: eObj } = await db.from('objects').select('id').eq('token', token).single();
-    if (eObj || !obj) throw eObj || new Error('object not found');
-
-    // Find existing classification by scheme+uri, or create if missing
-    let clsId: string | null = null;
-    const { data: existing, error: eFind } = await db
-      .from('classifications')
-      .select('id')
-      .eq('scheme', scheme)
-      .eq('uri', uri)
-      .maybeSingle();
-    if (eFind) throw eFind;
-    if (existing?.id) {
-      clsId = existing.id;
-    } else {
-      const { data: inserted, error: eIns } = await db
-        .from('classifications')
-        .insert({ scheme, uri, label, label_ja, kind: 'concept' })
-        .select('id')
-        .single();
-      if (eIns || !inserted) throw eIns || new Error('classification insert failed');
-      clsId = inserted.id;
-    }
-
-    const { error: eLink } = await db
-      .from('object_classifications')
-      .upsert({ object_id: obj.id, classification_id: clsId, role });
-    if (eLink) throw eLink;
-
-    console.log('[classification] saved', { token, cls: clsId });
-    revalidatePath(`/admin/${token}`);
-    redirect(`/admin/${token}?saved=classification`);
-  } catch (err: any) {
-    console.error('[classification] error', err?.message || err);
-    redirect(`/admin/${token}?error=classification`);
-  }
-}
+// Removed direct classification server action; objects no longer write to object_classifications from UI
 
 async function deleteMediaAction(formData: FormData) {
   'use server';
@@ -452,9 +385,6 @@ export default async function AdminObjectPage({ params, searchParams }: { params
       .from('objects')
       .select(
         `id, token, local_number, title, title_ja, price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility,
-         object_classifications:object_classifications(role,
-           classification:classifications(id, scheme, uri, label, label_ja)
-         ),
          primary_local_class_id`
       )
       .eq('token', token)
@@ -719,35 +649,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
           </form>
         </section>
 
-        <section>
-          <h3 className="text-md font-semibold mt-4">Classifications</h3>
-
-          <ul className="space-y-2">
-            {(object.object_classifications ?? []).map((oc: any, i: number) => (
-              <li key={i} className="card">
-                <div className="text-sm">
-                  <strong>{oc.classification?.label || oc.classification?.uri}</strong>{' '}
-                  {oc.classification?.label_ja ? <span lang="ja">/ {oc.classification.label_ja}</span> : null}
-                  <div className="text-xs text-gray-600">{oc.role} · {oc.classification?.scheme} · <a className="underline" href={oc.classification?.uri} target="_blank" rel="noreferrer">{oc.classification?.uri}</a></div>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <div className="card mt-4">
-            <h4 className="text-sm font-semibold mb-2">Add classification</h4>
-            <LookupPanel />
-            <form id="classification-form" action={saveClassificationAction} className="space-y-2" style={{ marginTop: 8 }}>
-              <input type="hidden" name="object_token" value={token} />
-              <input name="scheme" className="input" placeholder="aat | wikidata" />
-              <input name="uri" className="input" placeholder="http://vocab.getty.edu/aat/300266745" />
-              <input name="label" className="input" placeholder="Label EN (optional)" />
-              <input name="label_ja" className="input" placeholder="Label JA (optional)" />
-              <input name="role" className="input" placeholder="primary type" defaultValue="primary type" />
-              <SubmitButton label="Save classification" pendingLabel="Saving..." />
-            </form>
-          </div>
-        </section>
+        {/* Removed direct per-object classification UI; prefer Local Class links */}
 
         <section>
           <h3 className="text-md font-semibold mt-4">Chakai</h3>
