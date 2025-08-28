@@ -20,9 +20,7 @@ export default async function ObjectPage({ params }: Props) {
     .select(
       `id, token, local_number, title, title_ja, visibility,
        price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url,
-       object_classifications:object_classifications(role,
-         classification:classifications(id, scheme, uri, label, label_ja)
-       )`
+       primary_local_class_id`
     )
     .eq('token', token)
     .single();
@@ -59,12 +57,51 @@ export default async function ObjectPage({ params }: Props) {
     .eq('object_id', data.id);
   const media = (mediaRows ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const img = media[0]?.uri as string | undefined;
-  const classifications = (data.object_classifications ?? [])
-    .map((oc: any) => oc.classification)
-    .filter(Boolean);
+  // Resolve Local Class info and external links
+  let localClassTitle: string = '';
+  let localClassBreadcrumb: string[] = [];
+  let localClassExternal: any[] = [];
+  if ((data as any).primary_local_class_id) {
+    const plcId = (data as any).primary_local_class_id as string;
+    const [{ data: lc }, { data: chain }] = await Promise.all([
+      db.from('local_classes').select('id, token, local_number, label_en, label_ja, preferred_classification_id').eq('id', plcId).maybeSingle(),
+      db.from('local_class_hierarchy').select('ancestor_id, descendant_id, depth').eq('descendant_id', plcId),
+    ]);
+    const ancestorIds = Array.from(new Set(((chain || []) as any[]).map((r: any) => String(r.ancestor_id)).filter((aid) => aid !== plcId)));
+    if (ancestorIds.length) {
+      const { data: rows } = await db.from('local_classes').select('id, local_number, label_en, label_ja').in('id', ancestorIds);
+      const byId: Record<string, any> = Object.create(null);
+      for (const a of rows || []) byId[String((a as any).id)] = a;
+      localClassBreadcrumb = ((chain || []) as any[])
+        .filter((r: any) => String(r.ancestor_id) !== plcId)
+        .sort((a: any, b: any) => a.depth - b.depth)
+        .map((r: any) => byId[String(r.ancestor_id)])
+        .filter(Boolean)
+        .map((a: any) => String(a.label_ja || a.label_en || a.local_number || a.id));
+    }
+    const title = lc ? String(lc.label_ja || lc.label_en || lc.local_number || lc.id) : '';
+    localClassTitle = title;
+    const { data: extRows } = await db
+      .from('local_class_links')
+      .select('classification:classifications(id, scheme, uri, label, label_ja)')
+      .eq('local_class_id', plcId);
+    localClassExternal = (extRows || []).map((r: any) => r.classification).filter(Boolean);
+  }
 
   const baseId = `https://collection.ito.com/id/${token}`;
-  const jsonld = buildLinkedArtJSONLD(data, media, classifications, baseId);
+  // Build classifications for JSON-LD from preferred external link if available
+  let jsonldClassifications: any[] = [];
+  if ((data as any).primary_local_class_id) {
+    const plcId = (data as any).primary_local_class_id as string;
+    const [{ data: lc }, { data: extRows }] = await Promise.all([
+      db.from('local_classes').select('id, preferred_classification_id').eq('id', plcId).maybeSingle(),
+      db.from('local_class_links').select('classification:classifications(id, scheme, uri, label, label_ja)').eq('local_class_id', plcId),
+    ]);
+    const preferredId = lc?.preferred_classification_id ? String(lc.preferred_classification_id) : '';
+    const preferred = (extRows || []).map((r: any) => r.classification).find((c: any) => String(c.id) === preferredId);
+    if (preferred) jsonldClassifications = [preferred];
+  }
+  const jsonld = buildLinkedArtJSONLD(data, media, jsonldClassifications, baseId);
 
   return (
     <main className="max-w-4xl mx-auto p-6">
@@ -74,6 +111,29 @@ export default async function ObjectPage({ params }: Props) {
         {isAdmin || isOwner ? (
           <p className="text-xs mt-1"><a className="underline" href={`/admin/${token}`}>Edit</a></p>
         ) : null}
+        {/* Local Class summary */}
+        <section className="card mt-3">
+          <h2 className="text-sm font-semibold mb-1">Classification</h2>
+          <div className="grid gap-2">
+            {localClassTitle ? (
+              <div className="text-sm">{localClassTitle}</div>
+            ) : (
+              <div className="text-xs text-gray-600">No local class selected</div>
+            )}
+            {localClassBreadcrumb.length ? (
+              <div className="text-xs text-gray-600">{localClassBreadcrumb.join(' / ')}</div>
+            ) : null}
+            {localClassExternal.length ? (
+              <div className="flex flex-wrap gap-2 text-xs">
+                {localClassExternal.map((c: any) => (
+                  <a key={String(c.id)} href={c.uri} target="_blank" rel="noreferrer" className="underline">
+                    {c.scheme}: {String(c.label_ja || c.label || c.uri)}
+                  </a>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </section>
       </header>
 
       {img ? (
@@ -156,19 +216,7 @@ export default async function ObjectPage({ params }: Props) {
         </section>
       </div>
 
-      <section className="mt-6">
-        <h2 className="text-lg font-semibold mb-2">Classifications</h2>
-        <ul className="list-disc pl-6 space-y-1">
-          {classifications.map((c: any, i: number) => (
-            <li key={i}>
-              <strong>{c?.label || c?.uri}</strong>
-              {c?.label_ja ? <span lang="ja"> / {c.label_ja}</span> : null}
-              {c?.scheme ? <span className="text-xs text-gray-600"> · {c.scheme}</span> : null}
-            </li>
-          ))}
-          {classifications.length === 0 ? <li className="text-sm text-gray-600">None</li> : null}
-        </ul>
-      </section>
+      {/* Removed direct per-object classifications list in favor of Local Class display above */}
 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonld) }} />
     </main>

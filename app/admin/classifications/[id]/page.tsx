@@ -19,39 +19,27 @@ export default async function ClassificationDetail({ params }: { params: { id: s
     .maybeSingle();
   if (!cls) return redirect('/admin/classifications');
 
-  // Find linked objects
-  const { data: links } = await db
-    .from('object_classifications')
-    .select('object_id')
+  // Find linked Local Classes
+  const { data: lcLinks } = await db
+    .from('local_class_links')
+    .select('local_class_id')
     .eq('classification_id', cid);
-  const objIds = Array.from(new Set((links || []).map((r: any) => r.object_id).filter(Boolean)));
-  let objects: any[] = [];
-  if (objIds.length) {
-    const { data: objs } = await db
-      .from('objects')
-      .select('id, token, title, title_ja')
-      .in('id', objIds);
-    objects = objs || [];
+  const lcIds = Array.from(new Set((lcLinks || []).map((r: any) => r.local_class_id).filter(Boolean)));
+  let localClasses: any[] = [];
+  if (lcIds.length) {
+    const { data: rows } = await db
+      .from('local_classes')
+      .select('id, token, local_number, label_en, label_ja, preferred_classification_id')
+      .in('id', lcIds);
+    localClasses = rows || [];
   }
 
-  // For thumbnails, fetch first media per object
-  let mediaByObject: Record<string, string | undefined> = {};
-  if (objects.length) {
-    const { data: media } = await db
-      .from('media')
-      .select('id, object_id, uri, sort_order')
-      .in('object_id', objects.map((o: any) => o.id));
-    const grouped: Record<string, any[]> = {};
-    for (const m of media || []) {
-      const oid = (m as any).object_id as string;
-      if (!grouped[oid]) grouped[oid] = [];
-      grouped[oid].push(m);
-    }
-    for (const [oid, arr] of Object.entries(grouped)) {
-      const sorted = (arr as any[]).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-      mediaByObject[oid] = sorted[0]?.uri;
-    }
-  }
+  // Load options for pulldown
+  const { data: allLocalClasses } = await db
+    .from('local_classes')
+    .select('id, label_en, label_ja, local_number')
+    .order('local_number')
+    .limit(1000);
 
   return (
     <main className="max-w-5xl mx-auto p-6">
@@ -61,85 +49,106 @@ export default async function ClassificationDetail({ params }: { params: { id: s
         <div className="text-xs text-gray-600">{(cls as any).scheme} · <a className="underline" href={(cls as any).uri} target="_blank" rel="noreferrer">{(cls as any).uri}</a></div>
       </div>
 
-      <AddObjectForm classificationId={(cls as any).id} />
+      <LinkLocalClassForm classificationId={(cls as any).id} allLocalClasses={allLocalClasses || []} />
 
-      <h2 className="text-lg font-semibold mb-2">Objects</h2>
-      {!objects.length ? <p className="text-sm text-gray-600">No objects linked.</p> : null}
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-        {objects.map((o: any) => (
-          <div key={o.id} className="card">
-            <div style={{ position: 'relative', width: '100%', paddingTop: '66%', background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
-              {mediaByObject[o.id] ? (
-                <a href={`/id/${o.token}`}>
-                  <Image src={mediaByObject[o.id] as string} alt={o.title} fill sizes="240px" style={{ objectFit: 'cover' }} />
-                </a>
-              ) : null}
-            </div>
-            <div className="mt-2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <a className="underline text-sm" href={`/id/${o.token}`}>{o.title || o.title_ja || o.token}</a>
-              <a className="underline text-xs" href={`/admin/${o.token}`} style={{ marginLeft: 'auto' }}>Edit</a>
-              <UnlinkForm classificationId={(cls as any).id} objectId={o.id} />
-            </div>
-          </div>
-        ))}
-      </div>
+      <h2 className="text-lg font-semibold mb-2">Linked Local Classes</h2>
+      {!localClasses.length ? <p className="text-sm text-gray-600">No local classes linked.</p> : null}
+      <ul className="grid gap-2">
+        {localClasses.map((c: any) => {
+          const isPref = String(c.preferred_classification_id || '') === String((cls as any).id);
+          return (
+            <li key={c.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8 }}>
+              <a className="underline text-sm" href={`/admin/local-classes/${c.id}`}>{String(c.label_ja || c.label_en || c.local_number || c.id)}</a>
+              {isPref ? (
+                <span className="text-xs">Preferred</span>
+              ) : (
+                <form action={setPreferredForClass}>
+                  <input type="hidden" name="classification_id" value={String((cls as any).id)} />
+                  <input type="hidden" name="local_class_id" value={String(c.id)} />
+                  <button className="text-xs underline" type="submit">Set preferred</button>
+                </form>
+              )}
+              <UnlinkLocalClassForm classificationId={(cls as any).id} localClassId={c.id} />
+            </li>
+          );
+        })}
+      </ul>
     </main>
   );
 }
 
 // ---- Server actions and client stubs ----
 
-async function addObjectToClassification(formData: FormData) {
+// Link a Classification to a Local Class
+async function linkClassificationToLocalClass(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
   const classification_id = String(formData.get('classification_id') || '');
-  const token = String(formData.get('object_token') || '').trim();
-  const role = String(formData.get('role') || 'primary type');
-  if (!classification_id || !token) return;
+  const local_class_id = String(formData.get('local_class_id') || '');
+  const set_preferred = String(formData.get('set_preferred') || '') === 'on';
+  if (!classification_id || !local_class_id) return;
   const db = supabaseAdmin();
-  const { data: obj } = await db.from('objects').select('id').eq('token', token).maybeSingle();
-  if (!obj?.id) return;
-  await db.from('object_classifications').upsert({ object_id: obj.id, classification_id, role });
+  await db.from('local_class_links').upsert({ classification_id, local_class_id });
+  if (set_preferred) {
+    await db.from('local_classes').update({ preferred_classification_id: classification_id }).eq('id', local_class_id);
+  }
   revalidatePath(`/admin/classifications/${classification_id}`);
 }
 
-async function unlinkObjectClassification(formData: FormData) {
+async function unlinkClassificationFromLocalClass(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
   const classification_id = String(formData.get('classification_id') || '');
-  const object_id = String(formData.get('object_id') || '');
-  if (!classification_id || !object_id) return;
+  const local_class_id = String(formData.get('local_class_id') || '');
+  if (!classification_id || !local_class_id) return;
   const db = supabaseAdmin();
-  await db.from('object_classifications').delete().eq('classification_id', classification_id).eq('object_id', object_id);
+  await db.from('local_class_links').delete().eq('classification_id', classification_id).eq('local_class_id', local_class_id);
   revalidatePath(`/admin/classifications/${classification_id}`);
 }
 
-function AddObjectForm({ classificationId }: { classificationId: string }) {
+// Set preferred for a given Local Class
+async function setPreferredForClass(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const classification_id = String(formData.get('classification_id') || '');
+  const local_class_id = String(formData.get('local_class_id') || '');
+  if (!classification_id || !local_class_id) return;
+  const db = supabaseAdmin();
+  await db.from('local_classes').update({ preferred_classification_id: classification_id }).eq('id', local_class_id);
+  revalidatePath(`/admin/classifications/${classification_id}`);
+}
+
+function LinkLocalClassForm({ classificationId, allLocalClasses }: { classificationId: string; allLocalClasses: any[] }) {
   return (
-    <form action={addObjectToClassification} className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+    <form action={linkClassificationToLocalClass} className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
       <input type="hidden" name="classification_id" value={classificationId} />
       <div>
-        <label className="label">Add object by token</label>
-        <input name="object_token" className="input" placeholder="e.g., n887frf17nth" />
+        <label className="label">Link to Local Class</label>
+        <select name="local_class_id" className="input" defaultValue="">
+          <option value="">(select)</option>
+          {(allLocalClasses || []).map((c: any) => (
+            <option key={String(c.id)} value={String(c.id)}>
+              {String(c.label_ja || c.label_en || c.local_number || c.id)}
+            </option>
+          ))}
+        </select>
       </div>
+      <label className="text-xs flex items-center gap-2"><input type="checkbox" name="set_preferred" /> Set as preferred for this class</label>
       <div>
-        <label className="label">Role</label>
-        <input name="role" className="input" defaultValue="primary type" />
-      </div>
-      <div>
-        <button className="button" type="submit">Link object</button>
+        <button className="button" type="submit">Link</button>
       </div>
     </form>
   );
 }
 
-function UnlinkForm({ classificationId, objectId }: { classificationId: string; objectId: string }) {
+function UnlinkLocalClassForm({ classificationId, localClassId }: { classificationId: string; localClassId: string }) {
   return (
-    <form action={unlinkObjectClassification}>
+    <form action={unlinkClassificationFromLocalClass}>
       <input type="hidden" name="classification_id" value={classificationId} />
-      <input type="hidden" name="object_id" value={objectId} />
+      <input type="hidden" name="local_class_id" value={localClassId} />
       <button className="text-red-600 text-xs" type="submit">Unlink</button>
     </form>
   );
