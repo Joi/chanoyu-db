@@ -34,4 +34,26 @@ export const BASE_URL = (() => {
   return `${proto}://${BASE_DOMAIN}`;
 })();
 
+export const ENTITY_LABELS = {
+  home: 'Home',
+  lookup: 'Lookup',
+  login: 'Login',
+  logout: 'Logout',
+  admin: 'Admin',
+  accounts: 'Accounts',
+  members: 'Members',
+  chakai: 'Chakai',
+  items: 'Items',
+  media: 'Media',
+  localClasses: 'Local Classes',
+  classifications: 'Classifications',
+  teaRooms: 'Tea Rooms',
+  teaSchools: 'Tea Schools',
+};
+
+export const TOOLTIP = {
+  localClasses: 'Project taxonomy (ローカル分類)',
+  classifications: 'External authorities (AAT/Wikidata) — 分類（標準語彙）',
+};
+
 

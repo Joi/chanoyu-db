@@ -43,8 +43,8 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes">Local Classes</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications">Classifications</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes" title="Project taxonomy (ローカル分類)">Local Classes</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications" title="External authorities (AAT/Wikidata) — 分類（標準語彙）">Classifications</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
             </div>
