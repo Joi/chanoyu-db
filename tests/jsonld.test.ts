@@ -18,4 +18,18 @@ describe('buildLinkedArtJSONLD', () => {
     expect(ids).toContain('https://www.wikidata.org/entity/Q42');
     expect((jsonld as any).summary).toBeUndefined();
   });
+
+  it('includes only the single preferred external when one classification is provided', () => {
+    const obj: any = {
+      id: 'uuid', token: 'tok', title: 'Title', title_ja: null, visibility: 'public'
+    };
+    const media: any[] = [];
+    const classifications: any[] = [
+      { scheme: 'aat', uri: 'http://vocab.getty.edu/aat/300193015', label: 'Tea bowls' },
+    ];
+    const jsonld = buildLinkedArtJSONLD(obj, media, classifications, 'https://example.com/id/tok');
+    expect(jsonld.classified_as?.length).toBe(1);
+    const ids = (jsonld.classified_as || []).map((t: any) => t.id);
+    expect(ids).toContain('http://vocab.getty.edu/aat/300193015');
+  });
 });

@@ -1,13 +1,14 @@
-## Migration Plan: Remove direct item→classification links
+# Migration Plan: Remove direct item→classification links
 
 Objective: Items should link only to Local Classes. Eliminate direct `object_classifications` interactions from app logic and UI, and resolve external types via each Local Class's preferred external link.
 
-### 1) Database and Data Flow
+## 1) Database and Data Flow
+
 - Keep `object_classifications` table for now (read-only or legacy), but stop all writes from the app.
 - Ensure `objects.primary_local_class_id` is populated for objects during migration/backfill.
 - Use `local_class_links` and `local_classes.preferred_classification_id` for JSON-LD external type resolution.
 
-### 2) Code Changes by File (with line references)
+## 2) Code Changes by File (with line references)
 
 1. `app/admin/[token]/page.tsx`
    - Remove direct classification write path and UI.
@@ -60,24 +61,39 @@ Objective: Items should link only to Local Classes. Eliminate direct `object_cla
      - Update to reflect that `buildLinkedArtJSONLD` will receive classifications resolved from Local Class preferred link(s).
      - Replace test input assembly to a single AAT or Wikidata record coming from Local Class preferred link, and assert the same Linked.Art output.
 
-### 3) SQL/Policies Considerations
+## 3) SQL/Policies Considerations
+
 - Ensure RLS allows reading `local_class_links` and `local_classes` for public JSON-LD resolution.
-- Consider a DB trigger or admin-only policy to block inserts to `object_classifications` from app roles (optional while UI writes are removed).
+- Implemented: RLS read-only on `object_classifications`; trigger blocks 'primary type' writes.
 
-### 4) Backfill Steps (out of code)
-- Map existing items to `primary_local_class_id` using their current `object_classifications` if possible.
-- For Local Classes lacking `preferred_classification_id`, select the best linked external and set it.
+## 4) Backfill Steps (out of code)
 
-### 5) Rollout Notes
-- Sequence: deploy code changes (no writes), backfill `primary_local_class_id`, verify JSON-LD, then optionally lock `object_classifications` writes.
-- Keep legacy classification admin pages accessible behind a feature flag or remove after verification.
+- Completed: mapped existing items to `primary_local_class_id` using their current `object_classifications` ('primary type').
+- Completed: created missing Local Classes and links where needed; set `preferred_classification_id`.
+
+## 5) Rollout Notes
+
+- Sequence executed: code changes (stopped direct writes) → Supabase migration (RLS + trigger) → backfill + cleanup → view added.
+- Next: update scripts to seed via Local Classes; add tests and docs; consider feature-flag cleanup.
+
+## 6) Current Status and Remaining Work
+
+- Done on Supabase:
+  - RLS read-only for `object_classifications`
+  - Trigger blocking 'primary type' writes to `object_classifications`
+  - Backfill `objects.primary_local_class_id`
+  - Create/link missing Local Classes, set preferred
+  - Cleanup per-object 'primary type' rows
+  - `object_preferred_classification` view created
+- Remaining (code/docs/tests):
+  - Update `scripts/seed-object.ts` to use Local Classes only
+  - Add/update tests for JSON-LD via Local Class preferred link
+  - Update `docs/ARCHITECTURE.md` to reflect new data flow
 
 ---
 
 If file line numbers shift, search for these key anchors:
+
 - `object_classifications (` in `app/admin/[token]/page.tsx`, `app/id/[token]/page.tsx`, and both JSON-LD routes.
 - `saveClassificationAction` in `app/admin/[token]/page.tsx`.
 - `Add classification` section in admin object page.
-
-
-
