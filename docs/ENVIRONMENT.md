@@ -7,6 +7,9 @@ This repo runs both a Next.js app (TypeScript) and utility scripts (Python). The
 - Node.js LTS and pnpm
   - `brew install node pnpm`
   - or manage with `nvm`/`asdf` if you prefer
+- GitHub CLI
+  - `brew install gh`
+  - Authenticate once: `gh auth login` (choose GitHub.com, HTTPS)
 - Python 3.10+ and virtualenv tooling
   - `brew install python@3.10`
 
