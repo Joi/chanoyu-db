@@ -37,6 +37,31 @@ ELSE:
 - Keep comments concise and relevant
 </conditional-block>
 
+## Markdown Formatting
+
+Follow these rules to avoid markdownlint errors (MD0xx):
+
+### Headings and Spacing
+- Ensure a blank line before and after each heading (MD022/MD023).
+- Do not duplicate headings within the same section; vary wording if needed (MD024).
+
+### Lists
+- Add a blank line before and after lists (MD032).
+- Use consistent indentation for nested list items: two spaces per level (MD005/MD007).
+- Keep list markers consistent (`-` preferred for unordered lists).
+
+### Code Fences
+- Surround fenced code blocks with blank lines (MD031).
+- Always specify a language for fenced code blocks (MD040). Use `markdown` for Markdown examples.
+
+### Links and Text
+- Prefer relative links to local files; do not include bare URLs.
+- Keep lines reasonably short; wrap long lines where appropriate.
+
+### Tables and Misc
+- Add a blank line before and after tables.
+- Avoid trailing spaces and tabs.
+
 <conditional-block task-condition="html-css-tailwind" context-check="html-css-style">
 IF current task involves writing or updating HTML, CSS, or TailwindCSS:
   IF html-style.md AND css-style.md already in context:

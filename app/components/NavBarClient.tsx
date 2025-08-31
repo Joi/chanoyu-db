@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-export default function NavBarClient({ isLoggedIn }: { isLoggedIn: boolean }) {
+export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: boolean; isAdmin: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -30,37 +30,39 @@ export default function NavBarClient({ isLoggedIn }: { isLoggedIn: boolean }) {
 
   return (
     <nav className="flex gap-4 items-center" ref={ref}>
-      <details className="nav-group relative group" role="menu">
-        <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Public</summary>
-        <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
-          <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/">Home</a>
-          <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/lookup">Category Lookup</a>
-          <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/chakai">Chakai</a>
-        </div>
-      </details>
+      <a className="font-medium text-sm" href="/">Home</a>
+      <a className="font-medium text-sm" href="/lookup">Lookup</a>
 
       {isLoggedIn ? (
-        <details className="nav-group relative group" role="menu">
-          <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Collection Admin</summary>
-          <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications">Classifications</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes">Local Classes</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes/new">Create Local Class</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-rooms">Tea Rooms</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/new">Create object</a>
-          </div>
-        </details>
+        isAdmin ? (
+          <details className="nav-group relative group" role="menu">
+            <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Admin</summary>
+            <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin">Admin</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Accounts</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes">Local Classes</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications">Classifications</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
+            </div>
+          </details>
+        ) : (
+          <>
+            <a className="font-medium text-sm" href="/members">Members</a>
+            <a className="font-medium text-sm" href="/chakai">Chakai</a>
+            <a className="font-medium text-sm" href="/tea-rooms">Tea Rooms</a>
+          </>
+        )
       ) : null}
 
       {isLoggedIn ? (
         <details className="nav-group relative group" role="menu">
           <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Account</summary>
           <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
-            <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
+            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/members">Members</a> : null}
             <form action="/logout" method="post">
               <button className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-50 rounded" type="submit">Sign out</button>
             </form>

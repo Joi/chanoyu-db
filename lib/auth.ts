@@ -68,6 +68,49 @@ export async function logout() {
   cookies().delete(COOKIE_NAME);
 }
 
+export type UserRole = 'owner' | 'admin' | 'member' | 'visitor';
+
+export interface CurrentAccount {
+  id: string;
+  email: string;
+  role: UserRole;
+  full_name_en?: string | null;
+  full_name_ja?: string | null;
+  tea_school_id?: string | null;
+}
+
+export interface CurrentRoleResult {
+  role: UserRole;
+  accountId: string | null;
+  account: CurrentAccount | null;
+}
+
+export async function getCurrentRole(): Promise<CurrentRoleResult> {
+  const token = cookies().get(COOKIE_NAME)?.value;
+  if (!token) return { role: 'visitor', accountId: null, account: null };
+  try {
+    const { payload } = await jwtVerify(token, encoder.encode(AUTH_SECRET));
+    const email = typeof payload.sub === 'string' ? payload.sub : '';
+    if (!email) return { role: 'visitor', accountId: null, account: null };
+    const db = supabaseAdmin();
+    const { data } = await db
+      .from('accounts')
+      .select('id,email,role,full_name_en,full_name_ja,tea_school_id')
+      .eq('email', email)
+      .maybeSingle();
+    if (!data) return { role: 'visitor', accountId: null, account: null };
+    const dbRole = (data as any).role as string;
+    const normalizedRole: UserRole = dbRole === 'owner' ? 'owner' : dbRole === 'admin' ? 'admin' : 'member';
+    return {
+      role: normalizedRole,
+      accountId: String((data as any).id || ''),
+      account: data as CurrentAccount,
+    };
+  } catch {
+    return { role: 'visitor', accountId: null, account: null };
+  }
+}
+
 export async function currentUserEmail(): Promise<string | null> {
   const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return null;
