@@ -14,6 +14,8 @@
 - Goal: Items should link only to Local Classes; remove direct `object_classifications` usage in app code and admin UI.
 - Owner: @joi (handoff-ready)
 - Plan doc: [docs/PLAN_remove_direct_classification_links.md](docs/PLAN_remove_direct_classification_links.md)
+ - Branch: `remove-direct-classification-links` (pushed)
+ - Status: Code implemented; remaining: schema freeze, docs update, backfill, fallback logic, and tests
 
 #### Scope & Checklist
 - [ ] Schema: freeze writes to `object_classifications` (keep for legacy reads if needed)
