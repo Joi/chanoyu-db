@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 const visibleFor = {
   visitor: ['Home', 'Lookup', 'Login'],
   member: ['Members', 'Chakai', 'Tea Rooms', 'Lookup', 'Logout'],
-  admin: ['Admin', 'Accounts', 'Chakai', 'Items', 'Media', 'Local Classes', 'Classifications', 'Tea Schools', 'Members', 'Lookup', 'Logout'],
+  admin: ['Admin', 'Chakai', 'Items', 'Media', 'Local Classes', 'Classifications', 'Tea Schools', 'Members', 'Lookup', 'Logout'],
 };
 
 describe('navbar visibility spec shape', () => {
@@ -20,7 +20,7 @@ describe('navbar visibility spec shape', () => {
   });
   it('admin menu contains required items', () => {
     const v = visibleFor.admin;
-    for (const label of ['Admin', 'Accounts', 'Chakai', 'Items', 'Media', 'Local Classes', 'Classifications', 'Tea Schools', 'Members', 'Lookup', 'Logout']) expect(v).toContain(label);
+    for (const label of ['Admin', 'Chakai', 'Items', 'Media', 'Local Classes', 'Classifications', 'Tea Schools', 'Members', 'Lookup', 'Logout']) expect(v).toContain(label);
   });
 });
 

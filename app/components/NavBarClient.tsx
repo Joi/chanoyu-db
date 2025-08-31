@@ -39,7 +39,6 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
             <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Admin</summary>
             <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-borderGray rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin">Admin</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Accounts</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
@@ -69,7 +68,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
           </div>
         </details>
       ) : (
-        <a className="font-medium text-sm hover:underline" href="/login">Login</a>
+        <a className="font-medium text-sm" href="/login">Login</a>
       )}
     </nav>
   );

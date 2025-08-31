@@ -30,7 +30,10 @@ export default async function AdminHome() {
     <main className="max-w-5xl mx-auto my-10 px-6">
       <header className="mb-4">
         <h1 className="text-xl font-semibold">Admin — 管理</h1>
-        <p className="text-sm text-gray-700 mt-1">
+        <p className="text-sm text-gray-700 mt-1" lang="en">
+          Local Class (ローカル分類) is our project’s category. Each item selects one primary Local Class. It may link to a preferred external Classification (AAT/Wikidata). Classifications (分類) are canonical external authorities; Items inherit via Local Classes.
+        </p>
+        <p className="text-sm text-gray-700 mt-1" lang="ja">
           Local Classes（ローカル分類）は本プロジェクトの分類体系です。各アイテムは一つの主要ローカル分類を選びます。
           Classifications（分類; AAT/Wikidata）は外部の権威データで、ローカル分類から代表リンクとして参照します。
         </p>
