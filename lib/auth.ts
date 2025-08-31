@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify, decodeJwt } from 'jose';
 import { cookies } from 'next/headers';
 import crypto from 'node:crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import type { UserRole } from './roles';
 
 // Constants
 export const COOKIE_NAME = 'ito_admin';
@@ -68,7 +69,7 @@ export async function logout() {
   cookies().delete(COOKIE_NAME);
 }
 
-export type UserRole = 'owner' | 'admin' | 'member' | 'visitor';
+// UserRole moved to lib/roles for testability without Next server deps
 
 export interface CurrentAccount {
   id: string;
@@ -109,6 +110,12 @@ export async function getCurrentRole(): Promise<CurrentRoleResult> {
   } catch {
     return { role: 'visitor', accountId: null, account: null };
   }
+}
+
+export function defaultPathForRole(role: UserRole): string {
+  if (role === 'owner' || role === 'admin') return '/admin';
+  if (role === 'member') return '/members';
+  return '/';
 }
 
 export async function currentUserEmail(): Promise<string | null> {
