@@ -84,7 +84,7 @@ Notes for routing and UI:
   - Logout → `/logout`
 - Admin/Owner:
   - Admin → `/admin`
-  - Accounts → `/admin/accounts`
+  - Members (manages login identities/roles; previously "Accounts") → `/admin/members`
   - Chakai → `/admin/chakai`
   - Items → `/admin/items`
   - Media → `/admin/media`
@@ -97,6 +97,7 @@ Notes for routing and UI:
 
 Notes:
 - Keep labels short; page headers and descriptions can include Japanese terms.
+- Ensure link styling is consistent across all menu items (no mixed styles like non-link text among links).
 - On mobile, collapse trailing items into a “More” menu if needed.
 - Local Classes are the primary taxonomy here; Classifications are external authorities referenced via Local Classes.
 - “Members” links to the member dashboard tied to the signed‑in Account’s linked Member (if any). “Accounts” (admin) manages login identities and roles.
@@ -149,9 +150,9 @@ Notes:
   - Tea Schools 流派 — “Lineages and schools. 流派”
   - Members 会員 — “People and profiles. 会員情報”
 
-- Page header help (suggested):
-  - Local Classes: “Local Class (ローカル分類) is our project’s category. Each item selects one primary Local Class. It may link to a preferred external Classification (AAT/Wikidata).”
-  - Classifications: “Classifications (分類) are canonical external authorities from Getty AAT and Wikidata. Objects do not link here directly; they inherit via Local Classes.”
+- Page header help (bilingual):
+  - EN: “Local Class (ローカル分類) is our project’s category. Each item selects one primary Local Class. It may link to a preferred external Classification (AAT/Wikidata). Classifications (分類) are canonical external authorities; Items inherit via Local Classes.”
+  - JA: “Local Classes（ローカル分類）は本プロジェクトの分類体系です。各アイテムは一つの主要ローカル分類を選びます。Classifications（分類; AAT/Wikidata）は外部の権威データで、ローカル分類から代表リンクとして参照します。”
 
 ## Copy inventory (centralized constants)
 - Entities and display names

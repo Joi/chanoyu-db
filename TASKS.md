@@ -7,11 +7,16 @@
 ## TODO This Week
 
 <!-- Priority tasks for the current week -->
-- [ ] Implement role-aware landing in `app/page.tsx` (Epic: Landings & Nav)
-- [ ] Honor validated `next` in `/login` redirect (Epic: Landings & Nav)
-- [ ] Make NavBar role-aware with English-only labels (Epic: Landings & Nav)
-- [ ] Create `app/members/page.tsx` with quick actions (Epic: Landings & Nav)
-- [ ] Centralize entity copy in `lib/branding.ts` (Epic: Landings & Nav)
+- [x] Implement role-aware landing in `app/page.tsx` (Epic: Landings & Nav)
+- [x] Honor validated `next` in `/login` redirect (Epic: Landings & Nav)
+- [x] Make NavBar role-aware with English-only labels (Epic: Landings & Nav)
+- [x] Create `app/members/page.tsx` with quick actions (Epic: Landings & Nav)
+- [x] Centralize entity copy in `lib/branding.ts` (Epic: Landings & Nav)
+  
+  New polish tasks:
+  - [ ] Admin landing header: bilingual EN/JA help text
+  - [ ] NavBar link styling: make all items consistent (no mixed styles)
+  - [ ] Unify terminology: use “Members” everywhere (remove “Accounts” label)
 
 ## Active Epics
 
@@ -35,15 +40,18 @@
   - [x] Redesign `app/admin/page.tsx` to management cards with EN/JA help
 - NavBar
   - [x] Make NavBar role-aware with English-only labels; hide privileged links
+  - [ ] Ensure consistent link styling across menus
 - Copy and tooltips
   - [x] Centralize labels/CTAs/descriptions in `lib/branding.ts` (or extend `lib/translate.ts`)
   - [x] Add tooltips: Local Classes — "Project taxonomy (ローカル分類)"; Classifications — "External authorities (AAT/Wikidata)"
+  - [ ] Admin landing header help bilingual (EN/JA)
 - JSON-LD and model alignment
   - [ ] Confirm external types resolve via Local Class preferred Classification in `lib/jsonld.ts` and related routes
 - Tests and QA
   - [x] Add tests: login `next`, role-based defaults, NavBar visibility by role
 - Documentation
   - [x] Cross-link `docs/ARCHITECTURE.md` and `docs/PLAN_remove_direct_classification_links.md` from the spec
+  - [ ] Create spec: Members terminology unification; NavBar styling; Admin help bilingual
 - Accessibility and responsiveness
   - [ ] Verify focus states, touch targets (≥44px), contrast; ensure EN/JA copy does not overflow
 
