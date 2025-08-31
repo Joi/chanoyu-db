@@ -30,6 +30,12 @@ Main tables:
 - `local_class_links` - Join between `local_classes` and `classifications`
 - `local_class_hierarchy` - Closure table for tree/breadcrumb
 
+#### Classification Model (v2)
+- Objects do not write to `object_classifications` directly.
+- Each object references a single `primary_local_class_id`.
+- External authority types for JSON-LD are resolved from the Local Class’s `preferred_classification_id` (via `local_class_links`).
+- The legacy `object_classifications` table remains read-only for transition and analytics.
+
 ### 3. Storage (Supabase Storage)
 - Public bucket: `media`
 - Stores object images
@@ -41,7 +47,7 @@ Main tables:
 1. User visits `/id/abc123`
 2. Next.js fetches from Supabase
 3. Checks visibility permissions
-4. Resolves Local Class for admin views; authority labels derived from preferred link when present
+4. Resolves Local Class breadcrumb; derives authority label(s) only from the Local Class preferred link (if set)
 5. Renders page with images
 
 #### Adding via Notion:

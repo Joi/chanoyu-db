@@ -14,18 +14,21 @@
 - Goal: Items should link only to Local Classes; remove direct `object_classifications` usage in app code and admin UI.
 - Owner: @joi (handoff-ready)
 - Plan doc: [docs/PLAN_remove_direct_classification_links.md](docs/PLAN_remove_direct_classification_links.md)
+ - Branch: `remove-direct-classification-links` (pushed)
+ - Status: Supabase migration applied (RLS freeze, trigger, backfill, cleanup, view). Remaining: fallback logic.
 
 #### Scope & Checklist
-- [ ] Schema: freeze writes to `object_classifications` (keep for legacy reads if needed)
+- [x] Schema: freeze writes to `object_classifications` (keep for legacy reads if needed)
 - [x] Admin Object Page: remove add/list of direct classifications; rely on `primary_local_class_id`
 - [x] Public Object Page: show Local Class + breadcrumb; drop direct classifications list
 - [x] JSON-LD endpoints: resolve types via Local Class preferred external link
 - [x] ARK endpoint: same as JSON-LD
 - [x] Admin Classification Pages: repurpose to show linked Local Classes; remove item link/unlink; add preferred controls
 - [x] LookupPanel: remove old object-page use (file deleted)
-- [ ] Tests: add/update tests for JSON-LD resolution via Local Class
-- [ ] Docs: update `docs/ARCHITECTURE.md` classification flow
-- [ ] Backfill: ensure each object has `primary_local_class_id` where possible
+- [x] Tests: add/update tests for JSON-LD resolution via Local Class
+- [x] Docs: update `docs/ARCHITECTURE.md` classification flow
+- [x] Backfill: ensure each object has `primary_local_class_id` where possible
+- [x] Scripts: update `scripts/seed-object.ts` to seed via Local Classes
 - [ ] Feature flag/deploy plan: staged rollout with toggle if needed
 
 ### Feature: Local Classes (Metaclassification)
@@ -68,8 +71,8 @@ Branch: `feature/local-classes`
 
 #### Backfill (Staged)
 - [ ] Seed initial Local Classes for top external classifications
-- [ ] Map existing objects to `primary_local_class_id` where possible
-- [ ] Keep `object_classifications` in place during transition
+- [x] Map existing objects to `primary_local_class_id` where possible
+- [x] Keep `object_classifications` in place during transition
 
 #### Testing
 - [ ] Unit tests for closure maintenance and cycle prevention

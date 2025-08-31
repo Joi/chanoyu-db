@@ -28,7 +28,7 @@ Vercel project settings:
 # 1) work locally
 pnpm dev
 
-# 2) push to preview
+# 2) push to preview (dev branch)
 git checkout dev
 git add -A && git commit -m "feat: ..."
 git push origin dev
@@ -75,11 +75,22 @@ vercel logs <deployment-url> --since 15m | cat
 
 ## Promote to production
 
-Preferred (via PR):
+Preferred (via PR using GitHub CLI):
 
 ```bash
-# open PR dev → main in GitHub UI, merge when green
-# never commit directly to main; prefer PRs for traceability
+# create a PR from dev → main that closes an issue (e.g., #34)
+git checkout dev && git push origin dev
+gh pr create --base main --head dev --title "feat: remove direct classification links" --body "This implements the migration to Local Classes. Closes #34."
+
+# review status
+gh pr view --web
+
+# after checks pass, merge the PR (squash by default)
+gh pr merge --squash --delete-branch
+
+# pull latest main and dev locally
+git checkout main && git pull --ff-only
+git checkout dev && git pull --ff-only
 ```
 
 ### Local Classes rollout notes
