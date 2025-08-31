@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
-import { login, currentUserEmail, currentUserEmailUnsafe } from '@/lib/auth';
+import { login, currentUserEmail, currentUserEmailUnsafe, getCurrentRole, defaultPathForRole } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { validateNextPath } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -10,8 +11,14 @@ async function signIn(formData: FormData) {
   'use server';
   const email = String(formData.get('email') || '');
   const password = String(formData.get('password') || '');
+  const nextRaw = String(formData.get('next') || '');
+  const nextPath = validateNextPath(nextRaw);
   const ok = await login(email, password);
-  if (ok) redirect('/admin');
+  if (ok) {
+    if (nextPath) return redirect(nextPath);
+    const { role } = await getCurrentRole();
+    return redirect(defaultPathForRole(role));
+  }
   redirect('/login?error=invalid');
 }
 
@@ -42,6 +49,8 @@ export default async function LoginPage({ searchParams }: { searchParams?: { [ke
   }
 
   const error = typeof searchParams?.error === 'string' ? searchParams!.error : undefined;
+  const nextParam = typeof searchParams?.next === 'string' ? searchParams!.next : undefined;
+  const nextSafe = validateNextPath(nextParam || undefined) || '';
   const signedOut = searchParams?.signedout === '1';
   return (
     <main className="max-w-sm mx-auto my-10">
@@ -57,6 +66,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: { [ke
         </div>
       ) : null}
       <form action={signIn} className="mt-4 border border-borderGray rounded-lg p-4 bg-white space-y-3">
+        {nextSafe ? <input type="hidden" name="next" value={nextSafe} /> : null}
         <div>
           <label className="block text-xs text-gray-600 mb-1">Email</label>
           <input name="email" type="email" className="w-full border border-borderGray rounded-md px-3 py-2" required />

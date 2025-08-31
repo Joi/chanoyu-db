@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify, decodeJwt } from 'jose';
 import { cookies } from 'next/headers';
 import crypto from 'node:crypto';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import type { UserRole } from './roles';
 
 // Constants
 export const COOKIE_NAME = 'ito_admin';
@@ -66,6 +67,55 @@ export async function login(email: string, password: string): Promise<boolean> {
 
 export async function logout() {
   cookies().delete(COOKIE_NAME);
+}
+
+// UserRole moved to lib/roles for testability without Next server deps
+
+export interface CurrentAccount {
+  id: string;
+  email: string;
+  role: UserRole;
+  full_name_en?: string | null;
+  full_name_ja?: string | null;
+  tea_school_id?: string | null;
+}
+
+export interface CurrentRoleResult {
+  role: UserRole;
+  accountId: string | null;
+  account: CurrentAccount | null;
+}
+
+export async function getCurrentRole(): Promise<CurrentRoleResult> {
+  const token = cookies().get(COOKIE_NAME)?.value;
+  if (!token) return { role: 'visitor', accountId: null, account: null };
+  try {
+    const { payload } = await jwtVerify(token, encoder.encode(AUTH_SECRET));
+    const email = typeof payload.sub === 'string' ? payload.sub : '';
+    if (!email) return { role: 'visitor', accountId: null, account: null };
+    const db = supabaseAdmin();
+    const { data } = await db
+      .from('accounts')
+      .select('id,email,role,full_name_en,full_name_ja,tea_school_id')
+      .eq('email', email)
+      .maybeSingle();
+    if (!data) return { role: 'visitor', accountId: null, account: null };
+    const dbRole = (data as any).role as string;
+    const normalizedRole: UserRole = dbRole === 'owner' ? 'owner' : dbRole === 'admin' ? 'admin' : 'member';
+    return {
+      role: normalizedRole,
+      accountId: String((data as any).id || ''),
+      account: data as CurrentAccount,
+    };
+  } catch {
+    return { role: 'visitor', accountId: null, account: null };
+  }
+}
+
+export function defaultPathForRole(role: UserRole): string {
+  if (role === 'owner' || role === 'admin') return '/admin';
+  if (role === 'member') return '/members';
+  return '/';
 }
 
 export async function currentUserEmail(): Promise<string | null> {

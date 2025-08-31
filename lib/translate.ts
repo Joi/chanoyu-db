@@ -36,3 +36,17 @@ export async function translateText(
     return null;
   }
 }
+
+// Validate a next path for login redirects. Allow only same-origin paths starting with '/'.
+export function validateNextPath(input: string | null | undefined): string | null {
+  if (!input) return null;
+  if (!input.startsWith('/')) return null;
+  try {
+    const url = new URL(input, 'http://localhost');
+    if (url.origin !== 'http://localhost') return null;
+    if (!url.pathname.startsWith('/')) return null;
+    return url.pathname + (url.search || '') + (url.hash || '');
+  } catch {
+    return null;
+  }
+}

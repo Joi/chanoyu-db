@@ -6,6 +6,15 @@ async function signOut() {
   await logout();
 }
 
+function Card({ href, title, subtitle }: { href: string; title: string; subtitle: string }) {
+  return (
+    <Link href={href} className="card hover:shadow-sm transition-shadow" style={{ display: 'block' }}>
+      <div className="font-medium">{title}</div>
+      <div className="text-sm text-gray-700" lang="ja">{subtitle}</div>
+    </Link>
+  );
+}
+
 export default async function AdminHome() {
   const ok = await requireAdmin();
   if (!ok) {
@@ -18,21 +27,29 @@ export default async function AdminHome() {
   const isOwner = await requireOwner();
 
   return (
-    <main className="max-w-2xl mx-auto my-10 px-6">
-      <h1 className="text-xl font-semibold mb-4">Admin</h1>
-      <ul className="list-disc pl-5 space-y-2">
-        <li><Link href="/admin/items" className="underline">Items</Link></li>
-        <li><Link href="/admin/media" className="underline">Media</Link></li>
-        <li><Link href="/admin/classifications" className="underline">Classifications</Link></li>
-        <li><Link href="/admin/local-classes" className="underline">Local Classes</Link></li>
-        <li><Link href="/admin/tea-schools" className="underline">Tea Schools</Link></li>
-        <li><Link href="/admin/chakai" className="underline">Chakai</Link></li>
-        <li><Link href="/admin/tea-rooms" className="underline">Tea Rooms</Link></li>
-        <li><Link href="/admin/new" className="underline">Create object</Link></li>
-        <li><Link href="/lookup" className="underline">Category Lookup (AAT + Wikidata)</Link></li>
-        {/* Accounts merged into Members */}
-        <li><Link href="/admin/members" className="underline">Members</Link></li>
-      </ul>
+    <main className="max-w-5xl mx-auto my-10 px-6">
+      <header className="mb-4">
+        <h1 className="text-xl font-semibold">Admin — 管理</h1>
+        <p className="text-sm text-gray-700 mt-1" lang="en">
+          Local Class (ローカル分類) is our project’s category. Each item selects one primary Local Class. It may link to a preferred external Classification (AAT/Wikidata). Classifications (分類) are canonical external authorities; Items inherit via Local Classes.
+        </p>
+        <p className="text-sm text-gray-700 mt-1" lang="ja">
+          Local Classes（ローカル分類）は本プロジェクトの分類体系です。各アイテムは一つの主要ローカル分類を選びます。
+          Classifications（分類; AAT/Wikidata）は外部の権威データで、ローカル分類から代表リンクとして参照します。
+        </p>
+      </header>
+      <section className="grid" style={{ gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+        <Card href="/admin/members" title="Members" subtitle="会員 — People and profiles" />
+        <Card href="/admin/chakai" title="Chakai" subtitle="茶会 — Oversee gatherings" />
+        <Card href="/admin/tea-rooms" title="Tea Rooms" subtitle="茶室 — Rooms and places" />
+        <Card href="/admin/items" title="Items" subtitle="道具 — Inventory and details" />
+        <Card href="/admin/media" title="Media" subtitle="メディア — Library and linking" />
+        <Card href="/admin/local-classes" title="Local Classes" subtitle="ローカル分類 — Project taxonomy (preferred external link)" />
+        <Card href="/admin/classifications" title="Classifications" subtitle="分類 — AAT/Wikidata authorities" />
+        <Card href="/admin/tea-schools" title="Tea Schools" subtitle="流派 — Lineages and schools" />
+        <Card href="/lookup" title="Lookup" subtitle="用語検索 — Category lookup" />
+        {isOwner ? <Card href="/admin/new" title="Create object" subtitle="新規オブジェクト — Add item" /> : null}
+      </section>
       <form action={signOut} className="mt-6">
         <button className="text-sm underline" type="submit">Sign out</button>
       </form>
