@@ -201,7 +201,9 @@ Notes:
 - Whether to include a relationships diagram on the public landing or link to it.
 - Deep-link login from protected routes: ensure all such routes set `next` automatically.
 
-
+## References
+- See Architecture: [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+- See Migration plan for removing direct object→classification links: [docs/PLAN_remove_direct_classification_links.md](../docs/PLAN_remove_direct_classification_links.md)
 
 ## Implementation checklist (for the agent)
 - Routing and auth
