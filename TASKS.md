@@ -25,25 +25,25 @@
 #### Scope & Checklist — Role‑aware Landings & English NavBar
 
 - Routing and auth
-  - [ ] Implement role-aware landing in `app/page.tsx` (server)
-  - [ ] Ensure `/login` honors validated `next` with role-based fallback
-  - [ ] Add role helper returning `owner|admin|member|visitor` and linked Member id
+  - [x] Implement role-aware landing in `app/page.tsx` (server)
+  - [x] Ensure `/login` honors validated `next` with role-based fallback
+  - [x] Add role helper returning `owner|admin|member|visitor` and linked Member id
 - Members landing
-  - [ ] Create `app/members/page.tsx` with quick actions and recent activity
+  - [x] Create `app/members/page.tsx` with quick actions and recent activity
   - [ ] Show prompts when Account lacks linked Member (create or select)
 - Admin landing
-  - [ ] Redesign `app/admin/page.tsx` to management cards with EN/JA help
+  - [x] Redesign `app/admin/page.tsx` to management cards with EN/JA help
 - NavBar
-  - [ ] Make NavBar role-aware with English-only labels; hide privileged links
+  - [x] Make NavBar role-aware with English-only labels; hide privileged links
 - Copy and tooltips
-  - [ ] Centralize labels/CTAs/descriptions in `lib/branding.ts` (or extend `lib/translate.ts`)
-  - [ ] Add tooltips: Local Classes — "Project taxonomy (ローカル分類)"; Classifications — "External authorities (AAT/Wikidata)"
+  - [x] Centralize labels/CTAs/descriptions in `lib/branding.ts` (or extend `lib/translate.ts`)
+  - [x] Add tooltips: Local Classes — "Project taxonomy (ローカル分類)"; Classifications — "External authorities (AAT/Wikidata)"
 - JSON-LD and model alignment
   - [ ] Confirm external types resolve via Local Class preferred Classification in `lib/jsonld.ts` and related routes
 - Tests and QA
-  - [ ] Add tests: login `next`, role-based defaults, NavBar visibility by role
+  - [x] Add tests: login `next`, role-based defaults, NavBar visibility by role
 - Documentation
-  - [ ] Cross-link `docs/ARCHITECTURE.md` and `docs/PLAN_remove_direct_classification_links.md` from the spec
+  - [x] Cross-link `docs/ARCHITECTURE.md` and `docs/PLAN_remove_direct_classification_links.md` from the spec
 - Accessibility and responsiveness
   - [ ] Verify focus states, touch targets (≥44px), contrast; ensure EN/JA copy does not overflow
 

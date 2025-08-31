@@ -1,39 +1,23 @@
 import { redirect } from 'next/navigation';
-import { login, currentUserEmail, currentUserEmailUnsafe, getCurrentRole } from '@/lib/auth';
+import { login, currentUserEmail, currentUserEmailUnsafe, getCurrentRole, defaultPathForRole } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { validateNextPath } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
-
-function isValidNextPath(input: string | null | undefined): string | null {
-  if (!input) return null;
-  try {
-    const url = new URL(input, 'http://localhost');
-    // Only allow same-origin relative paths (no protocol/host) and must start with '/'
-    if (url.origin !== 'http://localhost') return null;
-    if (!url.pathname.startsWith('/')) return null;
-    return url.pathname + (url.search || '') + (url.hash || '');
-  } catch {
-    // If it's a plain path like "/admin" without protocol, still validate
-    if (input.startsWith('/')) return input;
-    return null;
-  }
-}
 
 async function signIn(formData: FormData) {
   'use server';
   const email = String(formData.get('email') || '');
   const password = String(formData.get('password') || '');
   const nextRaw = String(formData.get('next') || '');
-  const nextPath = isValidNextPath(nextRaw);
+  const nextPath = validateNextPath(nextRaw);
   const ok = await login(email, password);
   if (ok) {
     if (nextPath) return redirect(nextPath);
     const { role } = await getCurrentRole();
-    if (role === 'owner' || role === 'admin') return redirect('/admin');
-    if (role === 'member') return redirect('/members');
-    return redirect('/');
+    return redirect(defaultPathForRole(role));
   }
   redirect('/login?error=invalid');
 }
@@ -66,7 +50,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: { [ke
 
   const error = typeof searchParams?.error === 'string' ? searchParams!.error : undefined;
   const nextParam = typeof searchParams?.next === 'string' ? searchParams!.next : undefined;
-  const nextSafe = isValidNextPath(nextParam || undefined) || '';
+  const nextSafe = validateNextPath(nextParam || undefined) || '';
   const signedOut = searchParams?.signedout === '1';
   return (
     <main className="max-w-sm mx-auto my-10">
