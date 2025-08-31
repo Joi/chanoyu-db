@@ -7,13 +7,15 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 export const COOKIE_NAME = 'ito_admin';
 export const TOKEN_EXPIRY = '2h';
 
-const AUTH_SECRET_RAW = process.env.AUTH_SECRET || 'change-me';
-const AUTH_SECRET = AUTH_SECRET_RAW.padEnd(32, 'x');
-
-// Soft validation in production builds if secret isn't configured
-if (process.env.NODE_ENV === 'production' && AUTH_SECRET_RAW === 'change-me') {
-  console.warn('[auth] AUTH_SECRET is not set; using default. Set AUTH_SECRET in production.');
+// Require AUTH_SECRET to be set - no insecure fallbacks
+const AUTH_SECRET_RAW = process.env.AUTH_SECRET;
+if (!AUTH_SECRET_RAW || AUTH_SECRET_RAW.length < 16) {
+  throw new Error(
+    'AUTH_SECRET environment variable is required and must be at least 16 characters long. ' +
+    'Generate a secure secret with: openssl rand -base64 32'
+  );
 }
+const AUTH_SECRET = AUTH_SECRET_RAW.padEnd(32, 'x');
 
 const encoder = new TextEncoder();
 
