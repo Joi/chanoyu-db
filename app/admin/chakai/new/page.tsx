@@ -79,6 +79,12 @@ async function createChakai(formData: FormData) {
 export default async function NewChakaiPage() {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
+  const db = supabaseAdmin();
+  const { data: rooms } = await db
+    .from('locations')
+    .select('id, name, name_en, name_ja, local_number')
+    .order('name', { ascending: true })
+    .limit(1000);
 
   return (
     <main className="max-w-xl mx-auto p-6">
@@ -115,7 +121,18 @@ export default async function NewChakaiPage() {
         <fieldset className="border p-3 rounded">
           <legend className="text-sm font-medium">Tea Room</legend>
           <div className="grid gap-3">
-            <SearchSelect name="location_id" label="Select existing tea room" searchPath="/api/search/locations" labelFields={["name_en","name_ja","name","local_number","address_en","address_ja","address"]} valueKey="id" />
+            <div className="grid gap-1">
+              <label className="text-sm">Select tea room</label>
+              <select name="location_id" className="input w-full" defaultValue="">
+                <option value="">— Select —</option>
+                {(rooms || []).map((r: any) => {
+                  const title = r.name_ja || r.name_en || r.name || '';
+                  const en = r.name_en || r.name || '';
+                  const label = en && r.name_ja ? `${title} / ${en}` : title;
+                  return <option key={r.id} value={r.id}>{label}{r.local_number ? ` (${r.local_number})` : ''}</option>;
+                })}
+              </select>
+            </div>
             <div className="text-xs text-gray-600">Or create a new tea room:</div>
             <input name="location_name_en" className="input w-full" placeholder="Name (EN)" />
             <input name="location_name_ja" className="input w-full" placeholder="Name (JA)" />
