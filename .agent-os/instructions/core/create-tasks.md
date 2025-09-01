@@ -71,6 +71,40 @@ EOF
 
 </step>
 
+<step number="0a" subagent="git-workflow" name="optional_branch_creation">
+
+### Step 0a: Create/Switch to a Feature Branch (on request)
+
+If the user says "create a new branch to do this" (or explicitly requests a branch now), create or switch to `feature/<slug>` before creating issues.
+
+<how_to_derive_slug>
+  Prefer one of:
+  - From Issue labels: `feature:<slug>`
+  - From latest spec folder name `.agent-os/specs/YYYY-MM-DD-<slug>/` (strip date)
+</how_to_derive_slug>
+
+<automation_example>
+  ```bash
+  # Try to derive slug from the invoking Issue labels
+  ISSUE_NUMBER=$(jq -r '.issue.number // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+  if [ -n "$ISSUE_NUMBER" ]; then
+    SLUG=$(gh issue view "$ISSUE_NUMBER" --json labels --jq '.labels[].name | select(startswith("feature:")) | sub("^feature:";"")' | head -n1)
+  fi
+
+  # Fallback: derive from latest spec directory
+  if [ -z "${SLUG:-}" ]; then
+    SLUG=$(ls -1d .agent-os/specs/*/ 2>/dev/null | sed -E 's#.*/[0-9]{4}-[0-9]{2}-[0-9]{2}-##; s#/$##' | tail -n1)
+  fi
+
+  if [ -n "${SLUG:-}" ]; then
+    chmod +x scripts/git-ensure-feature-branch.sh || true
+    ./scripts/git-ensure-feature-branch.sh "$SLUG"
+  fi
+  ```
+</automation_example>
+
+</step>
+
 <step number="1" subagent="gh-cli" name="create_github_issues">
 
 ### Step 1: Create GitHub Issues (replace local tasks.md)

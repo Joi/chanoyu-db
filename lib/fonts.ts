@@ -13,12 +13,14 @@ export const garamond = EB_Garamond({
 })
 
 export const notoSansJP = Noto_Sans_JP({
+  weight: ['400'],
   subsets: ['latin'],
   variable: '--font-noto-sans-jp',
   display: 'swap',
 })
 
 export const notoSerifJP = Noto_Serif_JP({
+  weight: ['400'],
   subsets: ['latin'],
   variable: '--font-noto-serif-jp',
   display: 'swap',
