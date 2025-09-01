@@ -39,6 +39,13 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 1. First ask Claude to review existing patterns in /app
 2. Have it suggest database schema changes
 3. Implement in steps: database → API → UI
+
+### Planning & Tasks (Updated)
+
+- Use GitHub Issues as the source of truth (no local markdown task lists).
+- Create a feature branch from `dev` for each feature and open a PR to `dev`.
+- Specs live under `.agent-os/specs/YYYY-MM-DD-slug/` and are linked from the initial Spec issue.
+- Prefer the `gh` CLI or GitHub UI to create issues with labels like `type:*`, `area:*`, `priority:*`, `state:*`, and `feature:<slug>`.
 ```
 
 ### Database Changes

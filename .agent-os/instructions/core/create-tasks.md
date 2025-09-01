@@ -18,52 +18,37 @@ With the user's approval, proceed to creating a tasks list based on the current 
 
 <process_flow>
 
-<step number="1" subagent="file-creator" name="create_tasks">
+<step number="1" subagent="gh-cli" name="create_github_issues">
 
-### Step 1: Create tasks.md
+### Step 1: Create GitHub Issues (replace local tasks.md)
 
-Use the file-creator subagent to create file: tasks.md inside of the current feature's spec folder.
+Create a small set of GitHub Issues derived from the approved spec. Prefer 1-5 issues grouped by deliverable/component. Use labels and optional milestone.
 
-<file_template>
-  <header>
-    # Spec Tasks
-  </header>
-</file_template>
+<issue_guidelines>
+  <labels>
+    - type:feature | type:bug | type:chore | type:docs
+    - area:frontend | area:api | area:db | area:admin | area:media | area:workflow | area:docs
+    - priority:P0 | priority:P1 | priority:P2
+    - state:ready | state:blocked | state:needs-spec
+    - feature:<slug>
+  </labels>
+  <milestone>
+    - optional: Feature: <Short Name>
+  </milestone>
+  <body_template>
+    - Link the spec: .agent-os/specs/YYYY-MM-DD-slug/spec.md
+    - Brief acceptance criteria
+    - Testing notes (if any)
+  </body_template>
+</issue_guidelines>
 
-<task_structure>
-  <major_tasks>
-    - count: 1-5
-    - format: numbered checklist
-    - grouping: by feature or component
-  </major_tasks>
-  <subtasks>
-    - count: up to 8 per major task
-    - format: decimal notation (1.1, 1.2)
-    - first_subtask: typically write tests
-    - last_subtask: verify all tests pass
-  </subtasks>
-</task_structure>
-
-<task_template>
-  ## Tasks
-
-  - [ ] 1. [MAJOR_TASK_DESCRIPTION]
-    - [ ] 1.1 Write tests for [COMPONENT]
-    - [ ] 1.2 [IMPLEMENTATION_STEP]
-    - [ ] 1.3 [IMPLEMENTATION_STEP]
-    - [ ] 1.4 Verify all tests pass
-
-  - [ ] 2. [MAJOR_TASK_DESCRIPTION]
-    - [ ] 2.1 Write tests for [COMPONENT]
-    - [ ] 2.2 [IMPLEMENTATION_STEP]
-</task_template>
-
-<ordering_principles>
-  - Consider technical dependencies
-  - Follow TDD approach
-  - Group related functionality
-  - Build incrementally
-</ordering_principles>
+<automation_minimal>
+  Prefer manual creation in GitHub UI or use gh CLI:
+  gh issue create --title "[Feature] Short task title" \
+                  --body "See .agent-os/specs/YYYY-MM-DD-slug/spec.md" \
+                  --label "type:feature,area:workflow,feature:slug,state:ready" \
+                  --milestone "Feature: Short Name"
+</automation_minimal>
 
 </step>
 
@@ -71,33 +56,31 @@ Use the file-creator subagent to create file: tasks.md inside of the current fea
 
 ### Step 2: Execution Readiness Check
 
-Evaluate readiness to begin implementation by presenting the first task summary and requesting user confirmation to proceed.
+Evaluate readiness by presenting the first ready Issue and requesting confirmation to proceed.
 
 <readiness_summary>
   <present_to_user>
     - Spec name and description
-    - First task summary from tasks.md
+    - First "state:ready" issue title and labels
     - Estimated complexity/scope
-    - Key deliverables for task 1
+    - Key deliverables for this issue
   </present_to_user>
 </readiness_summary>
 
 <execution_prompt>
-  PROMPT: "The spec planning is complete. The first task is:
+  PROMPT: "Planning is complete. The first issue is:
 
-  **Task 1:** [FIRST_TASK_TITLE]
-  [BRIEF_DESCRIPTION_OF_TASK_1_AND_SUBTASKS]
+  **Issue:** [ISSUE_TITLE] ([ISSUE_NUMBER])
+  Labels: [LABELS]
 
-  Would you like me to proceed with implementing Task 1? I will focus only on this first task and its subtasks unless you specify otherwise.
-
-  Type 'yes' to proceed with Task 1, or let me know if you'd like to review or modify the plan first."
+  Proceed with this issue? I'll focus only on it unless you specify otherwise."
 </execution_prompt>
 
 <execution_flow>
   IF user_confirms_yes:
     REFERENCE: @.agent-os/instructions/core/execute-tasks.md
-    FOCUS: Only Task 1 and its subtasks
-    CONSTRAINT: Do not proceed to additional tasks without explicit user request
+    FOCUS: Only the selected Issue
+    CONSTRAINT: Do not proceed to additional issues without explicit user request
   ELSE:
     WAIT: For user clarification or modifications
 </execution_flow>
