@@ -35,6 +35,41 @@ git push origin dev
 # → Vercel builds Preview → visit https://dev.collection.ito.com
 ```
 
+## Feature branch workflow with GitHub Issues
+
+- Source of truth for planning: GitHub Issues (no local markdown task lists).
+- Branch per feature from `dev`; open PR to `dev`; later merge `dev → main`.
+- Specs live under `.agent-os/specs/YYYY-MM-DD-slug/` and are linked from the initial Spec issue.
+
+Feature branch naming:
+
+```bash
+git checkout dev
+git checkout -b feature/<slug>
+```
+
+Labels (suggested):
+
+- type:feature | type:bug | type:chore | type:docs
+- area:frontend | area:api | area:db | area:admin | area:media | area:workflow | area:docs
+- priority:P0 | priority:P1 | priority:P2
+- state:ready | state:blocked | state:needs-spec
+- feature:<slug>
+
+Optional milestone: "Feature: Short Name" to group related issues.
+
+Minimal bootstrap (requires GitHub CLI `gh`):
+
+```bash
+scripts/feature-bootstrap.sh <slug> "Human-friendly feature title"
+```
+
+This will:
+- Create/checkout `feature/<slug>` from `dev`
+- Create a spec folder `.agent-os/specs/YYYY-MM-DD-<slug>/`
+- Open an initial Spec issue labeled `feature:<slug>` and `state:needs-spec`
+- Open a draft PR `feature/<slug> → dev`
+
 Optional: fast preview deploy from your working tree (skips GitHub build queue)
 
 ```bash

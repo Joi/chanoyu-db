@@ -44,6 +44,28 @@ Use the context-fetcher subagent to identify spec initiation method by either fi
 
 </step>
 
+<step number="5a" subagent="run-command" name="optional_feature_bootstrap">
+
+### Optional: Feature Bootstrap (branch, spec stub, issue, draft PR)
+
+If the user provides a slug and title, offer to run the bootstrap command to set up the feature branch and initial artifacts.
+
+<inputs>
+  - slug (kebab-case)
+  - title (human-friendly)
+</inputs>
+
+<command>
+  scripts/feature-bootstrap.sh [slug] [title]
+</command>
+
+<when_to_use>
+  - User explicitly requests bootstrap OR
+  - User confirms they want a branch/issue/PR created now
+</when_to_use>
+
+</step>
+
 <step number="2" subagent="context-fetcher" name="context_gathering">
 
 ### Step 2: Context Gathering (Conditional)

@@ -29,11 +29,11 @@ Execute tasks for a given spec following three distinct phases:
 
 ### Step 1: Task Assignment
 
-Identify which tasks to execute from the spec (using spec_srd_reference file path and optional specific_tasks array), defaulting to the next uncompleted parent task if not specified.
+Identify which GitHub Issue(s) to execute for the spec (using spec reference and optional issue numbers), defaulting to the next open Issue labeled "state:ready" and the feature label for this spec if not specified.
 
 <task_selection>
-  <explicit>user specifies exact task(s)</explicit>
-  <implicit>find next uncompleted task in tasks.md</implicit>
+  <explicit>user specifies exact issue number(s)</explicit>
+  <implicit>find next open issue with labels: feature:<slug> AND state:ready</implicit>
 </task_selection>
 
 <instructions>
@@ -48,7 +48,7 @@ Identify which tasks to execute from the spec (using spec_srd_reference file pat
 
 ### Step 2: Context Analysis
 
-Use the context-fetcher subagent to gather minimal context for task understanding by always loading spec tasks.md, and conditionally loading @.agent-os/product/mission-lite.md, spec-lite.md, and sub-specs/technical-spec.md if not already in context.
+Use the context-fetcher subagent to gather minimal context for task understanding by loading spec files and the selected Issue details. Conditionally load @.agent-os/product/mission-lite.md and sub-specs/technical-spec.md if not already in context.
 
 <instructions>
   ACTION: Use context-fetcher subagent to:
@@ -61,7 +61,8 @@ Use the context-fetcher subagent to gather minimal context for task understandin
 
 <context_gathering>
   <essential_docs>
-    - tasks.md for task breakdown
+    - Issue body and labels
+    - spec.md and spec-lite.md
   </essential_docs>
   <conditional_docs>
     - mission-lite.md for product alignment
@@ -76,7 +77,7 @@ Use the context-fetcher subagent to gather minimal context for task understandin
 
 ### Step 3: Git Branch Management
 
-Use the git-workflow subagent to manage git branches to ensure proper isolation by creating or switching to the appropriate branch for the spec.
+Use the git-workflow subagent to manage git branches to ensure proper isolation by creating or switching to the appropriate feature branch for the spec.
 
 <instructions>
   ACTION: Use git-workflow subagent
@@ -104,19 +105,19 @@ Use the git-workflow subagent to manage git branches to ensure proper isolation 
 
 ### Step 4: Task Execution Loop
 
-**IMPORTANT**: This is a loop. Execute ALL assigned tasks before proceeding to Phase 3.
+**IMPORTANT**: This is a loop. Execute all selected Issues before proceeding to Phase 3.
 
-Execute all assigned parent tasks and their subtasks using @.agent-os/instructions/core/execute-task.md instructions, continuing until all tasks are complete.
+Execute each selected Issue using @.agent-os/instructions/core/execute-task.md guidance, continuing until all Issues are complete.
 
 <execution_flow>
   LOAD @.agent-os/instructions/core/execute-task.md ONCE
 
-  FOR each parent_task assigned in Step 1:
+  FOR each issue assigned in Step 1:
     EXECUTE instructions from execute-task.md with:
-      - parent_task_number
-      - all associated subtasks
+      - issue_number
+      - acceptance criteria from issue body
     WAIT for task completion
-    UPDATE tasks.md status
+    UPDATE issue status/labels and link commits/PR
   END FOR
 
   **IMPORTANT**: After loop completes, CONTINUE to Phase 3 (Step 5). Do not stop here.
@@ -135,19 +136,19 @@ Execute all assigned parent tasks and their subtasks using @.agent-os/instructio
 </loop_logic>
 
 <task_status_check>
-  AFTER each task execution:
-    CHECK tasks.md for remaining tasks
-    IF all assigned tasks complete:
+  AFTER each issue execution:
+    CHECK for remaining open issues in the feature label
+    IF all assigned issues complete:
       PROCEED to next step
     ELSE:
-      CONTINUE with next task
+      CONTINUE with next issue
 </task_status_check>
 
 <instructions>
   ACTION: Load execute-task.md instructions once at start
   REUSE: Same instructions for each parent task iteration
   LOOP: Through all assigned parent tasks
-  UPDATE: Task status after each completion
+  UPDATE: Issue status/labels after each completion
   VERIFY: All tasks complete before proceeding
   HANDLE: Blocking issues appropriately
   **IMPORTANT**: When all tasks complete, proceed to Step 5
