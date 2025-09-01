@@ -51,7 +51,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
   return (
     <nav className="flex gap-3 items-center" ref={ref}>
       <button
-        className="md:hidden inline-flex items-center justify-center rounded-lg px-2 py-1 border border-[color:var(--line)]"
+        className="md:hidden inline-flex items-center justify-center rounded-lg px-3 py-2 border border-[color:var(--line)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--link)] focus-visible:ring-offset-2"
         aria-label="Open menu"
         onClick={() => setMobileOpen(true)}
       >
@@ -128,7 +128,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
           <div className="absolute left-0 top-0 bottom-0 w-72 bg-white border-r border-[color:var(--line)] p-4 grid gap-3">
             <div className="flex items-center justify-between">
               <strong>Menu</strong>
-              <button onClick={() => setMobileOpen(false)} aria-label="Close menu">Close</button>
+              <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="px-3 py-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--link)] focus-visible:ring-offset-2">Close</button>
             </div>
             <input
               className="border rounded px-2 py-1 text-sm"

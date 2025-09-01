@@ -180,6 +180,10 @@ Run:
     pnpm dev
     # open http://localhost:3000
 
+### Minimal UI Polish (feature/minimal-ui-polish)
+
+This branch adds minimal design tokens, fonts via `next/font` (Inter, EB Garamond, Noto Sans/Serif JP), UI primitives (`Container`, `Title`, `Muted`, `Separator`, `Button`), a public Objects grid at `/objects`, a redesigned object detail page at `/id/{token}`, and a mobile sheet navigation with integrated object search.
+
 Admin pages:
 - `/admin/chakai` — list, add via `/admin/chakai/new`, edit via `/admin/chakai/[id]`
   - Add attendees and items via searchable selectors
