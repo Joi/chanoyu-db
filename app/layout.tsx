@@ -1,7 +1,9 @@
 import './globals.css';
 import NavBar from './components/NavBar';
+import Container from './components/Container';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/branding';
 import Image from 'next/image';
+import { inter, garamond, notoSansJP, notoSerifJP } from '@/lib/fonts';
 
 export const metadata = {
   title: APP_NAME,
@@ -15,17 +17,22 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="bg-background text-foreground">
-        <header className="border-b border-borderGray bg-white">
-          <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+    <html lang="en" className={`${inter.variable} ${garamond.variable} ${notoSansJP.variable} ${notoSerifJP.variable}`}>
+      <body className="font-sans bg-paper text-ink">
+        <header className="border-b border-[color:var(--line,_rgba(0,0,0,0.08))] bg-white">
+          <Container>
+          <div className="py-4 flex items-center justify-between">
             <a className="font-extrabold text-lg no-underline text-inherit" href="/">{APP_NAME}</a>
             <NavBar />
           </div>
+          </Container>
         </header>
-        <div className="max-w-3xl mx-auto px-6 py-6">{children}</div>
-        <footer className="border-t border-borderGray bg-white">
-          <div className="max-w-3xl mx-auto px-6 py-6 text-sm text-gray-600">
+        <Container>
+          <div className="py-6">{children}</div>
+        </Container>
+        <footer className="border-t border-[color:var(--line,_rgba(0,0,0,0.08))] bg-white">
+          <Container>
+          <div className="py-6 text-sm text-gray-600">
             <span className="inline-flex items-center gap-2">
               <span>© {APP_NAME}</span>
               <a
@@ -47,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
             </span>
           </div>
+          </Container>
         </footer>
       </body>
     </html>

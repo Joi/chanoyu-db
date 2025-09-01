@@ -9,6 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        paper: '#FFFFFF',
+        ink: '#111111',
+        inkMuted: '#2B2B2B',
+        inkSubtle: '#666666',
+        line: 'rgba(0,0,0,0.08)',
+        link: '#0645AD',
+        // legacy aliases (keep for compatibility)
         background: '#fafafa',
         foreground: '#171717',
         primaryBlue: '#1A80B4',
@@ -18,8 +25,15 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          'Avenir', 'Montserrat', 'Corbel', 'URW Gothic', 'source-sans-pro',
-          '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif',
+          'var(--font-inter)',
+          'var(--font-noto-sans-jp)',
+          'system-ui',
+          'sans-serif',
+        ],
+        serif: [
+          'var(--font-garamond)',
+          'var(--font-noto-serif-jp)',
+          'serif',
         ],
       },
     },
