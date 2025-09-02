@@ -10,17 +10,17 @@ export function SiteHeader() {
       <NavigationMenu>
         <NavigationMenuList className="hidden gap-2 sm:flex">
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center" href="/objects">
+            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center focus:outline-none focus:ring-2 focus:ring-ring rounded-sm" href="/objects">
               Objects
             </a>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center" href="/chakai">
+            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center focus:outline-none focus:ring-2 focus:ring-ring rounded-sm" href="/chakai">
               Chakai
             </a>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center" href="/lookup">
+            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center focus:outline-none focus:ring-2 focus:ring-ring rounded-sm" href="/lookup">
               Lookup
             </a>
           </NavigationMenuItem>
