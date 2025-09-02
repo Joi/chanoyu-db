@@ -1,28 +1,50 @@
-import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@/components/ui/navigation-menu";
+"use client";
+import { NavigationMenu, NavigationMenuItem, NavigationMenuList, NavigationMenuLink } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function SiteHeader() {
+  const pathname = usePathname();
   return (
     <div className="flex items-center justify-between py-2">
-      <a href="/" className="text-xl font-semibold tracking-tight hover:opacity-90">
+      <Link href="/" className="text-xl font-semibold tracking-tight hover:opacity-90">
         Ito Chanoyu
-      </a>
+      </Link>
       <NavigationMenu>
         <NavigationMenuList className="hidden gap-2 sm:flex">
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center focus:outline-none focus:ring-2 focus:ring-ring rounded-sm" href="/objects">
-              Objects
-            </a>
+            <NavigationMenuLink asChild>
+              <Link
+                href="/objects"
+                className="inline-flex min-h-[44px] items-center px-3 py-2 hover:underline"
+                aria-current={pathname?.startsWith("/objects") ? "page" : undefined}
+              >
+                Objects
+              </Link>
+            </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center focus:outline-none focus:ring-2 focus:ring-ring rounded-sm" href="/chakai">
-              Chakai
-            </a>
+            <NavigationMenuLink asChild>
+              <Link
+                href="/chakai"
+                className="inline-flex min-h-[44px] items-center px-3 py-2 hover:underline"
+                aria-current={pathname?.startsWith("/chakai") ? "page" : undefined}
+              >
+                Chakai
+              </Link>
+            </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center focus:outline-none focus:ring-2 focus:ring-ring rounded-sm" href="/lookup">
-              Lookup
-            </a>
+            <NavigationMenuLink asChild>
+              <Link
+                href="/lookup"
+                className="inline-flex min-h-[44px] items-center px-3 py-2 hover:underline"
+                aria-current={pathname === "/lookup" ? "page" : undefined}
+              >
+                Lookup
+              </Link>
+            </NavigationMenuLink>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
