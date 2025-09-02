@@ -35,5 +35,14 @@
 
 - gh CLI:
   1) `git checkout -B dev && git push -u origin dev`
-  2) `gh pr create --base main --head dev --title "<title>" --body "<body>"`
+  2) Prefer body files for proper newlines:
+     ```bash
+     cat > /tmp/pr_body.md <<'EOF'
+     Summary line
+
+     - Item 1
+     - Item 2
+     EOF
+     gh pr create --base main --head dev --title "<title>" --body-file /tmp/pr_body.md
+     ```
   3) Optional: `gh pr view --web` to open in browser; `gh pr merge --merge` when green.

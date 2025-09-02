@@ -58,28 +58,51 @@ fi
 git add "$SPEC_DIR/spec.md"
 git commit -m "chore(spec): bootstrap ${SLUG} spec folder" || true
 
-# Create Issue
+# Create Issue (use temp file for proper multiline Markdown and embed spec)
+ISSUE_BODY_FILE=$(mktemp)
+{
+  cat <<EOF
+# [Spec] ${TITLE}
+
+Source: \
+\`${SPEC_DIR}/spec.md\`
+
+Labels: \`type:docs\`, \`area:workflow\`, \`feature:${SLUG}\`, \`state:needs-spec\`
+
+---
+
+The following is the current contents of the spec for convenience:
+
+EOF
+  cat "${SPEC_DIR}/spec.md"
+} > "$ISSUE_BODY_FILE"
+
 ISSUE_URL=$(gh issue create \
   --title "[Spec] ${TITLE}" \
-  --body "Spec lives at \
-
-
-
-${SPEC_DIR}/spec.md
-
-Please track work in GitHub Issues labeled \`feature:${SLUG}\`." \
+  --body-file "$ISSUE_BODY_FILE" \
   --label "type:docs,area:workflow,feature:${SLUG},state:needs-spec" \
   --json url --jq .url)
 
+rm -f "$ISSUE_BODY_FILE"
+
 echo "Created issue: ${ISSUE_URL}"
 
-# Create draft PR
+# Create draft PR (use body file to ensure newlines render)
+PR_BODY_FILE=$(mktemp)
+cat > "$PR_BODY_FILE" <<EOF
+Draft PR for ${TITLE}.
+
+Spec: ${ISSUE_URL}
+EOF
+
 gh pr create \
   --base dev \
   --head "$BRANCH" \
   --title "feat(${SLUG}): ${TITLE}" \
-  --body "Draft PR for ${TITLE}.\n\nSpec: ${ISSUE_URL}\n" \
+  --body-file "$PR_BODY_FILE" \
   --draft || true
+
+rm -f "$PR_BODY_FILE"
 
 echo "Bootstrap complete for ${SLUG}" 
 

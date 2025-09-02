@@ -3,6 +3,9 @@ import { notFound, redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { buildLinkedArtJSONLD } from '@/lib/jsonld';
 import RevealPrice from '@/app/components/RevealPrice';
+import Container from '@/app/components/Container'
+import Title from '@/app/components/Title'
+import Separator from '@/app/components/Separator'
 // import { makeSupabaseThumbUrl } from '@/lib/storage';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 
@@ -104,121 +107,128 @@ export default async function ObjectPage({ params }: Props) {
   const jsonld = buildLinkedArtJSONLD(data, media, jsonldClassifications, baseId);
 
   return (
-    <main className="max-w-4xl mx-auto p-6">
-      <header className="mb-4">
-        <h1 className="text-xl font-semibold">{data.title}</h1>
-        {data.title_ja ? <p className="text-sm" lang="ja">{data.title_ja}</p> : null}
-        {isAdmin || isOwner ? (
-          <p className="text-xs mt-1"><a className="underline" href={`/admin/${token}`}>Edit</a></p>
-        ) : null}
-        {/* Local Class summary */}
-        <section className="card mt-3">
-          <h2 className="text-sm font-semibold mb-1">Classification</h2>
-          <div className="grid gap-2">
-            {localClassTitle ? (
-              <div className="text-sm">{localClassTitle}</div>
-            ) : (
-              <div className="text-xs text-gray-600">No local class selected</div>
-            )}
-            {localClassBreadcrumb.length ? (
-              <div className="text-xs text-gray-600">{localClassBreadcrumb.join(' / ')}</div>
-            ) : null}
-            {localClassExternal.length ? (
-              <div className="flex flex-wrap gap-2 text-xs">
-                {localClassExternal.map((c: any) => (
-                  <a key={String(c.id)} href={c.uri} target="_blank" rel="noreferrer" className="underline">
-                    {c.scheme}: {String(c.label_ja || c.label || c.uri)}
-                  </a>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </section>
-      </header>
-
-      {img ? (
-        <div className="relative w-full" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
-          <a href={img} target="_blank" rel="noreferrer">
-            <Image src={img} alt={data.title} fill sizes="(max-width: 768px) 100vw, 768px" style={{ objectFit: 'cover' }} />
-          </a>
-        </div>
-      ) : null}
-
-      <div className="grid mt-6" style={{ gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <section>
-          <h2 className="text-lg font-semibold mb-2">Details</h2>
-          <dl className="space-y-2">
-            {data.local_number ? (
-              <div>
-                <dt className="text-sm text-gray-600">Number</dt>
-                <dd>{data.local_number}</dd>
-              </div>
-            ) : null}
-            {(data.craftsman || data.craftsman_ja) ? (
-              <div>
-                <dt className="text-sm text-gray-600">Craftsman</dt>
-                <dd>
-                  {data.craftsman || ''} {data.craftsman_ja ? <span lang="ja">/ {data.craftsman_ja}</span> : null}
-                </dd>
-              </div>
-            ) : null}
-            {data.event_date ? (
-              <div>
-                <dt className="text-sm text-gray-600">Date</dt>
-                <dd>{String(data.event_date)}</dd>
-              </div>
-            ) : null}
-            {data.url ? (
-              <div>
-                <dt className="text-sm text-gray-600">URL</dt>
-                <dd><a className="underline" href={data.url} target="_blank" rel="noreferrer">{data.url}</a></dd>
-              </div>
-            ) : null}
-            {Array.isArray(data.tags) && data.tags.length ? (
-              <div>
-                <dt className="text-sm text-gray-600">Tags</dt>
-                <dd>{data.tags.join(', ')}</dd>
-              </div>
-            ) : null}
-            {(isAdmin || isOwner) && (data.store || data.store_ja) ? (
-              <div>
-                <dt className="text-sm text-gray-600">Store</dt>
-                <dd>
-                  {data.store || ''} {data.store_ja ? <span lang="ja">/ {data.store_ja}</span> : null}
-                </dd>
-              </div>
-            ) : null}
-            {(isAdmin || isOwner) && (data.location || data.location_ja) ? (
-              <div>
-                <dt className="text-sm text-gray-600">Location</dt>
-                <dd>
-                  {data.location || ''} {data.location_ja ? <span lang="ja">/ {data.location_ja}</span> : null}
-                </dd>
-              </div>
-            ) : null}
-            {isOwner && (data.price != null) ? (
-              <div>
-                <dt className="text-sm text-gray-600">Price</dt>
-                <dd><RevealPrice price={Number(data.price)} /></dd>
-              </div>
-            ) : null}
-          </dl>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold mb-2">Description</h2>
-          {(data.notes || data.notes_ja) ? (
-            <div className="mt-2">
-              {data.notes ? <p className="mb-1">{data.notes}</p> : null}
-              {data.notes_ja ? <p className="mb-1" lang="ja">{data.notes_ja}</p> : null}
-            </div>
+    <main>
+      <Container>
+        <header className="py-6">
+          <Title level={1}>{data.title || data.title_ja || data.local_number || data.token}</Title>
+          {data.title_ja && data.title ? (
+            <p className="text-sm text-inkSubtle" lang="ja">{data.title_ja}</p>
           ) : null}
-        </section>
-      </div>
+          {(isAdmin || isOwner) ? (
+            <p className="text-xs mt-1"><a className="underline" href={`/admin/${token}`}>Edit</a></p>
+          ) : null}
+          <div className="mt-4 border border-[color:var(--line)] rounded-lg p-3 bg-white">
+            <h2 className="text-sm font-semibold mb-1">Classification</h2>
+            <div className="grid gap-2">
+              {localClassTitle ? (
+                <div className="text-sm">{localClassTitle}</div>
+              ) : (
+                <div className="text-xs text-inkSubtle">No local class selected</div>
+              )}
+              {localClassBreadcrumb.length ? (
+                <div className="text-xs text-inkSubtle">{localClassBreadcrumb.join(' / ')}</div>
+              ) : null}
+              {localClassExternal.length ? (
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {localClassExternal.map((c: any) => (
+                    <a key={String(c.id)} href={c.uri} target="_blank" rel="noreferrer" className="underline">
+                      {c.scheme}: {String(c.label_ja || c.label || c.uri)}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </header>
 
-      {/* Removed direct per-object classifications list in favor of Local Class display above */}
+        {img ? (
+          <div className="relative w-full aspect-[4/3] bg-[color:var(--paper)] rounded-lg overflow-hidden border border-[color:var(--line)]">
+            <a href={img} target="_blank" rel="noreferrer">
+              <Image src={img} alt={data.title || ''} fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" />
+            </a>
+          </div>
+        ) : null}
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonld) }} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <section>
+            <h2 className="font-serif text-[1.5rem] leading-snug mb-2">Details</h2>
+            <Separator className="mb-3" />
+            <dl className="space-y-3">
+              {data.local_number ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">Number</dt>
+                  <dd>{data.local_number}</dd>
+                </div>
+              ) : null}
+              {(data.craftsman || data.craftsman_ja) ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">Craftsman</dt>
+                  <dd>
+                    {data.craftsman || ''} {data.craftsman_ja ? <span lang="ja">/ {data.craftsman_ja}</span> : null}
+                  </dd>
+                </div>
+              ) : null}
+              {data.event_date ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">Date</dt>
+                  <dd>{String(data.event_date)}</dd>
+                </div>
+              ) : null}
+              {data.url ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">URL</dt>
+                  <dd><a className="underline" href={data.url} target="_blank" rel="noreferrer">{data.url}</a></dd>
+                </div>
+              ) : null}
+              {Array.isArray(data.tags) && data.tags.length ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">Tags</dt>
+                  <dd>{data.tags.join(', ')}</dd>
+                </div>
+              ) : null}
+              {(isAdmin || isOwner) && (data.store || data.store_ja) ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">Store</dt>
+                  <dd>
+                    {data.store || ''} {data.store_ja ? <span lang="ja">/ {data.store_ja}</span> : null}
+                  </dd>
+                </div>
+              ) : null}
+              {(isAdmin || isOwner) && (data.location || data.location_ja) ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">Location</dt>
+                  <dd>
+                    {data.location || ''} {data.location_ja ? <span lang="ja">/ {data.location_ja}</span> : null}
+                  </dd>
+                </div>
+              ) : null}
+              {isOwner && (data.price != null) ? (
+                <div>
+                  <dt className="text-sm text-inkSubtle">Price</dt>
+                  <dd><RevealPrice price={Number(data.price)} /></dd>
+                </div>
+              ) : null}
+            </dl>
+          </section>
+
+          <section>
+            <h2 className="font-serif text-[1.5rem] leading-snug mb-2">Description</h2>
+            <Separator className="mb-3" />
+            {(data.notes || data.notes_ja) ? (
+              <div className="prose">
+                {data.notes ? <p className="mb-1">{data.notes}</p> : null}
+                {data.notes_ja ? <p className="mb-1" lang="ja">{data.notes_ja}</p> : null}
+              </div>
+            ) : (
+              <p className="text-sm text-inkSubtle">No description</p>
+            )}
+          </section>
+        </div>
+
+        {/* Removed direct per-object classifications list in favor of Local Class display above */}
+
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonld) }} />
+      </Container>
     </main>
   );
 }
