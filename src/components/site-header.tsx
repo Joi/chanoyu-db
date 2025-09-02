@@ -10,23 +10,23 @@ export function SiteHeader() {
       <NavigationMenu>
         <NavigationMenuList className="hidden gap-2 sm:flex">
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline" href="/objects">
+            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center" href="/objects">
               Objects
             </a>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline" href="/chakai">
+            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center" href="/chakai">
               Chakai
             </a>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <a className="px-3 py-2 hover:underline" href="/lookup">
+            <a className="px-3 py-2 hover:underline min-h-[44px] inline-flex items-center" href="/lookup">
               Lookup
             </a>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
-      <Button variant="default" className="hidden sm:inline-flex">
+      <Button variant="default" className="hidden min-h-[44px] sm:inline-flex">
         Sign in
       </Button>
     </div>
