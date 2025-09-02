@@ -51,8 +51,6 @@ export default function Page() {
           imageUrl={it.imageUrl}
           primaryLabel="Open"
           secondaryLabel="Quick view"
-          onPrimary={() => console.log("open", it.href)}
-          onSecondary={() => console.log("peek", it.href)}
         />
       ))}
     </div>

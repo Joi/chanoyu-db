@@ -13,6 +13,11 @@ import PendingProgress from '@/app/components/PendingProgress';
 import SearchSelect from '@/app/components/SearchSelect';
 import type { LocalClass, SelectOption } from '@/lib/types/admin';
 import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 // Proper UUID validation schema
 const uuidSchema = z.string().uuid();
@@ -559,94 +564,131 @@ export default async function AdminObjectPage({ params, searchParams }: { params
 
         <section>
           <h2 className="text-lg font-semibold mb-2">Metadata</h2>
-          <form action={updateObjectAction} className="card space-y-2">
-            <input type="hidden" name="object_token" value={token} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Edit fields</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form action={updateObjectAction} className="grid gap-4">
+                <input type="hidden" name="object_token" value={token} />
 
-            <label className="label">Local number</label>
-            <input name="local_number" className="input" defaultValue={object.local_number || ''} />
+                <div className="grid gap-2">
+                  <Label htmlFor="local_number">Local number</Label>
+                  <Input id="local_number" name="local_number" defaultValue={object.local_number || ''} />
+                </div>
 
-            <label className="label">Title (EN)</label>
-            <input name="title" className="input" defaultValue={object.title || ''} />
-            {object.title && !object.title_ja ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'title')} type="submit" style={{ padding: '2px 6px', fontSize: 12, marginLeft: 8, marginTop: 4 }}>E → JA</button>
-            ) : null}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="title">Title (EN)</Label>
+                    <Input id="title" name="title" defaultValue={object.title || ''} />
+                    {object.title && !object.title_ja ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'title')} type="submit">E → JA</Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="title_ja">Title (JA)</Label>
+                    <Input id="title_ja" name="title_ja" defaultValue={object.title_ja || ''} />
+                    {object.title_ja && !object.title ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'title_ja')} type="submit">JA → EN</Button>
+                    ) : null}
+                  </div>
+                </div>
 
-            <label className="label">Title (JA)</label>
-            <input name="title_ja" className="input" defaultValue={object.title_ja || ''} />
-            {object.title_ja && !object.title ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'title_ja')} type="submit" style={{ padding: '2px 6px', fontSize: 12, marginTop: 4 }}>JA → EN</button>
-            ) : null}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="craftsman">Craftsman (EN)</Label>
+                    <Input id="craftsman" name="craftsman" defaultValue={object.craftsman || ''} />
+                    {object.craftsman && !object.craftsman_ja ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'craftsman')} type="submit">E → JA</Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="craftsman_ja">Craftsman (JA)</Label>
+                    <Input id="craftsman_ja" name="craftsman_ja" defaultValue={object.craftsman_ja || ''} />
+                    {object.craftsman_ja && !object.craftsman ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'craftsman_ja')} type="submit">JA → EN</Button>
+                    ) : null}
+                  </div>
+                </div>
 
-            <label className="label">Craftsman (EN)</label>
-            <input name="craftsman" className="input" defaultValue={object.craftsman || ''} />
-            <label className="label">Craftsman (JA)</label>
-            <input name="craftsman_ja" className="input" defaultValue={object.craftsman_ja || ''} />
-            {object.craftsman && !object.craftsman_ja ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'craftsman')} type="submit" style={{ padding: '2px 6px', fontSize: 12, marginTop: 4 }}>E → JA</button>
-            ) : null}
-            {object.craftsman_ja && !object.craftsman ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'craftsman_ja')} type="submit" style={{ padding: '2px 6px', fontSize: 12, marginTop: 4 }}>JA → EN</button>
-            ) : null}
+                <div className="grid gap-2">
+                  <Label htmlFor="event_date">Date</Label>
+                  <Input id="event_date" name="event_date" defaultValue={object.event_date || ''} />
+                </div>
 
-            <label className="label">Date</label>
-            <input name="event_date" className="input" defaultValue={object.event_date || ''} />
+                <div className="grid gap-2">
+                  <Label htmlFor="tags">Tags (comma separated)</Label>
+                  <Input id="tags" name="tags" defaultValue={(object.tags || []).join(', ')} />
+                </div>
 
-            <label className="label">Tags (comma separated)</label>
-            <input name="tags" className="input" defaultValue={(object.tags || []).join(', ')} />
-
-            {isOwner ? (
-              <>
-                <label className="label">Price</label>
-                <PriceInput defaultValue={object.price ?? ''} />
-              </>
-            ) : null}
-
-            {isAdmin ? (
-              <>
-                <label className="label">Store (EN)</label>
-                <input name="store" className="input" defaultValue={object.store || ''} />
-                <label className="label">Store (JA)</label>
-                <input name="store_ja" className="input" defaultValue={object.store_ja || ''} />
-                {object.store && !object.store_ja ? (
-                  <button className="button secondary" formAction={autoTranslate.bind(null, 'store')} type="submit" style={{ padding: '2px 6px', fontSize: 12 }}>E → JA</button>
+                {isOwner ? (
+                  <div className="grid gap-2">
+                    <Label htmlFor="price">Price</Label>
+                    <PriceInput defaultValue={object.price ?? ''} />
+                  </div>
                 ) : null}
-                {object.store_ja && !object.store ? (
-                  <button className="button secondary" formAction={autoTranslate.bind(null, 'store_ja')} type="submit" style={{ padding: '2px 6px', fontSize: 12 }}>JA → EN</button>
+
+                {isAdmin ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor="store">Store (EN)</Label>
+                      <Input id="store" name="store" defaultValue={object.store || ''} />
+                      {object.store && !object.store_ja ? (
+                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'store')} type="submit">E → JA</Button>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="store_ja">Store (JA)</Label>
+                      <Input id="store_ja" name="store_ja" defaultValue={object.store_ja || ''} />
+                      {object.store_ja && !object.store ? (
+                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'store_ja')} type="submit">JA → EN</Button>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="location">Location (EN)</Label>
+                      <Input id="location" name="location" defaultValue={object.location || ''} />
+                      {object.location && !object.location_ja ? (
+                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'location')} type="submit">E → JA</Button>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="location_ja">Location (JA)</Label>
+                      <Input id="location_ja" name="location_ja" defaultValue={object.location_ja || ''} />
+                      {object.location_ja && !object.location ? (
+                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'location_ja')} type="submit">JA → EN</Button>
+                      ) : null}
+                    </div>
+                  </div>
                 ) : null}
 
-                <label className="label">Location (EN)</label>
-                <input name="location" className="input" defaultValue={object.location || ''} />
-                <label className="label">Location (JA)</label>
-                <input name="location_ja" className="input" defaultValue={object.location_ja || ''} />
-                {object.location && !object.location_ja ? (
-                  <button className="button secondary" formAction={autoTranslate.bind(null, 'location')} type="submit" style={{ padding: '2px 6px', fontSize: 12 }}>E → JA</button>
-                ) : null}
-                {object.location_ja && !object.location ? (
-                  <button className="button secondary" formAction={autoTranslate.bind(null, 'location_ja')} type="submit" style={{ padding: '2px 6px', fontSize: 12 }}>JA → EN</button>
-                ) : null}
-              </>
-            ) : null}
+                <div className="grid gap-2">
+                  <Label htmlFor="url">URL</Label>
+                  <Input id="url" name="url" defaultValue={object.url || ''} />
+                </div>
 
-            <label className="label">URL</label>
-            <input name="url" className="input" defaultValue={object.url || ''} />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="notes">Notes (EN)</Label>
+                    <Textarea id="notes" name="notes" defaultValue={object.notes || ''} />
+                    {object.notes && !object.notes_ja ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'notes')} type="submit">E → JA</Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="notes_ja">Notes (JA)</Label>
+                    <Textarea id="notes_ja" name="notes_ja" defaultValue={object.notes_ja || ''} />
+                    {object.notes_ja && !object.notes ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'notes_ja')} type="submit">JA → EN</Button>
+                    ) : null}
+                  </div>
+                </div>
 
-            <label className="label">Notes (EN)</label>
-            <textarea name="notes" className="textarea" defaultValue={object.notes || ''} />
-            <label className="label">Notes (JA)</label>
-            <textarea name="notes_ja" className="textarea" defaultValue={object.notes_ja || ''} />
-            {object.notes && !object.notes_ja ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'notes')} type="submit" style={{ padding: '2px 6px', fontSize: 12 }}>E → JA</button>
-            ) : null}
-            {object.notes_ja && !object.notes ? (
-              <button className="button secondary" formAction={autoTranslate.bind(null, 'notes_ja')} type="submit" style={{ padding: '2px 6px', fontSize: 12 }}>JA → EN</button>
-            ) : null}
-
-            
-
-            <div style={{ marginTop: 8 }}>
-              <SubmitButton label="Save metadata" pendingLabel="Saving..." />
-            </div>
-          </form>
+                <div className="pt-2">
+                  <SubmitButton label="Save metadata" pendingLabel="Saving..." />
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Removed direct per-object classification UI; prefer Local Class links */}
