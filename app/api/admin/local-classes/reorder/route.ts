@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 
@@ -30,6 +31,7 @@ async function handle(classId: string, direction: string, req: Request) {
   orderedIds[neighbor] = tmp;
   const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
   await Promise.all(updates);
+  revalidatePath('/admin/local-classes');
   return NextResponse.redirect(new URL('/admin/local-classes', req.url));
 }
 
