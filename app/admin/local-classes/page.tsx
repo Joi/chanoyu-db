@@ -144,12 +144,12 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                   <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                   {isTop ? (
                     <div className="flex items-center gap-1">
-                      <form action={reorderTopLevelAction}>
+                      <form action={reorderTopLevelAction} method="post">
                         <input type="hidden" name="class_id" value={id} />
                         <input type="hidden" name="direction" value="up" />
                         <button className="text-xs underline" type="submit">↑</button>
                       </form>
-                      <form action={reorderTopLevelAction}>
+                      <form action={reorderTopLevelAction} method="post">
                         <input type="hidden" name="class_id" value={id} />
                         <input type="hidden" name="direction" value="down" />
                         <button className="text-xs underline" type="submit">↓</button>
@@ -209,12 +209,12 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                     <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                     {(!r.parent_id) ? (
                       <div className="flex items-center gap-1">
-                        <form action={reorderTopLevelAction}>
+                        <form action={reorderTopLevelAction} method="post">
                           <input type="hidden" name="class_id" value={String(r.id)} />
                           <input type="hidden" name="direction" value="up" />
                           <button className="text-xs underline" type="submit">↑</button>
                         </form>
-                        <form action={reorderTopLevelAction}>
+                        <form action={reorderTopLevelAction} method="post">
                           <input type="hidden" name="class_id" value={String(r.id)} />
                           <input type="hidden" name="direction" value="down" />
                           <button className="text-xs underline" type="submit">↓</button>
