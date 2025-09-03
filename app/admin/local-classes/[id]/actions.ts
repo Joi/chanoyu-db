@@ -26,6 +26,11 @@ const externalLinkSchema = z.object({
   label_ja: z.string().max(255).optional(),
 });
 
+const reorderChildrenSchema = z.object({
+  parent_id: uuidSchema,
+  ordered_ids: z.string().min(1), // comma-separated UUIDs
+});
+
 export async function updateLocalClassAction(formData: FormData) {
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
@@ -125,6 +130,40 @@ export async function deleteLocalClassServerAction(formData: FormData) {
   }
   revalidatePath('/admin/local-classes');
   redirect('/admin/local-classes?saved=deleted');
+}
+
+export async function reorderChildrenServerAction(formData: FormData) {
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const raw = {
+    parent_id: String(formData.get('parent_id') || '').trim(),
+    ordered_ids: String(formData.get('ordered_ids') || '').trim(),
+  };
+  const parsed = reorderChildrenSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.error('[local-class:reorder-children] validation error', parsed.error.flatten());
+    return redirect(`/admin/local-classes/${raw.parent_id}?error=reorder-validate`);
+  }
+  const { parent_id, ordered_ids } = parsed.data;
+  const ids = ordered_ids.split(',').map((s) => s.trim()).filter(Boolean);
+  if (!ids.length) return redirect(`/admin/local-classes/${parent_id}`);
+  const db = supabaseAdmin();
+  // Ensure all ids are children of parent
+  const { data: kids } = await db
+    .from('local_classes')
+    .select('id')
+    .eq('parent_id', parent_id)
+    .in('id', ids);
+  const validIds = new Set((kids || []).map((r: any) => String(r.id)));
+  const updates = ids
+    .map((id, idx) => ({ id, idx }))
+    .filter(({ id }) => validIds.has(String(id)))
+    .map(({ id, idx }) => db.from('local_classes').update({ sort_order: idx + 1 }).eq('id', id));
+  if (updates.length) {
+    await Promise.all(updates);
+  }
+  revalidatePath(`/admin/local-classes/${parent_id}`);
+  redirect(`/admin/local-classes/${parent_id}?saved=reordered`);
 }
 
 // External link actions

@@ -13,6 +13,7 @@ import {
   addExternalLinkAction,
   removeExternalLinkAction,
   setPreferredExternalAction,
+  reorderChildrenServerAction,
 } from './actions';
 // Using simple <select> pulldowns to avoid accidental creation; search widget remains available on the New page
 
@@ -70,7 +71,8 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
   // Load options for parent/attach pulldowns
   const { data: allClasses } = await db
     .from('local_classes')
-    .select('id, label_en, label_ja, local_number')
+    .select('id, label_en, label_ja, local_number, sort_order')
+    .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number')
     .limit(1000);
   const optionTitle = (r: LocalClass) => String(r.label_ja || r.label_en || r.local_number || r.id);
@@ -144,6 +146,7 @@ export default async function LocalClassDetail({ params }: { params: { id: strin
           <h2 className="text-sm font-semibold mb-2">Children</h2>
           <AttachExistingChild parentId={cid} options={(allClasses || []).filter((r: any) => String(r.id) !== cid)} />
           <ChildList parentId={cid} />
+          <ReorderChildrenForm parentId={cid} />
         </div>
 
         <div className="card">
@@ -240,8 +243,9 @@ async function ChildList({ parentId }: { parentId: string }) {
   const db = supabaseAdmin();
   const { data: kids } = await db
     .from('local_classes')
-    .select('id, local_number, label_en, label_ja')
+    .select('id, local_number, label_en, label_ja, sort_order')
     .eq('parent_id', parentId)
+    .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number');
   const list = kids || [];
   if (!list.length) return <div className="text-xs text-gray-600">No children</div>;
@@ -300,6 +304,17 @@ function AddExternalLinkForm({ classId }: { classId: string }) {
       </div>
       <input name="label_ja" className="input" placeholder="Label (JA)" />
       <button className="button" type="submit">Add link</button>
+    </form>
+  );
+}
+
+function ReorderChildrenForm({ parentId }: { parentId: string }) {
+  return (
+    <form action={reorderChildrenServerAction} className="mt-3 grid gap-2">
+      <div className="text-xs text-gray-600">Reorder children (comma-separated IDs)</div>
+      <input type="hidden" name="parent_id" value={parentId} />
+      <input name="ordered_ids" className="input" placeholder="uuid1, uuid2, uuid3" />
+      <button className="button" type="submit">Save order</button>
     </form>
   );
 }

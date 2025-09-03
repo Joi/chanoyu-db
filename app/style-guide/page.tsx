@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CollectionCard, CollectionCardSkeleton } from "@/src/components/collection-card";
 
 export default function StyleGuide() {
   return (
@@ -28,6 +29,19 @@ export default function StyleGuide() {
       </section>
 
       <section>
+        <h2 className="mb-4 text-xl font-semibold">Collection Card</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CollectionCard
+            href="/objects/demo"
+            title="Demo Object Title With A Slightly Longer Name"
+            subtitle="Optional muted metadata appears here"
+            imageUrl={null}
+          />
+          <CollectionCardSkeleton />
+        </div>
+      </section>
+
+      <section>
         <h2 className="mb-4 text-xl font-semibold">Inputs</h2>
         <div className="max-w-sm">
           <Input placeholder="Type here..." />
@@ -44,6 +58,15 @@ export default function StyleGuide() {
           <TabsContent value="account">Account settings</TabsContent>
           <TabsContent value="password">Password settings</TabsContent>
         </Tabs>
+      </section>
+
+      <section>
+        <h2 className="mb-4 text-xl font-semibold">Skeletons</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CollectionCardSkeleton />
+          <CollectionCardSkeleton />
+          <CollectionCardSkeleton />
+        </div>
       </section>
     </div>
   );

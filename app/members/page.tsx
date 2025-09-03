@@ -14,7 +14,7 @@ export default async function MembersLanding() {
         <p>Quick actions</p>
         <ul className="list-disc pl-5">
           <li><a className="underline" href="/chakai">Start a Chakai</a></li>
-          <li><a className="underline" href="/admin/new">Add Item</a></li>
+          <li><a className="underline" href="/admin/items">Add Item</a></li>
           <li><a className="underline" href="/admin/media">Upload Media</a></li>
           <li><a className="underline" href="/tea-rooms">Create Tea Room</a></li>
         </ul>

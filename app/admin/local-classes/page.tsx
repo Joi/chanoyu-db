@@ -1,15 +1,76 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
  
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Server action: reorder top-level classes deterministically (1..n)
+async function reorderTopLevelAction(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const classId = String(formData.get('class_id') || '').trim();
+  const direction = String(formData.get('direction') || '').trim();
+  if (!classId || (direction !== 'up' && direction !== 'down')) return redirect('/admin/local-classes');
+  const db = supabaseAdmin();
+  const { data: rows } = await db
+    .from('local_classes')
+    .select('id, sort_order, local_number')
+    .is('parent_id', null)
+    .order('sort_order', { ascending: true, nullsFirst: true })
+    .order('local_number');
+  const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
+  const idx = list.findIndex((r) => String(r.id) === classId);
+  if (idx < 0) return redirect('/admin/local-classes');
+  const neighbor = direction === 'up' ? idx - 1 : idx + 1;
+  if (neighbor < 0 || neighbor >= list.length) return redirect('/admin/local-classes');
+  const orderedIds = list.map((r) => String(r.id));
+  const tmp = orderedIds[idx];
+  orderedIds[idx] = orderedIds[neighbor];
+  orderedIds[neighbor] = tmp;
+  const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
+  await Promise.all(updates);
+  revalidatePath('/admin/local-classes');
+  redirect('/admin/local-classes');
+}
 
 export default async function LocalClassesIndex({ searchParams }: { searchParams?: { [k: string]: string | string[] | undefined } }) {
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
   const db = supabaseAdmin();
+
+  // Inline reorder handler via query params to avoid any server action quirks in dev
+  const dir = typeof searchParams?.direction === 'string' ? String(searchParams!.direction) : '';
+  const targetId = typeof searchParams?.class_id === 'string' ? String(searchParams!.class_id) : '';
+  if ((dir === 'up' || dir === 'down') && targetId) {
+    // Normalize legacy empty-string parents to NULL so they are treated as top-level
+    await db.from('local_classes').update({ parent_id: null }).eq('parent_id', '');
+    const { data: rows } = await db
+      .from('local_classes')
+      .select('id, sort_order, local_number, parent_id')
+      .or('parent_id.is.null,parent_id.eq.')
+      .order('sort_order', { ascending: true, nullsFirst: true })
+      .order('local_number');
+    const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
+    const idx = list.findIndex((r) => String(r.id) === targetId);
+    if (idx >= 0) {
+      const neighbor = dir === 'up' ? idx - 1 : idx + 1;
+      if (neighbor >= 0 && neighbor < list.length) {
+        const orderedIds = list.map((r) => String(r.id));
+        const tmp = orderedIds[idx];
+        orderedIds[idx] = orderedIds[neighbor];
+        orderedIds[neighbor] = tmp;
+        const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
+        await Promise.all(updates);
+      }
+    }
+    revalidatePath('/admin/local-classes');
+    return redirect('/admin/local-classes');
+  }
 
   // Sanitize search query using the same logic as the secure API to prevent SQL injection
   const rawQuery = typeof searchParams?.q === 'string' ? String(searchParams!.q) : '';
@@ -22,10 +83,31 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
     return esc;
   };
   const q = sanitizeSearchQuery(rawQuery.trim());
+  const debug = String(searchParams?.debug || '') === '1';
+
+  // One-time normalization: set sequential sort_order for all top-level
+  async function normalizeTopLevelAction() {
+    'use server';
+    const ok = await requireAdmin();
+    if (!ok) return redirect('/login');
+    const db = supabaseAdmin();
+    await db.from('local_classes').update({ parent_id: null }).eq('parent_id', '');
+    const { data: rows } = await db
+      .from('local_classes')
+      .select('id, local_number')
+      .is('parent_id', null)
+      .order('local_number');
+    const ids = (rows || []).map((r: any) => String(r.id));
+    const updates = ids.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
+    await Promise.all(updates);
+    revalidatePath('/admin/local-classes');
+    redirect('/admin/local-classes?debug=1');
+  }
 
   let query = db
     .from('local_classes')
-    .select('id, token, local_number, label_en, label_ja, parent_id')
+    .select('id, token, local_number, label_en, label_ja, parent_id, sort_order')
+    .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number')
     .limit(1000);
   if (q) {
@@ -53,7 +135,7 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   for (const r of (totalCountsRes?.data as any[]) || []) totalCounts.set(String(r.local_class_id), Number(r.object_count || 0));
 
   // Build maps for tree rendering when no search query
-  type RowT = { id: string; token: string | null; local_number: string | null; label_en: string | null; label_ja: string | null; parent_id: string | null };
+  type RowT = { id: string; token: string | null; local_number: string | null; label_en: string | null; label_ja: string | null; parent_id: string | null; sort_order: number | null };
   const byId: Record<string, RowT> = Object.create(null);
   const childrenOf: Record<string, string[]> = Object.create(null);
   for (const r of list as RowT[]) {
@@ -66,8 +148,11 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
     return ids.sort((a, b) => {
       const ra = byId[a];
       const rb = byId[b];
-      const la = String(ra.label_ja || ra.label_en || ra.local_number || '').toLowerCase();
-      const lb = String(rb.label_ja || rb.label_en || rb.local_number || '').toLowerCase();
+      const sa = ra.sort_order == null ? 999999 : ra.sort_order;
+      const sb = rb.sort_order == null ? 999999 : rb.sort_order;
+      if (sa !== sb) return sa - sb;
+      const la = String(ra.local_number || ra.label_ja || ra.label_en || '').toLowerCase();
+      const lb = String(rb.local_number || rb.label_ja || rb.label_en || '').toLowerCase();
       return la.localeCompare(lb);
     });
   };
@@ -88,18 +173,29 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
           const direct = directCounts.get(id) || 0;
           const total = totalCounts.get(id) || direct;
           const kids = childrenOf[id] || [];
+          const isTop = depth === 0;
           return (
             <li key={id} className="card">
-              <Link href={`/admin/local-classes/${id}`} className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium underline">{title}</div>
-                  {showBoth ? (
-                    <div className="text-xs text-gray-600">{labelEn}</div>
+              <div className="flex items-center justify-between">
+                <Link href={`/admin/local-classes/${id}`} className="flex items-center gap-3">
+                  <div>
+                    <div className="text-sm font-medium underline">{title}</div>
+                    {showBoth ? (
+                      <div className="text-xs text-gray-600">{labelEn}</div>
+                    ) : null}
+                    <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
+                  </div>
+                </Link>
+                <div className="flex items-center gap-3">
+                  <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
+                  {isTop ? (
+                    <div className="flex items-center gap-1">
+                      <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(id)}&direction=up`}>↑</a>
+                      <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(id)}&direction=down`}>↓</a>
+                    </div>
                   ) : null}
-                  <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
                 </div>
-                <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
-              </Link>
+              </div>
               {kids.length ? (
                 <div className="mt-1">
                   {renderTree(kids, depth + 1)}
@@ -118,6 +214,19 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
         <h1 className="text-xl font-semibold">Local Classes</h1>
         <Link className="button" href="/admin/local-classes/new">New Local Class</Link>
       </div>
+      {debug ? (
+        <div className="card mb-3 text-xs">
+          <div className="font-medium mb-1">Debug: Top-level order (id · local_number · sort_order)</div>
+          <ul className="grid gap-1">
+            {sortIds(childrenOf['__root__'] || []).map((id) => (
+              <li key={id} className="break-all">{id} · {String(byId[id]?.local_number || '')} · {String(byId[id]?.sort_order ?? 'null')}</li>
+            ))}
+          </ul>
+          <form action={normalizeTopLevelAction} className="mt-2">
+            <button type="submit" className="text-xs underline">Normalize top-level sort_order</button>
+          </form>
+        </div>
+      ) : null}
       <form className="flex gap-2 mb-4">
         <input name="q" className="input" placeholder="Search local classes..." defaultValue={q} />
         <button className="button" type="submit">Search</button>
@@ -137,16 +246,26 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
             const total = totalCounts.get(String(r.id)) || direct;
             return (
               <li key={r.id} className="card">
-                <Link href={`/admin/local-classes/${r.id}`} className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium underline">{title}</div>
-                    {showBoth ? (
-                      <div className="text-xs text-gray-600">{labelEn}</div>
+                <div className="flex items-center justify-between">
+                  <Link href={`/admin/local-classes/${r.id}`} className="flex items-center gap-3">
+                    <div>
+                      <div className="text-sm font-medium underline">{title}</div>
+                      {showBoth ? (
+                        <div className="text-xs text-gray-600">{labelEn}</div>
+                      ) : null}
+                      <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
+                    {(!r.parent_id) ? (
+                      <div className="flex items-center gap-1">
+                        <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(String(r.id))}&direction=up`}>↑</a>
+                        <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(String(r.id))}&direction=down`}>↓</a>
+                      </div>
                     ) : null}
-                    <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
                   </div>
-                  <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
-                </Link>
+                </div>
               </li>
             );
           })}

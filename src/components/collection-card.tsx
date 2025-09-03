@@ -55,17 +55,23 @@ export function CollectionCard({
             {title}
           </Link>
           {subtitle ? (
-            <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+            <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{subtitle}</p>
           ) : null}
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button size="sm" onClick={onPrimary} aria-label={primaryLabel}>
-            {primaryLabel}
-          </Button>
-          <Button size="sm" variant="secondary" onClick={onSecondary} aria-label={secondaryLabel}>
-            {secondaryLabel}
-          </Button>
-        </div>
+        {(onPrimary || onSecondary) ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {onPrimary ? (
+              <Button size="sm" onClick={onPrimary} aria-label={primaryLabel}>
+                {primaryLabel}
+              </Button>
+            ) : null}
+            {onSecondary ? (
+              <Button size="sm" variant="secondary" onClick={onSecondary} aria-label={secondaryLabel}>
+                {secondaryLabel}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

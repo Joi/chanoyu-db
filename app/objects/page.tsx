@@ -106,7 +106,14 @@ export default async function ObjectsIndexPage() {
                       ) : null}
                     </div>
                     <div className="px-3 py-2">
-                      <p className="text-sm leading-snug line-clamp-2 text-foreground">{alt}</p>
+                      <p className="line-clamp-2 text-base font-medium leading-snug">{alt}</p>
+                      {(o.title && o.title_ja) || o.local_number ? (
+                        <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">
+                          {o.title && o.title_ja ? <span lang="ja">{o.title_ja}</span> : null}
+                          {o.title && o.title_ja && o.local_number ? ' · ' : null}
+                          {o.local_number || null}
+                        </p>
+                      ) : null}
                     </div>
                   </Link>
                 </article>

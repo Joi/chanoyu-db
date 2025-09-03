@@ -4,6 +4,7 @@ export interface LocalClass {
   id: string;
   token?: string;
   local_number?: string;
+  sort_order?: number | null;
   label_en?: string;
   label_ja?: string;
   description?: string;

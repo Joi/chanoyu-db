@@ -16,6 +16,17 @@ export function SiteHeader() {
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
               <Link
+                href="/members"
+                className="inline-flex min-h-[44px] items-center px-3 py-2 hover:underline"
+                aria-current={pathname?.startsWith("/members") ? "page" : undefined}
+              >
+                Members
+              </Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink asChild>
+              <Link
                 href="/objects"
                 className="inline-flex min-h-[44px] items-center px-3 py-2 hover:underline"
                 aria-current={pathname?.startsWith("/objects") ? "page" : undefined}
@@ -32,6 +43,17 @@ export function SiteHeader() {
                 aria-current={pathname?.startsWith("/chakai") ? "page" : undefined}
               >
                 Chakai
+              </Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink asChild>
+              <Link
+                href="/media"
+                className="inline-flex min-h-[44px] items-center px-3 py-2 hover:underline"
+                aria-current={pathname?.startsWith("/media") ? "page" : undefined}
+              >
+                Media
               </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>

@@ -83,7 +83,10 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
       >
         Menu
       </button>
-      <a className="font-medium text-sm hidden md:inline" href="/">Home</a>
+      <a className="font-medium text-sm hidden md:inline" href="/members">Members</a>
+      <a className="font-medium text-sm hidden md:inline" href="/objects">Objects</a>
+      <a className="font-medium text-sm hidden md:inline" href="/chakai">Chakai</a>
+      <a className="font-medium text-sm hidden md:inline" href="/media">Media</a>
       <a className="hidden md:inline btn btn-outline text-sm" href="/lookup" role="button">Lookup</a>
 
       <div className="relative hidden md:block">
@@ -133,8 +136,9 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
         ) : (
           <>
             <a className="font-medium text-sm hidden md:inline" href="/members">Members</a>
+            <a className="font-medium text-sm hidden md:inline" href="/objects">Objects</a>
             <a className="font-medium text-sm hidden md:inline" href="/chakai">Chakai</a>
-            <a className="font-medium text-sm hidden md:inline" href="/tea-rooms">Tea Rooms</a>
+            <a className="font-medium text-sm hidden md:inline" href="/media">Media</a>
           </>
         )
       ) : null}
@@ -144,6 +148,9 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
           <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Account</summary>
           <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-[color:var(--line)] rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
             {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/members">Members</a> : null}
+            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/objects">Objects</a> : null}
+            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/chakai">Chakai</a> : null}
+            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/media">Media</a> : null}
             <form action="/logout" method="post">
               <button className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-50 rounded" type="submit">Sign out</button>
             </form>
@@ -168,7 +175,10 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search objects"
             />
-            <a href="/" className="text-sm">Home</a>
+            <a href="/members" className="text-sm">Members</a>
+            <a href="/objects" className="text-sm">Objects</a>
+            <a href="/chakai" className="text-sm">Chakai</a>
+            <a href="/media" className="text-sm">Media</a>
             <a href="/lookup" className="text-sm">Lookup</a>
             {isLoggedIn ? (
               isAdmin ? (
@@ -185,8 +195,9 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
               ) : (
                 <div className="grid gap-1">
                   <a className="text-sm" href="/members">Members</a>
+                  <a className="text-sm" href="/objects">Objects</a>
                   <a className="text-sm" href="/chakai">Chakai</a>
-                  <a className="text-sm" href="/tea-rooms">Tea Rooms</a>
+                  <a className="text-sm" href="/media">Media</a>
                 </div>
               )
             ) : null}

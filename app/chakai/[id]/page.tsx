@@ -80,7 +80,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
     .eq('chakai_id', c.id);
   const { data: itemRows } = await db
     .from('chakai_items')
-    .select('objects(id, token, title, title_ja, local_number)')
+    .select('objects(id, token, title, title_ja, local_number, primary_local_class_id)')
     .eq('chakai_id', c.id);
   const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
   let thumbByObject: Record<string, string | null> = {};
@@ -95,6 +95,44 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       const oid = (m as any).object_id as string;
       if (!thumbByObject[oid]) thumbByObject[oid] = (m as any).uri || null;
     }
+  }
+
+  // Group items by Local Class with defined order
+  let grouped: Array<{ classId: string | null; classTitle: string; items: any[]; sortOrder: number | null }> = [];
+  if (itemObjects.length) {
+    const byClass: Record<string, any[]> = {};
+    for (const o of itemObjects) {
+      const cid = (o as any).primary_local_class_id || null;
+      const key = cid ? String(cid) : '__none__';
+      if (!byClass[key]) byClass[key] = [];
+      byClass[key].push(o);
+    }
+    const classIds = Object.keys(byClass).filter((k) => k !== '__none__');
+    let classMetaById: Record<string, { title: string; sortOrder: number | null }> = {};
+    if (classIds.length) {
+      const { data: classes } = await db
+        .from('local_classes')
+        .select('id, label_en, label_ja, local_number, sort_order')
+        .in('id', classIds);
+      for (const lc of classes || []) {
+        const title = String((lc as any).label_ja || (lc as any).label_en || (lc as any).local_number || (lc as any).id);
+        classMetaById[String((lc as any).id)] = { title, sortOrder: (lc as any).sort_order ?? null };
+      }
+    }
+    for (const [key, items] of Object.entries(byClass)) {
+      if (key === '__none__') continue;
+      const meta = classMetaById[key] || { title: '—', sortOrder: null };
+      grouped.push({ classId: key, classTitle: meta.title, items, sortOrder: meta.sortOrder });
+    }
+    if (byClass['__none__']) {
+      grouped.push({ classId: null, classTitle: 'Unclassified', items: byClass['__none__'], sortOrder: 999999 });
+    }
+    grouped.sort((a, b) => {
+      const sa = a.sortOrder == null ? Number.POSITIVE_INFINITY : Number(a.sortOrder);
+      const sb = b.sortOrder == null ? Number.POSITIVE_INFINITY : Number(b.sortOrder);
+      if (sa !== sb) return sa - sb;
+      return a.classTitle.localeCompare(b.classTitle);
+    });
   }
 
   const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
@@ -186,25 +224,32 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       <section className="mb-6">
         <h2 className="font-medium">Items used</h2>
         {!itemObjects?.length ? <div className="text-sm">—</div> : (
-          <div className="grid" style={{ gap: 8 }}>
-            {itemObjects!.map((o: any, i: number) => {
-              const ja = o.title_ja || '';
-              const en = o.title || '';
-              const label = ja || en || o.local_number || o.token;
-              const secondary = ja && en ? en : '';
-              const thumb = thumbByObject[o.id] || null;
-              return (
-                <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', alignItems: 'center', gap: 8 }}>
-                  <div style={{ position: 'relative', width: 64, height: 64, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
-                    {thumb ? <Image src={thumb} alt={label} fill sizes="64px" style={{ objectFit: 'cover' }} /> : null}
-                  </div>
-                  <div className="text-sm">
-                    <a className="underline" href={`/id/${o.token}`}>{label}</a>{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}
-                  </div>
-                  <a className="text-xs underline" href={`/id/${o.token}`}>View</a>
+          <div className="grid" style={{ gap: 12 }}>
+            {grouped.map((group) => (
+              <div key={String(group.classId || 'none')} className="grid gap-2">
+                <div className="text-sm font-medium">{group.classTitle}</div>
+                <div className="grid" style={{ gap: 8 }}>
+                  {group.items.map((o: any) => {
+                    const ja = o.title_ja || '';
+                    const en = o.title || '';
+                    const label = ja || en || o.local_number || o.token;
+                    const secondary = ja && en ? en : '';
+                    const thumb = thumbByObject[o.id] || null;
+                    return (
+                      <div key={o.id} className="card" style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', alignItems: 'center', gap: 8 }}>
+                        <div style={{ position: 'relative', width: 64, height: 64, background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
+                          {thumb ? <Image src={thumb} alt={label} fill sizes="64px" style={{ objectFit: 'cover' }} /> : null}
+                        </div>
+                        <div className="text-sm">
+                          <a className="underline" href={`/id/${o.token}`}>{label}</a>{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}
+                        </div>
+                        <a className="text-xs underline" href={`/id/${o.token}`}>View</a>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </section>
