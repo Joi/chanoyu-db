@@ -113,7 +113,7 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
                   {thumb ? <Image src={thumb} alt={o.title} fill sizes="80px" style={{ objectFit: 'cover' }} /> : null}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <a href={`/admin/${o.token}`} className="text-sm font-semibold underline">{o.title || o.title_ja || o.local_number || o.token}</a>
+                  <a href={`/id/${o.token}`} className="text-sm font-semibold underline">{o.title || o.title_ja || o.local_number || o.token}</a>
                   {o.title && o.title_ja ? <span className="text-sm" lang="ja">/ {o.title_ja}</span> : null}
                   <span className="text-xs text-gray-600">· Token: {o.token}</span>
                   <a href={`/id/${o.token}`} className="text-xs underline" style={{ marginLeft: 'auto' }}>View</a>
@@ -148,7 +148,7 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <a href={`/admin/${o.token}`} className="text-sm font-semibold underline">{o.title || o.local_number || '(untitled)'}</a>
+                    <a href={`/id/${o.token}`} className="text-sm font-semibold underline">{o.title || o.local_number || '(untitled)'}</a>
                     {o.title_ja ? <span className="text-sm" lang="ja">/ {o.title_ja}</span> : null}
                     <span className="text-xs text-gray-600">· Token: {o.token}</span>
                     <a href={`/id/${o.token}`} className="text-xs underline" style={{ marginLeft: 'auto' }}>View</a>

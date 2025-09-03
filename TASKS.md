@@ -24,6 +24,67 @@ Spec documents live under `.agent-os/specs/YYYY-MM-DD-slug/` and should be linke
 
 ## Active Epics
 
+### Epic: UI Modernization with shadcn/ui
+
+- Owner: @joi
+- Spec: [.agent-os/specs/2025-09-01-minimal-ui-polish/shadcn-ui-setup-spec.md](.agent-os/specs/2025-09-01-minimal-ui-polish/shadcn-ui-setup-spec.md)
+- Branch: `feature/minimal-ui-polish`
+- Status: Ready to implement
+
+#### Scope & Checklist — UI Modernization
+
+- Setup
+  - [ ] Initialize shadcn/ui (Next.js + TS + Tailwind) and add core components (button, card, input, label, textarea, select, tabs, dropdown-menu, sheet, dialog, navigation-menu, badge, table, skeleton, toast, tooltip, sonner)
+  - [ ] Add Prettier and `prettier-plugin-tailwindcss`; update `.prettierrc`
+- Design tokens
+  - [ ] Add CSS variables to `app/globals.css` for base, brand, surfaces, radius; include dark theme overrides
+  - [ ] Add global typography helpers: `.prose`, link color/hover styles
+- Tailwind config
+  - [ ] Update `tailwind.config.ts` (darkMode, content globs, extended colors from CSS vars, radii, maxWidth.container, spacing.grid)
+- App shell & layout
+  - [ ] Create `src/components/app-shell.tsx` (sticky header, 12‑col layout, max‑w container)
+  - [ ] Create `src/components/site-header.tsx` with `NavigationMenu` and primary actions
+  - [ ] Wire `app/(site)/layout.tsx` to use `AppShell` + `SiteHeader`
+- QA page
+  - [ ] Create `app/style-guide/page.tsx` demonstrating Buttons, Cards, Inputs, Tabs
+- Components
+  - [ ] Add `src/components/collection-card.tsx` with loading/empty variants and accessibility
+  - [ ] Add `app/examples/collection-grid/page.tsx` to demo responsive grid and JP text handling
+- A11y & i18n polish
+  - [ ] Verify focus states, AA contrast, tap targets (≥44px), truncation/line‑clamp for long JP/EN strings
+
+#### Task Breakdown — UI Modernization
+
+1. UI-1 Setup
+   - [ ] Initialize shadcn/ui and install listed components
+   - [ ] Configure Prettier with Tailwind plugin
+
+2. UI-2 Design tokens
+   - [ ] Implement CSS variables and dark theme in `app/globals.css`
+   - [ ] Add global typography/link styles
+
+3. UI-3 Tailwind configuration
+   - [ ] Update `tailwind.config.ts` per spec (darkMode, content, theme.extend)
+
+4. UI-4 App shell
+   - [ ] Implement `src/components/app-shell.tsx`
+
+5. UI-5 Header
+   - [ ] Implement `src/components/site-header.tsx` using shadcn `NavigationMenu` and `Button`
+
+6. UI-6 Layout wiring
+   - [ ] Update/create `app/(site)/layout.tsx` to wrap with `AppShell` and `SiteHeader`
+
+7. UI-7 Style Guide
+   - [ ] Implement `app/style-guide/page.tsx` with Buttons, Cards, Inputs, Tabs examples
+
+8. UI-8 Collection components
+   - [ ] Implement `src/components/collection-card.tsx` (default, skeleton, empty)
+   - [ ] Implement `app/examples/collection-grid/page.tsx` usage grid
+
+9. UI-9 A11y/i18n QA
+   - [ ] Manual QA for focus states, contrast, tap targets, long JP strings
+
 <!--
 ### Epic: Role‑aware Landings & English NavBar
 

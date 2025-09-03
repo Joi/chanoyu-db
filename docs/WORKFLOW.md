@@ -115,7 +115,12 @@ Preferred (via PR using GitHub CLI):
 ```bash
 # create a PR from dev → main that closes an issue (e.g., #34)
 git checkout dev && git push origin dev
-gh pr create --base main --head dev --title "feat: remove direct classification links" --body "This implements the migration to Local Classes. Closes #34."
+cat > /tmp/pr_body.md <<'EOF'
+This implements the migration to Local Classes.
+
+Closes #34.
+EOF
+gh pr create --base main --head dev --title "feat: remove direct classification links" --body-file /tmp/pr_body.md
 
 # review status
 gh pr view --web

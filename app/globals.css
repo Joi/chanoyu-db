@@ -2,76 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-:root{--background:#fafafa;--foreground:#171717;--primary-blue:#1A80B4;--hover-blue:#146087;--section-bg:#f5f5f5;--border-gray:#e5e5e5}
-*{box-sizing:border-box}
-html,body{padding:0;margin:0}
-body{background:var(--background);color:var(--foreground);font-family:Avenir, Montserrat, Corbel,'URW Gothic', source-sans-pro,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6}
+* { box-sizing: border-box }
+html, body { padding: 0; margin: 0 }
 
-a{color:var(--primary-blue);text-decoration:underline;text-underline-offset:2px;transition:color .2s ease}
-a:hover{color:var(--hover-blue)}
-img{max-width:100%;height:auto}
+/* Global element resets only; colors and typography come from shadcn tokens */
 
-.container{max-width:960px;margin:0 auto;padding:24px}
-.header{border-bottom:1px solid var(--border-gray);padding:16px 24px;margin-bottom:8px;background:#fff}
-.header a{color:inherit;text-decoration:none}
-.header .brand{font-weight:800;font-size:20px}
-.nav{display:flex;gap:16px;align-items:center}
+.prose p { margin: 12px 0 }
 
-/* Nav groups */
-.nav-group{position:relative}
-.nav-parent{font-weight:500;cursor:pointer;list-style:none}
-summary.nav-parent::-webkit-details-marker{display:none}
-.nav-sub{display:none;position:absolute;top:100%;left:0;margin-top:6px;background:#fff;border:1px solid var(--border-gray);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.08);padding:8px 10px;min-width:220px;z-index:20}
-.nav-group{position:relative}
-.nav-group[open] .nav-sub{display:block}
-.nav-sub a{display:block;padding:6px 8px;color:#111;text-decoration:none}
-.nav-sub a:hover{background:#f7f7f7}
+/* Hairline separators */
+.separator { height: 1px; background: hsl(var(--border)) }
 
-h1{font-size:32px;line-height:1.2;margin:16px 0 8px}
-h2{font-size:22px;line-height:1.3;margin:14px 0 8px}
-.prose p{margin:12px 0}
+/* Legacy utility class fallbacks kept temporarily */
+.muted { color: hsl(var(--muted-foreground)); font-size: 12px }
 
-.button{display:inline-flex;align-items:center;justify-content:center;background:var(--primary-blue);color:#fff;border:none;border-radius:8px;padding:10px 14px;cursor:pointer;text-decoration:none;text-align:center}
-.button:link,.button:visited{color:inherit;text-decoration:none}
-.button.secondary{background:#fff;color:#111;border:1px solid var(--border-gray)}
-.button.small{padding:6px 12px;font-size:13px;border-radius:6px;min-width:96px;width:96px;line-height:1;height:36px}
-.button.danger{color:#b91c1c;background:#fff;border:1px solid #fecdd3}
-.button.danger:hover{border-color:#fca5a5}
-.button[disabled]{opacity:.5;cursor:not-allowed}
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
 
-/* Micro-interactions for buttons */
-.button{transition:transform .08s ease, box-shadow .15s ease, background-color .15s ease}
-.button:active{transform:scale(.98)}
-.button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(26,128,180,.25)}
-
-/* Inline spinner for pending state */
-@keyframes spin{to{transform:rotate(360deg)}}
-.spinner{display:inline-block;width:16px;height:16px;border-radius:9999px;border:2px solid rgba(255,255,255,.6);border-top-color:#fff;animation:spin .6s linear infinite;margin-right:8px}
-.spinner.dark{border-color:rgba(0,0,0,.2);border-top-color:#111}
-
-/* Indeterminate progress bar */
-.progress{position:relative;height:4px;background:#e5e7eb;border-radius:9999px;overflow:hidden}
-.progress .indeterminate{position:absolute;left:0;top:0;height:100%;width:40%;background:var(--primary-blue);border-radius:9999px;animation:progress-indeterminate 1.2s ease-in-out infinite}
-@keyframes progress-indeterminate{0%{left:-40%}50%{left:30%;width:60%}100%{left:100%;width:40%}}
-
-/* File picker button in monochrome framed style */
-.button.file-choose{background:#fff;color:#111;border:1px solid #111;border-radius:6px;padding:6px 10px;font-size:12px;min-width:auto}
-.button.file-choose:hover{background:#111;color:#fff}
-
-.input,.textarea{width:100%;padding:10px;border:1px solid var(--border-gray);border-radius:6px;background:#fff}
-.textarea{min-height:100px}
-.label{display:block;font-size:12px;color:#666;margin-bottom:6px}
-
-.card{border:1px solid var(--border-gray);border-radius:10px;padding:16px;background:#fff}
-.grid{display:grid;gap:16px}
-
-.footer{border-top:1px solid var(--border-gray);padding:24px;color:#666;font-size:13px;margin-top:24px;background:#fff}
-
-/* Tables */
-.table{width:100%;border-collapse:separate;border-spacing:0}
-.table thead th{font-size:12px;text-transform:uppercase;letter-spacing:.02em;color:#666;text-align:left;border-bottom:1px solid var(--border-gray);padding:8px 10px;background:#fafafa;position:sticky;top:0;z-index:1}
-.table tbody td{padding:10px;border-bottom:1px solid var(--border-gray);vertical-align:middle}
-.table tbody tr:hover{background:#fbfbfb}
-.table td.actions,.table th.actions{text-align:right}
-.truncate{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.muted{color:#666;font-size:12px}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
