@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/auth';
  
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Reorder posts to API route to avoid server action transport issues
 const reorderEndpoint = '/api/admin/local-classes/reorder';
