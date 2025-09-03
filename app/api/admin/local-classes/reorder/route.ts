@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
 
-export async function POST(req: Request) {
+export const dynamic = 'force-dynamic';
+
+async function handle(classId: string, direction: string, req: Request) {
   const ok = await requireAdmin();
   if (!ok) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
-  const form = await req.formData();
-  const classId = String(form.get('class_id') || '').trim();
-  const direction = String(form.get('direction') || '').trim();
   if (!classId || (direction !== 'up' && direction !== 'down')) {
     return NextResponse.redirect(new URL('/admin/local-classes', req.url));
   }
@@ -32,6 +31,24 @@ export async function POST(req: Request) {
   const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
   await Promise.all(updates);
   return NextResponse.redirect(new URL('/admin/local-classes', req.url));
+}
+
+export async function POST(req: Request) {
+  const ok = await requireAdmin();
+  if (!ok) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+  const form = await req.formData();
+  const classId = String(form.get('class_id') || '').trim();
+  const direction = String(form.get('direction') || '').trim();
+  return handle(classId, direction, req);
+}
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const classId = String(url.searchParams.get('class_id') || '').trim();
+  const direction = String(url.searchParams.get('direction') || '').trim();
+  return handle(classId, direction, req);
 }
 
 
