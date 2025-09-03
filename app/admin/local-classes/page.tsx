@@ -1,10 +1,44 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/auth';
  
 
 export const dynamic = 'force-dynamic';
+
+// Reorder top-level (parent_id is null) by swapping sort_order values
+async function reorderTopLevelAction(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const classId = String(formData.get('class_id') || '').trim();
+  const direction = String(formData.get('direction') || '').trim(); // 'up' | 'down'
+  if (!classId || (direction !== 'up' && direction !== 'down')) return redirect('/admin/local-classes');
+  const db = supabaseAdmin();
+  // Load current top-level ordering
+  const { data: rows } = await db
+    .from('local_classes')
+    .select('id, sort_order, local_number')
+    .is('parent_id', null)
+    .order('sort_order', { ascending: true, nullsFirst: true })
+    .order('local_number');
+  const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
+  if (!list.length) return redirect('/admin/local-classes');
+  const idx = list.findIndex((r) => String(r.id) === classId);
+  if (idx < 0) return redirect('/admin/local-classes');
+  const neighbor = direction === 'up' ? idx - 1 : idx + 1;
+  if (neighbor < 0 || neighbor >= list.length) return redirect('/admin/local-classes');
+  const a = list[idx];
+  const b = list[neighbor];
+  const aSort = a.sort_order == null ? idx + 1 : a.sort_order;
+  const bSort = b.sort_order == null ? neighbor + 1 : b.sort_order;
+  // Swap
+  await db.from('local_classes').update({ sort_order: bSort }).eq('id', a.id);
+  await db.from('local_classes').update({ sort_order: aSort }).eq('id', b.id);
+  revalidatePath('/admin/local-classes');
+  redirect('/admin/local-classes');
+}
 
 export default async function LocalClassesIndex({ searchParams }: { searchParams?: { [k: string]: string | string[] | undefined } }) {
   const ok = await requireAdmin();
@@ -92,18 +126,37 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
           const direct = directCounts.get(id) || 0;
           const total = totalCounts.get(id) || direct;
           const kids = childrenOf[id] || [];
+          const isTop = depth === 0;
           return (
             <li key={id} className="card">
-              <Link href={`/admin/local-classes/${id}`} className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium underline">{title}</div>
-                  {showBoth ? (
-                    <div className="text-xs text-gray-600">{labelEn}</div>
+              <div className="flex items-center justify-between">
+                <Link href={`/admin/local-classes/${id}`} className="flex items-center gap-3">
+                  <div>
+                    <div className="text-sm font-medium underline">{title}</div>
+                    {showBoth ? (
+                      <div className="text-xs text-gray-600">{labelEn}</div>
+                    ) : null}
+                    <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
+                  </div>
+                </Link>
+                <div className="flex items-center gap-3">
+                  <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
+                  {isTop ? (
+                    <div className="flex items-center gap-1">
+                      <form action={reorderTopLevelAction}>
+                        <input type="hidden" name="class_id" value={id} />
+                        <input type="hidden" name="direction" value="up" />
+                        <button className="text-xs underline" type="submit">↑</button>
+                      </form>
+                      <form action={reorderTopLevelAction}>
+                        <input type="hidden" name="class_id" value={id} />
+                        <input type="hidden" name="direction" value="down" />
+                        <button className="text-xs underline" type="submit">↓</button>
+                      </form>
+                    </div>
                   ) : null}
-                  <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
                 </div>
-                <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
-              </Link>
+              </div>
               {kids.length ? (
                 <div className="mt-1">
                   {renderTree(kids, depth + 1)}
