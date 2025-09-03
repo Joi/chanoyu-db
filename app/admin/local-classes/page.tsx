@@ -29,13 +29,14 @@ async function reorderTopLevelAction(formData: FormData) {
   if (idx < 0) return redirect('/admin/local-classes');
   const neighbor = direction === 'up' ? idx - 1 : idx + 1;
   if (neighbor < 0 || neighbor >= list.length) return redirect('/admin/local-classes');
-  const a = list[idx];
-  const b = list[neighbor];
-  const aSort = a.sort_order == null ? idx + 1 : a.sort_order;
-  const bSort = b.sort_order == null ? neighbor + 1 : b.sort_order;
-  // Swap
-  await db.from('local_classes').update({ sort_order: bSort }).eq('id', a.id);
-  await db.from('local_classes').update({ sort_order: aSort }).eq('id', b.id);
+  // Build new sequential order for ALL top-level classes to ensure visible change
+  const orderedIds = list.map((r) => String(r.id));
+  const tmp = orderedIds[idx];
+  orderedIds[idx] = orderedIds[neighbor];
+  orderedIds[neighbor] = tmp;
+  // Assign 1..n
+  const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
+  await Promise.all(updates);
   revalidatePath('/admin/local-classes');
   redirect('/admin/local-classes');
 }
