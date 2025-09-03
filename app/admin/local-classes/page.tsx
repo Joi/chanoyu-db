@@ -8,8 +8,35 @@ import { requireAdmin } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Reorder posts to API route to avoid server action transport issues
-const reorderEndpoint = '/api/admin/local-classes/reorder';
+// Server action: reorder top-level classes deterministically (1..n)
+async function reorderTopLevelAction(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return redirect('/login');
+  const classId = String(formData.get('class_id') || '').trim();
+  const direction = String(formData.get('direction') || '').trim();
+  if (!classId || (direction !== 'up' && direction !== 'down')) return redirect('/admin/local-classes');
+  const db = supabaseAdmin();
+  const { data: rows } = await db
+    .from('local_classes')
+    .select('id, sort_order, local_number')
+    .is('parent_id', null)
+    .order('sort_order', { ascending: true, nullsFirst: true })
+    .order('local_number');
+  const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
+  const idx = list.findIndex((r) => String(r.id) === classId);
+  if (idx < 0) return redirect('/admin/local-classes');
+  const neighbor = direction === 'up' ? idx - 1 : idx + 1;
+  if (neighbor < 0 || neighbor >= list.length) return redirect('/admin/local-classes');
+  const orderedIds = list.map((r) => String(r.id));
+  const tmp = orderedIds[idx];
+  orderedIds[idx] = orderedIds[neighbor];
+  orderedIds[neighbor] = tmp;
+  const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
+  await Promise.all(updates);
+  revalidatePath('/admin/local-classes');
+  redirect('/admin/local-classes');
+}
 
 export default async function LocalClassesIndex({ searchParams }: { searchParams?: { [k: string]: string | string[] | undefined } }) {
   const ok = await requireAdmin();
@@ -114,8 +141,16 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                   <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                   {isTop ? (
                     <div className="flex items-center gap-1">
-                      <a href={`${reorderEndpoint}?class_id=${encodeURIComponent(id)}&direction=up`} className="text-xs underline">↑</a>
-                      <a href={`${reorderEndpoint}?class_id=${encodeURIComponent(id)}&direction=down`} className="text-xs underline">↓</a>
+                      <form action={reorderTopLevelAction} method="post">
+                        <input type="hidden" name="class_id" value={id} />
+                        <input type="hidden" name="direction" value="up" />
+                        <button className="text-xs underline" type="submit">↑</button>
+                      </form>
+                      <form action={reorderTopLevelAction} method="post">
+                        <input type="hidden" name="class_id" value={id} />
+                        <input type="hidden" name="direction" value="down" />
+                        <button className="text-xs underline" type="submit">↓</button>
+                      </form>
                     </div>
                   ) : null}
                 </div>
@@ -171,8 +206,16 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                     <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                     {(!r.parent_id) ? (
                       <div className="flex items-center gap-1">
-                        <a href={`${reorderEndpoint}?class_id=${encodeURIComponent(String(r.id))}&direction=up`} className="text-xs underline">↑</a>
-                        <a href={`${reorderEndpoint}?class_id=${encodeURIComponent(String(r.id))}&direction=down`} className="text-xs underline">↓</a>
+                        <form action={reorderTopLevelAction} method="post">
+                          <input type="hidden" name="class_id" value={String(r.id)} />
+                          <input type="hidden" name="direction" value="up" />
+                          <button className="text-xs underline" type="submit">↑</button>
+                        </form>
+                        <form action={reorderTopLevelAction} method="post">
+                          <input type="hidden" name="class_id" value={String(r.id)} />
+                          <input type="hidden" name="direction" value="down" />
+                          <button className="text-xs underline" type="submit">↓</button>
+                        </form>
                       </div>
                     ) : null}
                   </div>
