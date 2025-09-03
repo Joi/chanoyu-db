@@ -188,3 +188,23 @@ vercel inspect <deployment-url>
 
 - “Preview” on Vercel is the environment for any non‑production branch. Mapping the domain to branch `dev` gives you a stable dev URL.
 - Keep secrets unprefixed (server‑only). Only NEXT_PUBLIC_* can appear in browser.
+
+---
+
+## Coordinating schema changes across stacks
+
+- Shared contract lives under `supabase/` (SQL, migrations, RLS). If a migration affects both the web app and ingestion, keep the edits in a single PR.
+- Order of operations for a coupled change:
+  1) Write/update migration in `supabase/`
+  2) Update ingestion code under `ingestion/` if it queries affected tables/columns
+  3) Update web app under `app/`/`lib/`/`components/`
+  4) Include a brief verification checklist in the PR description
+- For safety, prefer idempotent SQL and include rollback notes when possible
+
+## CI path filters
+
+- Run Node jobs only when `app/**`, `lib/**`, `components/**`, or Node lockfiles change
+- Run Python jobs only when `ingestion/**`, `requirements*.txt`, or Python sources/tests change
+- Always run SQL checks when `supabase/**` changes
+
+See `docs/CI_MONOREPO.md` for a drop-in GitHub Actions example.
