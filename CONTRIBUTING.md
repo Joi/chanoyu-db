@@ -55,6 +55,20 @@ git push origin dev
 4. Wait for review/approval
 5. Merge when approved
 
+## Monorepo boundaries and PR guidance
+
+This repository intentionally hosts two stacks that share a single Supabase schema:
+
+- Web app (Next.js + TS): `app/`, `lib/`, `components/`, `scripts/` (TS utilities)
+- Ingestion (Python): `ingestion/` plus Python support files (`requirements*.txt`, `src/`, `tests/`)
+- Database contract: `supabase/` (migrations, policies, seeds)
+
+Guidelines:
+- Keep cross-cutting changes small and atomic. If a schema change affects both ingestion and web, put all required edits in one PR.
+- Secrets live in environment files appropriate to each stack. Do not mix client `.env.local` with ingestion `.env`.
+- Prefer server components for data fetching; follow Supabase access patterns under `lib/supabase/`.
+- CI should run jobs based on path changes; see `docs/CI_MONOREPO.md`.
+
 ## Working with AI Assistants
 
 We use Claude and Cursor for development. See `CLAUDE.md` for guidelines.
