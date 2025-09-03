@@ -85,6 +85,25 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   const q = sanitizeSearchQuery(rawQuery.trim());
   const debug = String(searchParams?.debug || '') === '1';
 
+  // One-time normalization: set sequential sort_order for all top-level
+  async function normalizeTopLevelAction() {
+    'use server';
+    const ok = await requireAdmin();
+    if (!ok) return redirect('/login');
+    const db = supabaseAdmin();
+    await db.from('local_classes').update({ parent_id: null }).eq('parent_id', '');
+    const { data: rows } = await db
+      .from('local_classes')
+      .select('id, local_number')
+      .is('parent_id', null)
+      .order('local_number');
+    const ids = (rows || []).map((r: any) => String(r.id));
+    const updates = ids.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
+    await Promise.all(updates);
+    revalidatePath('/admin/local-classes');
+    redirect('/admin/local-classes?debug=1');
+  }
+
   let query = db
     .from('local_classes')
     .select('id, token, local_number, label_en, label_ja, parent_id, sort_order')
@@ -203,6 +222,9 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
               <li key={id} className="break-all">{id} · {String(byId[id]?.local_number || '')} · {String(byId[id]?.sort_order ?? 'null')}</li>
             ))}
           </ul>
+          <form action={normalizeTopLevelAction} className="mt-2">
+            <button type="submit" className="text-xs underline">Normalize top-level sort_order</button>
+          </form>
         </div>
       ) : null}
       <form className="flex gap-2 mb-4">
