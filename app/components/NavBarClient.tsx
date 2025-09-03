@@ -84,7 +84,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
         Menu
       </button>
       <a className="font-medium text-sm hidden md:inline" href="/">Home</a>
-      <a className="font-medium text-sm hidden md:inline" href="/lookup">Lookup</a>
+      <a className="hidden md:inline btn btn-outline text-sm" href="/lookup" role="button">Lookup</a>
 
       <div className="relative hidden md:block">
         <input
@@ -150,7 +150,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
           </div>
         </details>
       ) : (
-        <a className="font-medium text-sm hidden md:inline" href="/login">Login</a>
+        <a className="hidden md:inline btn btn-primary text-sm" href="/login" role="button">Login</a>
       )}
 
       {mobileOpen ? (

@@ -79,3 +79,23 @@ html, body { padding: 0; margin: 0 }
     @apply bg-background text-foreground;
   }
 }
+
+/* Global clickable link and button affordances */
+@layer components {
+  a {
+    @apply underline underline-offset-4 text-primary hover:no-underline;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring;
+    @apply px-4 py-2;
+  }
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  .btn-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
+  .link {
+    @apply text-primary underline underline-offset-4 hover:no-underline;
+  }
+}
