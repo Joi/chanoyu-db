@@ -73,13 +73,17 @@ Notes for routing and UI:
 
 ## NavBar (English-only labels)
 - Visitor:
-  - Home → `/`
+  - Members → `/members`
+  - Objects → `/objects`
+  - Chakai → `/chakai`
+  - Media → `/media`
   - Lookup → `/lookup`
   - Login → `/login`
 - Member:
   - Members → `/members`
+  - Objects → `/objects`
   - Chakai → `/chakai`
-  - Tea Rooms → `/tea-rooms`
+  - Media → `/media`
   - Lookup → `/lookup`
   - Logout → `/logout`
 - Admin/Owner:

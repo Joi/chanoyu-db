@@ -36,23 +36,26 @@ export default async function ChakaiListPage() {
 
   return (
     <main className="max-w-4xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Chakai</h1>
+      <h1 className="text-2xl font-semibold mb-4">Chakai</h1>
       {!list.length ? (
-        <div className="card">No chakai available.</div>
+        <div className="rounded border border-border bg-card p-4 text-sm text-muted-foreground">No chakai available.</div>
       ) : (
-        <div className="grid" style={{ gap: 8 }}>
+        <div className="grid gap-2">
           {list.map((c: any) => {
             const loc = (c as any).locations || null;
             const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
             const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
             const title = c.name_en || c.name_ja || c.local_number || date;
             return (
-              <div key={c.id} className="card" style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
+              <div key={c.id} className="grid items-center rounded border border-border bg-card p-3" style={{ gridTemplateColumns: '1fr auto' }}>
                 <div>
-                  <div className="font-medium"><a className="underline" href={`/chakai/${c.token || c.id}`}>{title}</a>{c.name_en && c.name_ja ? <span className="text-sm text-gray-700 ml-2" lang="ja">/ {c.name_ja}</span> : null}</div>
-                  <div className="text-sm text-gray-700">{date}{time ? ` ${time}` : ''}{loc ? ` · ${loc.name}` : ''}{c.local_number ? ` · ${c.local_number}` : ''}</div>
+                  <div className="line-clamp-2 text-base font-medium leading-snug">
+                    <a className="hover:underline" href={`/chakai/${c.token || c.id}`}>{title}</a>
+                    {c.name_en && c.name_ja ? <span className="ml-2 text-sm text-muted-foreground" lang="ja">/ {c.name_ja}</span> : null}
+                  </div>
+                  <div className="mt-0.5 text-sm text-muted-foreground">{date}{time ? ` ${time}` : ''}{loc ? ` · ${loc.name}` : ''}{c.local_number ? ` · ${c.local_number}` : ''}</div>
                 </div>
-                <div className="text-xs text-gray-600">{c.visibility}</div>
+                <div className="text-xs text-muted-foreground">{c.visibility}</div>
               </div>
             );
           })}
