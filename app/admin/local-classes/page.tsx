@@ -50,18 +50,28 @@ async function reorderTopLevelAction(formData: FormData) {
     return redirect('/admin/local-classes?error=swap_failed');
   }
   
-  if (!result?.success) {
-    console.error('[reorder] Swap failed:', result?.error_message);
+  // Type the result properly
+  const swapResult = result as {
+    success: boolean;
+    error_message: string;
+    class1_old_sort: number;
+    class1_new_sort: number;
+    class2_old_sort: number;
+    class2_new_sort: number;
+  } | null;
+  
+  if (!swapResult?.success) {
+    console.error('[reorder] Swap failed:', swapResult?.error_message);
     return redirect('/admin/local-classes?error=swap_failed');
   }
   
   console.log('[reorder] Swap successful:', {
     class1: classId1,
     class2: classId2,
-    oldSort1: result.class1_old_sort,
-    newSort1: result.class1_new_sort,
-    oldSort2: result.class2_old_sort,
-    newSort2: result.class2_new_sort
+    oldSort1: swapResult.class1_old_sort,
+    newSort1: swapResult.class1_new_sort,
+    oldSort2: swapResult.class2_old_sort,
+    newSort2: swapResult.class2_new_sort
   });
   
   revalidatePath('/admin/local-classes');
