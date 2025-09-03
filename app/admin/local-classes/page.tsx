@@ -195,16 +195,34 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
             const total = totalCounts.get(String(r.id)) || direct;
             return (
               <li key={r.id} className="card">
-                <Link href={`/admin/local-classes/${r.id}`} className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium underline">{title}</div>
-                    {showBoth ? (
-                      <div className="text-xs text-gray-600">{labelEn}</div>
+                <div className="flex items-center justify-between">
+                  <Link href={`/admin/local-classes/${r.id}`} className="flex items-center gap-3">
+                    <div>
+                      <div className="text-sm font-medium underline">{title}</div>
+                      {showBoth ? (
+                        <div className="text-xs text-gray-600">{labelEn}</div>
+                      ) : null}
+                      <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
+                    {(!r.parent_id) ? (
+                      <div className="flex items-center gap-1">
+                        <form action={reorderTopLevelAction}>
+                          <input type="hidden" name="class_id" value={String(r.id)} />
+                          <input type="hidden" name="direction" value="up" />
+                          <button className="text-xs underline" type="submit">↑</button>
+                        </form>
+                        <form action={reorderTopLevelAction}>
+                          <input type="hidden" name="class_id" value={String(r.id)} />
+                          <input type="hidden" name="direction" value="down" />
+                          <button className="text-xs underline" type="submit">↓</button>
+                        </form>
+                      </div>
                     ) : null}
-                    <div className="text-xs text-gray-600">{r.local_number || r.token}</div>
                   </div>
-                  <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
-                </Link>
+                </div>
               </li>
             );
           })}
