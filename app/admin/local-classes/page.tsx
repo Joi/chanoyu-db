@@ -43,6 +43,33 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   if (!ok) return redirect('/login');
   const db = supabaseAdmin();
 
+  // Inline reorder handler via query params to avoid any server action quirks in dev
+  const dir = typeof searchParams?.direction === 'string' ? String(searchParams!.direction) : '';
+  const targetId = typeof searchParams?.class_id === 'string' ? String(searchParams!.class_id) : '';
+  if ((dir === 'up' || dir === 'down') && targetId) {
+    const { data: rows } = await db
+      .from('local_classes')
+      .select('id, sort_order, local_number')
+      .is('parent_id', null)
+      .order('sort_order', { ascending: true, nullsFirst: true })
+      .order('local_number');
+    const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
+    const idx = list.findIndex((r) => String(r.id) === targetId);
+    if (idx >= 0) {
+      const neighbor = dir === 'up' ? idx - 1 : idx + 1;
+      if (neighbor >= 0 && neighbor < list.length) {
+        const orderedIds = list.map((r) => String(r.id));
+        const tmp = orderedIds[idx];
+        orderedIds[idx] = orderedIds[neighbor];
+        orderedIds[neighbor] = tmp;
+        const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
+        await Promise.all(updates);
+      }
+    }
+    revalidatePath('/admin/local-classes');
+    return redirect('/admin/local-classes');
+  }
+
   // Sanitize search query using the same logic as the secure API to prevent SQL injection
   const rawQuery = typeof searchParams?.q === 'string' ? String(searchParams!.q) : '';
   const sanitizeSearchQuery = (raw: string): string => {
@@ -141,16 +168,8 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                   <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                   {isTop ? (
                     <div className="flex items-center gap-1">
-                      <form action={reorderTopLevelAction} method="post">
-                        <input type="hidden" name="class_id" value={id} />
-                        <input type="hidden" name="direction" value="up" />
-                        <button className="text-xs underline" type="submit">↑</button>
-                      </form>
-                      <form action={reorderTopLevelAction} method="post">
-                        <input type="hidden" name="class_id" value={id} />
-                        <input type="hidden" name="direction" value="down" />
-                        <button className="text-xs underline" type="submit">↓</button>
-                      </form>
+                      <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(id)}&direction=up`}>↑</a>
+                      <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(id)}&direction=down`}>↓</a>
                     </div>
                   ) : null}
                 </div>
@@ -206,16 +225,8 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                     <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                     {(!r.parent_id) ? (
                       <div className="flex items-center gap-1">
-                        <form action={reorderTopLevelAction} method="post">
-                          <input type="hidden" name="class_id" value={String(r.id)} />
-                          <input type="hidden" name="direction" value="up" />
-                          <button className="text-xs underline" type="submit">↑</button>
-                        </form>
-                        <form action={reorderTopLevelAction} method="post">
-                          <input type="hidden" name="class_id" value={String(r.id)} />
-                          <input type="hidden" name="direction" value="down" />
-                          <button className="text-xs underline" type="submit">↓</button>
-                        </form>
+                        <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(String(r.id))}&direction=up`}>↑</a>
+                        <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(String(r.id))}&direction=down`}>↓</a>
                       </div>
                     ) : null}
                   </div>
