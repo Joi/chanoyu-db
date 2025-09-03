@@ -17,8 +17,8 @@ async function handle(classId: string, direction: string, req: Request) {
   const db = supabaseAdmin();
   const { data: rows } = await db
     .from('local_classes')
-    .select('id, sort_order, local_number')
-    .is('parent_id', null)
+    .select('id, sort_order, local_number, parent_id')
+    .or('parent_id.is.null,parent_id.eq.')
     .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number');
   const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
@@ -39,8 +39,8 @@ async function handle(classId: string, direction: string, req: Request) {
   }
   const { data: after } = await db
     .from('local_classes')
-    .select('id, sort_order')
-    .is('parent_id', null)
+    .select('id, sort_order, parent_id')
+    .or('parent_id.is.null,parent_id.eq.')
     .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number');
   console.log('[reorder] after:', (after || []).map((r: any, i: number) => ({ i, id: r.id, sort: r.sort_order })));
