@@ -29,8 +29,20 @@ async function handle(classId: string, direction: string, req: Request) {
   const tmp = orderedIds[idx];
   orderedIds[idx] = orderedIds[neighbor];
   orderedIds[neighbor] = tmp;
+  console.log('[reorder] before:', list.map((r, i) => ({ i, id: r.id, sort: r.sort_order })));
   const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
-  await Promise.all(updates);
+  const results = await Promise.all(updates);
+  const err = results.find((r) => (r as any)?.error);
+  if (err && (err as any).error) {
+    console.error('[reorder] update error', (err as any).error?.message || (err as any).error);
+  }
+  const { data: after } = await db
+    .from('local_classes')
+    .select('id, sort_order')
+    .is('parent_id', null)
+    .order('sort_order', { ascending: true, nullsFirst: true })
+    .order('local_number');
+  console.log('[reorder] after:', (after || []).map((r: any, i: number) => ({ i, id: r.id, sort: r.sort_order })));
   revalidatePath('/admin/local-classes');
   return NextResponse.redirect(new URL('/admin/local-classes', req.url));
 }
