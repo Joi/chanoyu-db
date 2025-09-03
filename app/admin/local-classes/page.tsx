@@ -47,10 +47,12 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   const dir = typeof searchParams?.direction === 'string' ? String(searchParams!.direction) : '';
   const targetId = typeof searchParams?.class_id === 'string' ? String(searchParams!.class_id) : '';
   if ((dir === 'up' || dir === 'down') && targetId) {
+    // Normalize legacy empty-string parents to NULL so they are treated as top-level
+    await db.from('local_classes').update({ parent_id: null }).eq('parent_id', '');
     const { data: rows } = await db
       .from('local_classes')
-      .select('id, sort_order, local_number')
-      .is('parent_id', null)
+      .select('id, sort_order, local_number, parent_id')
+      .or('parent_id.is.null,parent_id.eq.')
       .order('sort_order', { ascending: true, nullsFirst: true })
       .order('local_number');
     const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
@@ -127,11 +129,11 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
     return ids.sort((a, b) => {
       const ra = byId[a];
       const rb = byId[b];
-      const sa = ra.sort_order == null ? Number.POSITIVE_INFINITY : ra.sort_order;
-      const sb = rb.sort_order == null ? Number.POSITIVE_INFINITY : rb.sort_order;
+      const sa = ra.sort_order == null ? 999999 : ra.sort_order;
+      const sb = rb.sort_order == null ? 999999 : rb.sort_order;
       if (sa !== sb) return sa - sb;
-      const la = String(ra.label_ja || ra.label_en || ra.local_number || '').toLowerCase();
-      const lb = String(rb.label_ja || rb.label_en || rb.local_number || '').toLowerCase();
+      const la = String(ra.local_number || ra.label_ja || ra.label_en || '').toLowerCase();
+      const lb = String(rb.local_number || rb.label_ja || rb.label_en || '').toLowerCase();
       return la.localeCompare(lb);
     });
   };
