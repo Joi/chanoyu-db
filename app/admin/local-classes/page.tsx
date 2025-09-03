@@ -81,6 +81,7 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
     return esc;
   };
   const q = sanitizeSearchQuery(rawQuery.trim());
+  const debug = String(searchParams?.debug || '') === '1';
 
   let query = db
     .from('local_classes')
@@ -192,6 +193,16 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
         <h1 className="text-xl font-semibold">Local Classes</h1>
         <Link className="button" href="/admin/local-classes/new">New Local Class</Link>
       </div>
+      {debug ? (
+        <div className="card mb-3 text-xs">
+          <div className="font-medium mb-1">Debug: Top-level order (id · local_number · sort_order)</div>
+          <ul className="grid gap-1">
+            {sortIds(childrenOf['__root__'] || []).map((id) => (
+              <li key={id} className="break-all">{id} · {String(byId[id]?.local_number || '')} · {String(byId[id]?.sort_order ?? 'null')}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <form className="flex gap-2 mb-4">
         <input name="q" className="input" placeholder="Search local classes..." defaultValue={q} />
         <button className="button" type="submit">Search</button>
