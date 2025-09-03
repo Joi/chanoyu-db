@@ -26,26 +26,6 @@ async function createObject(formData: FormData): Promise<void> {
 }
 
 export default function NewObjectPage() {
-  return (
-    <main className="max-w-2xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">New Object</h1>
-      <form action={createObject} className="space-y-3">
-        <div>
-          <label className="block text-sm">Title (EN)</label>
-          <input name="title" className="border rounded p-2 w-full" required />
-        </div>
-        <div>
-          <label className="block text-sm">Title (JA)</label>
-          <input name="title_ja" className="border rounded p-2 w-full" />
-        </div>
-        <div>
-          <label className="block text-sm">Local Number</label>
-          <input name="local_number" className="border rounded p-2 w-full" />
-        </div>
-        
-        <p className="text-xs text-gray-600">After saving, use <a className="underline" href="/lookup">Lookup</a> to find AAT/Wikidata and attach in DB (next step).</p>
-        <button className="bg-black text-white px-4 py-2 rounded" type="submit">Create</button>
-      </form>
-    </main>
-  );
+  // Deprecated page: redirect to Items to add via admin flow
+  redirect('/admin/items');
 }

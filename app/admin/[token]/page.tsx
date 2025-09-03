@@ -198,6 +198,23 @@ async function uploadMediaFileAction(formData: FormData) {
   }
 }
 
+// Mark a media as featured by setting its sort_order to 0 and bumping others
+async function makeFeaturedMediaAction(formData: FormData) {
+  'use server';
+  const mediaId = String(formData.get('media_id') || '');
+  const token = String(formData.get('object_token') || '');
+  if (!mediaId || !token) return;
+  const db = supabaseAdmin();
+  const { data: m } = await db.from('media').select('id, object_id').eq('id', mediaId).maybeSingle();
+  if (!m || !(m as any).object_id) return;
+  const objectId = String((m as any).object_id);
+  // Set selected to 0, others to 999
+  await db.from('media').update({ sort_order: 0 }).eq('id', mediaId);
+  await db.from('media').update({ sort_order: 999 }).neq('id', mediaId).eq('object_id', objectId);
+  revalidatePath(`/admin/${token}`);
+  redirect(`/admin/${token}?saved=featured`);
+}
+
 async function updateMediaAction(formData: FormData) {
   'use server';
   const id = String(formData.get('media_id') || '');
@@ -404,7 +421,8 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   // Load options for Local Class pulldown
   const { data: allLocalClasses } = await db
     .from('local_classes')
-    .select('id, label_en, label_ja, local_number')
+    .select('id, label_en, label_ja, local_number, sort_order')
+    .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number')
     .limit(1000);
   let media: any[] = [];
@@ -493,7 +511,10 @@ export default async function AdminObjectPage({ params, searchParams }: { params
           {detail ? <div className="text-xs text-gray-700 mt-1">{detail}</div> : null}
         </div>
       ) : null}
-      <h1 className="text-xl font-semibold mb-2">Admin: {object.title}</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-xl font-semibold">Admin: {object.title}</h1>
+        <a href="/admin/items" className="text-sm underline">← Back to Items</a>
+      </div>
       {object.title_ja ? <p className="text-sm" lang="ja">{object.title_ja}</p> : null}
       {/* Compact classification summary at top */}
       <section className="card mb-3">
@@ -523,15 +544,20 @@ export default async function AdminObjectPage({ params, searchParams }: { params
         <section>
           <h2 className="text-lg font-semibold mb-2">Images</h2>
           <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-            {media.map((m: any) => (
+            {media.map((m: any, idx: number) => (
               <div key={m.id} className="card">
                 <div className="relative w-full" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
                   <a href={`/media/${m.id}`}>
                     <Image src={m.uri} alt={object.title} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} />
                   </a>
                 </div>
-                <div className="mt-2 text-sm">
+                <div className="mt-2 text-sm flex items-center gap-3">
                   <a className="underline" href={`/media/${m.token || m.id}`}>Open media page</a> {m.local_number ? <span> · {m.local_number}</span> : null}
+                  <form action={makeFeaturedMediaAction} className="ml-auto">
+                    <input type="hidden" name="media_id" value={m.id} />
+                    <input type="hidden" name="object_token" value={token} />
+                    <button type="submit" className="text-xs underline">{idx === 0 ? 'Featured' : 'Make featured'}</button>
+                  </form>
                 </div>
                 <form action={deleteMediaAction} className="mt-2">
                   <input type="hidden" name="media_id" value={m.id} />
@@ -725,20 +751,8 @@ export default async function AdminObjectPage({ params, searchParams }: { params
         </section>
       </div>
       <section className="card mt-4">
-        <h2 className="text-sm font-semibold mb-2">Change Local Class</h2>
-        <form action={savePrimaryLocalClassAction} className="grid gap-2">
-          <input type="hidden" name="object_token" value={token} />
-          <label className="label">Select Local Class</label>
-          <select name="local_class_id" className="input" defaultValue={String(object.primary_local_class_id || '')}>
-            <option value="">(none)</option>
-            {(allLocalClasses || []).map((c: any) => (
-              <option key={String(c.id)} value={String(c.id)}>
-                {String(c.label_ja || c.label_en || c.local_number || c.id)}
-              </option>
-            ))}
-          </select>
-          <SubmitButton small label="Save Local Class" pendingLabel="Saving..." />
-        </form>
+        {/* Local Class change moved to Local Classes admin; avoid redundant UI here */}
+        <div className="text-sm text-muted-foreground">Manage the primary Local Class from the Local Classes section.</div>
       </section>
     </main>
   );

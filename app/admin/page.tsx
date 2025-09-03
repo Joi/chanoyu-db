@@ -48,7 +48,7 @@ export default async function AdminHome() {
         <Card href="/admin/classifications" title="Classifications" subtitle="分類 — AAT/Wikidata authorities" />
         <Card href="/admin/tea-schools" title="Tea Schools" subtitle="流派 — Lineages and schools" />
         <Card href="/lookup" title="Lookup" subtitle="用語検索 — Category lookup" />
-        {isOwner ? <Card href="/admin/new" title="Create object" subtitle="新規オブジェクト — Add item" /> : null}
+        {/* Removed direct create object shortcut; use Items page */}
       </section>
       <form action={signOut} className="mt-6">
         <button className="text-sm underline" type="submit">Sign out</button>

@@ -25,7 +25,8 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
 
   let query = db
     .from('local_classes')
-    .select('id, token, local_number, label_en, label_ja, parent_id')
+    .select('id, token, local_number, label_en, label_ja, parent_id, sort_order')
+    .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number')
     .limit(1000);
   if (q) {
@@ -53,7 +54,7 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   for (const r of (totalCountsRes?.data as any[]) || []) totalCounts.set(String(r.local_class_id), Number(r.object_count || 0));
 
   // Build maps for tree rendering when no search query
-  type RowT = { id: string; token: string | null; local_number: string | null; label_en: string | null; label_ja: string | null; parent_id: string | null };
+  type RowT = { id: string; token: string | null; local_number: string | null; label_en: string | null; label_ja: string | null; parent_id: string | null; sort_order: number | null };
   const byId: Record<string, RowT> = Object.create(null);
   const childrenOf: Record<string, string[]> = Object.create(null);
   for (const r of list as RowT[]) {
@@ -66,6 +67,9 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
     return ids.sort((a, b) => {
       const ra = byId[a];
       const rb = byId[b];
+      const sa = ra.sort_order == null ? Number.POSITIVE_INFINITY : ra.sort_order;
+      const sb = rb.sort_order == null ? Number.POSITIVE_INFINITY : rb.sort_order;
+      if (sa !== sb) return sa - sb;
       const la = String(ra.label_ja || ra.label_en || ra.local_number || '').toLowerCase();
       const lb = String(rb.label_ja || rb.label_en || rb.local_number || '').toLowerCase();
       return la.localeCompare(lb);
