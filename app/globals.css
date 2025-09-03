@@ -82,6 +82,9 @@ html, body { padding: 0; margin: 0 }
 
 /* Global clickable link and button affordances */
 @layer components {
+  a {
+    @apply underline underline-offset-4 text-primary hover:no-underline;
+  }
   .btn {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring;
     @apply px-4 py-2;
