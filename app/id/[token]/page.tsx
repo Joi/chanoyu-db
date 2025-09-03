@@ -112,21 +112,21 @@ export default async function ObjectPage({ params }: Props) {
         <header className="py-6">
           <Title level={1}>{data.title || data.title_ja || data.local_number || data.token}</Title>
           {data.title_ja && data.title ? (
-            <p className="text-sm text-inkSubtle" lang="ja">{data.title_ja}</p>
+            <p className="text-sm text-muted-foreground" lang="ja">{data.title_ja}</p>
           ) : null}
           {(isAdmin || isOwner) ? (
             <p className="text-xs mt-1"><a className="underline" href={`/admin/${token}`}>Edit</a></p>
           ) : null}
-          <div className="mt-4 border border-[color:var(--line)] rounded-lg p-3 bg-white">
+          <div className="mt-4 border border-border rounded-lg p-3 bg-card">
             <h2 className="text-sm font-semibold mb-1">Classification</h2>
             <div className="grid gap-2">
               {localClassTitle ? (
                 <div className="text-sm">{localClassTitle}</div>
               ) : (
-                <div className="text-xs text-inkSubtle">No local class selected</div>
+                <div className="text-xs text-muted-foreground">No local class selected</div>
               )}
               {localClassBreadcrumb.length ? (
-                <div className="text-xs text-inkSubtle">{localClassBreadcrumb.join(' / ')}</div>
+                <div className="text-xs text-muted-foreground">{localClassBreadcrumb.join(' / ')}</div>
               ) : null}
               {localClassExternal.length ? (
                 <div className="flex flex-wrap gap-2 text-xs">
@@ -142,7 +142,7 @@ export default async function ObjectPage({ params }: Props) {
         </header>
 
         {img ? (
-          <div className="relative w-full aspect-[4/3] bg-[color:var(--paper)] rounded-lg overflow-hidden border border-[color:var(--line)]">
+          <div className="relative w-full aspect-[4/3] bg-background rounded-lg overflow-hidden border border-border">
             <a href={img} target="_blank" rel="noreferrer">
               <Image src={img} alt={data.title || ''} fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" />
             </a>
@@ -151,18 +151,18 @@ export default async function ObjectPage({ params }: Props) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <section>
-            <h2 className="font-serif text-[1.5rem] leading-snug mb-2">Details</h2>
+            <h2 className="text-[1.5rem] leading-snug mb-2 font-semibold">Details</h2>
             <Separator className="mb-3" />
             <dl className="space-y-3">
               {data.local_number ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">Number</dt>
+                  <dt className="text-sm text-muted-foreground">Number</dt>
                   <dd>{data.local_number}</dd>
                 </div>
               ) : null}
               {(data.craftsman || data.craftsman_ja) ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">Craftsman</dt>
+                  <dt className="text-sm text-muted-foreground">Craftsman</dt>
                   <dd>
                     {data.craftsman || ''} {data.craftsman_ja ? <span lang="ja">/ {data.craftsman_ja}</span> : null}
                   </dd>
@@ -170,25 +170,25 @@ export default async function ObjectPage({ params }: Props) {
               ) : null}
               {data.event_date ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">Date</dt>
+                  <dt className="text-sm text-muted-foreground">Date</dt>
                   <dd>{String(data.event_date)}</dd>
                 </div>
               ) : null}
               {data.url ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">URL</dt>
+                  <dt className="text-sm text-muted-foreground">URL</dt>
                   <dd><a className="underline" href={data.url} target="_blank" rel="noreferrer">{data.url}</a></dd>
                 </div>
               ) : null}
               {Array.isArray(data.tags) && data.tags.length ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">Tags</dt>
+                  <dt className="text-sm text-muted-foreground">Tags</dt>
                   <dd>{data.tags.join(', ')}</dd>
                 </div>
               ) : null}
               {(isAdmin || isOwner) && (data.store || data.store_ja) ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">Store</dt>
+                  <dt className="text-sm text-muted-foreground">Store</dt>
                   <dd>
                     {data.store || ''} {data.store_ja ? <span lang="ja">/ {data.store_ja}</span> : null}
                   </dd>
@@ -196,7 +196,7 @@ export default async function ObjectPage({ params }: Props) {
               ) : null}
               {(isAdmin || isOwner) && (data.location || data.location_ja) ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">Location</dt>
+                  <dt className="text-sm text-muted-foreground">Location</dt>
                   <dd>
                     {data.location || ''} {data.location_ja ? <span lang="ja">/ {data.location_ja}</span> : null}
                   </dd>
@@ -204,7 +204,7 @@ export default async function ObjectPage({ params }: Props) {
               ) : null}
               {isOwner && (data.price != null) ? (
                 <div>
-                  <dt className="text-sm text-inkSubtle">Price</dt>
+                  <dt className="text-sm text-muted-foreground">Price</dt>
                   <dd><RevealPrice price={Number(data.price)} /></dd>
                 </div>
               ) : null}
@@ -212,7 +212,7 @@ export default async function ObjectPage({ params }: Props) {
           </section>
 
           <section>
-            <h2 className="font-serif text-[1.5rem] leading-snug mb-2">Description</h2>
+            <h2 className="text-[1.5rem] leading-snug mb-2 font-semibold">Description</h2>
             <Separator className="mb-3" />
             {(data.notes || data.notes_ja) ? (
               <div className="prose">
@@ -220,7 +220,7 @@ export default async function ObjectPage({ params }: Props) {
                 {data.notes_ja ? <p className="mb-1" lang="ja">{data.notes_ja}</p> : null}
               </div>
             ) : (
-              <p className="text-sm text-inkSubtle">No description</p>
+              <p className="text-sm text-muted-foreground">No description</p>
             )}
           </section>
         </div>

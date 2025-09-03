@@ -10,11 +10,11 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
-  			paper: '#FFFFFF',
-  			ink: '#111111',
-  			inkMuted: '#2B2B2B',
-  			inkSubtle: '#666666',
-  			line: 'rgba(0,0,0,0.08)',
+  			paper: 'hsl(var(--background))',
+  			ink: 'hsl(var(--foreground))',
+  			inkMuted: 'hsl(var(--muted-foreground))',
+  			inkSubtle: 'hsl(var(--muted-foreground))',
+  			line: 'hsl(var(--border))',
   			link: '#0645AD',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

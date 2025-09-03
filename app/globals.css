@@ -2,34 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --paper: #ffffff;
-  --ink: #111111;
-  --ink-muted: #2b2b2b;
-  --ink-subtle: #666666;
-  --line: rgba(0, 0, 0, 0.08);
-  --link: #0645ad;
-}
-
 * { box-sizing: border-box }
 html, body { padding: 0; margin: 0 }
-body { background: var(--paper); color: var(--ink); line-height: 1.6 }
 
-a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; transition: color .2s ease }
-a:hover { color: color-mix(in oklab, var(--link) 80%, black) }
-a:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in oklab, var(--link) 35%, white) }
-
-h1, h2, h3, h4 { font-family: var(--font-garamond), var(--font-noto-serif-jp), serif }
-h1 { font-size: 2.125rem; line-height: 1.2; margin: 16px 0 8px }
-h2 { font-size: 1.5rem; line-height: 1.3; margin: 14px 0 8px }
+/* Global element resets only; colors and typography come from shadcn tokens */
 
 .prose p { margin: 12px 0 }
 
 /* Hairline separators */
-.separator { height: 1px; background: var(--line) }
+.separator { height: 1px; background: hsl(var(--border)) }
 
 /* Legacy utility class fallbacks kept temporarily */
-.muted { color: var(--ink-subtle); font-size: 12px }
+.muted { color: hsl(var(--muted-foreground)); font-size: 12px }
 
 @layer base {
   :root {
