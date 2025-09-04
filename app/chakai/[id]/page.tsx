@@ -246,11 +246,6 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       }
     }
     
-    console.log('[ChakaiDetail] Hierarchy debug:', {
-      classMetaById,
-      byRootClass: Object.keys(byRootClass),
-      grouped: grouped.map(g => ({ title: g.classTitle, itemCount: g.items.length, sortOrder: g.sortOrder }))
-    });
     grouped.sort((a, b) => {
       const sa = a.sortOrder == null ? Number.POSITIVE_INFINITY : Number(a.sortOrder);
       const sb = b.sortOrder == null ? Number.POSITIVE_INFINITY : Number(b.sortOrder);
