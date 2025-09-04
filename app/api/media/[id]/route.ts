@@ -15,16 +15,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const isPrivileged = await requireAdmin();
 
     // First, get the media record and check what chakai it's linked to
+    console.log('[media] Fetching media record for ID:', mediaId);
     const { data: media, error: mediaError } = await db
       .from('media')
-      .select('id, uri, file_type, original_filename, visibility')
+      .select('id, uri, file_type, original_filename, storage_path, bucket')
       .eq('id', mediaId)
       .single();
 
     if (mediaError || !media) {
-      console.error('[media] Media not found:', mediaError);
+      console.error('[media] Media not found:', { mediaId, error: mediaError });
       return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
+
+    console.log('[media] Found media record:', media);
 
     // Get the chakai this media is linked to
     const { data: linkData, error: linkError } = await db
@@ -47,8 +50,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       // Admins/owners can access all media
       canAccessMedia = true;
     } else if (chakai.visibility === 'open') {
-      // For open chakai, users can access public media
-      canAccessMedia = media.visibility === 'public';
+      // For open chakai, users can access media (simplified for now)
+      canAccessMedia = true;
     } else if (chakai.visibility === 'members' && email) {
       // For members-only chakai, check if user is an attendee
       const { data: attendeeCheck } = await db
@@ -59,7 +62,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         .single();
 
       if (attendeeCheck) {
-        // Attendees can access both public and private media
+        // Attendees can access media
         canAccessMedia = true;
       }
     }
@@ -68,15 +71,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Fetch the actual file from Supabase storage
-    const response = await fetch(media.uri);
+    // Get the file from Supabase storage using the storage path
+    console.log('[media] Downloading file from storage:', media.storage_path || media.uri);
     
-    if (!response.ok) {
-      console.error('[media] Storage fetch failed:', response.status, response.statusText);
+    const storagePath = media.storage_path || media.uri;
+    const { data: fileData, error: downloadError } = await db.storage
+      .from(media.bucket || 'media')
+      .download(storagePath);
+
+    if (downloadError || !fileData) {
+      console.error('[media] Storage download failed:', downloadError);
       return NextResponse.json({ error: 'Failed to fetch media' }, { status: 500 });
     }
 
-    const buffer = await response.arrayBuffer();
+    const buffer = await fileData.arrayBuffer();
     
     // Set appropriate headers for the media type
     const headers = new Headers();
@@ -84,10 +92,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     
     // Add content disposition for download if requested
     const download = req.nextUrl.searchParams.get('download');
-    if (download === 'true' && media.original_filename) {
-      headers.set('Content-Disposition', `attachment; filename="${media.original_filename}"`);
-    } else if (media.original_filename) {
-      headers.set('Content-Disposition', `inline; filename="${media.original_filename}"`);
+    if (media.original_filename) {
+      // Encode filename to handle non-ASCII characters (like Japanese)
+      const encodedFilename = encodeURIComponent(media.original_filename);
+      const safeFilename = media.original_filename.replace(/[^\x00-\x7F]/g, '_'); // ASCII fallback
+      
+      const dispositionType = download === 'true' ? 'attachment' : 'inline';
+      headers.set('Content-Disposition', 
+        `${dispositionType}; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`
+      );
     }
     
     // Add cache headers for efficient delivery
