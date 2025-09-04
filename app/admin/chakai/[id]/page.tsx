@@ -248,9 +248,9 @@ export default async function EditChakai({ params }: { params: { id: string } })
                     <div className="text-sm">
                       <div>{label}{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}</div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                       <a className="text-xs underline" href={`/admin/${o.token}`}>Edit item</a>
-                      <form action={removeChakaiItem} style={{ display: 'inline' }}>
+                      <form action={removeChakaiItem} className="m-0">
                         <input type="hidden" name="chakai_id" value={c.id} />
                         <input type="hidden" name="object_id" value={o.id} />
                         <button type="submit" className="text-xs underline text-red-600">Remove</button>
