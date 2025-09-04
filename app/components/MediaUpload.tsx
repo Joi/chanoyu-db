@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+// MediaUpload component for chakai PDF and image attachments
+
 interface MediaUploadProps {
   chakaiId: string;
   onUploadSuccess?: (media: any) => void;
