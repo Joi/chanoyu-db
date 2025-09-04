@@ -1,0 +1,88 @@
+name: PR AC Guard
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+permissions:
+  pull-requests: write
+  issues: read
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract PR refs
+        id: refs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || "";
+            const m = body.match(/\b(closes|fixes|resolves)\s+#(\d+)\b/i);
+            if (!m) core.setFailed("PR body must include 'Closes #<issue>'");
+            core.setOutput("issue", m ? m[2] : "");
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Fetch Issue JSON
+        id: issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = core.getInput('issue', { required: true });
+            const { data } = await github.rest.issues.get({
+              ...context.repo, issue_number: Number(issue_number || "${{ steps.refs.outputs.issue }}")
+            });
+            return { body: data.body || "" };
+          result-encoding: string
+      - name: Parse AC
+        id: parse
+        run: |
+          echo '${{ steps.issue.outputs.result }}' | jq -r '.body' > issue_body.txt
+          node -v
+          mkdir -p scripts/ac
+          cat > scripts/ac/extract-ac.ts <<'TS'
+          /* placeholder – real file should exist in repo; this fallback ensures first run works */
+          TS
+          # Use repo's script if present; else write from workflow if you haven't committed yet.
+          if [ -f scripts/ac/extract-ac.ts ]; then
+            :
+          else
+            cat > scripts/ac/extract-ac.ts <<'TS'
+          ${{
+            steps.parse.outputs.dummy || ''
+          }}
+          TS
+          fi
+          # Use a bundled minimal parser in bash to avoid build steps:
+          node -e '
+            const fs=require("fs");
+            const body=fs.readFileSync("issue_body.txt","utf8");
+            const s="<!-- AC:BEGIN -->", e="<!-- AC:END -->";
+            const i=body.indexOf(s), j=body.indexOf(e,i+1);
+            if(i<0||j<0){console.error("NO_AC_BLOCK");process.exit(2)}
+            const block=body.slice(i,j);
+            const lines=block.split(/\r?\n/).map(l=>l.trim());
+            const ac=lines.map(l=>{
+              const m=l.match(/^-\\s*\\[\\s*(x?)\\s*\\]\\s*(AC-[\\w-]+):\\s*(.+)$/i);
+              return m?{id:m[2],checked:!!m[1],text:m[3]}:null
+            }).filter(Boolean);
+            if(!ac.length){console.error("NO_AC_ITEMS");process.exit(3)}
+            fs.writeFileSync("ac.json", JSON.stringify(ac,null,2));
+          '
+      - name: Comment AC Mirror
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const ac = JSON.parse(fs.readFileSync('ac.json','utf8'));
+            const md = [
+              "### Acceptance Criteria (from linked Issue)",
+              "",
+              ...ac.map(x => `- [${x.checked ? "x":" "}] ${x.id}: ${x.text}`)
+            ].join("\n");
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.payload.pull_request.number,
+              body: md
+            });
+      - name: Fail if AC missing
+        run: echo "AC OK"
