@@ -262,7 +262,8 @@ export default async function EditChakai({ params }: { params: { id: string } })
         <section className="grid gap-3">
           <h2 className="font-medium">Media Attachments</h2>
           <MediaUpload 
-            chakaiId={c.id} 
+            entityType="chakai"
+            entityId={c.id} 
             onUploadSuccess={() => {
               // Refresh the page to show the new media
               window.location.reload();
