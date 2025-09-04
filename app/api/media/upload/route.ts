@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       .from('media')
       .insert({
         uri: uploadData.path,
-        kind: file.type === 'application/pdf' ? 'pdf' : 'image',
+        kind: file.type.startsWith('image/') ? 'image' : 'file',
         bucket: 'media',
         storage_path: uploadData.path,
         visibility: visibility as 'public' | 'private',
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         .insert({
           chakai_id: entityId,
           media_id: mediaRecord.id,
-          role: file.type === 'application/pdf' ? 'attachment' : 'related'
+          role: 'attachment'
         });
 
       if (linkError) {
