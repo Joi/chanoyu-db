@@ -401,11 +401,6 @@ export default async function EditChakai({ params }: { params: { id: string } })
                       <button 
                         type="submit" 
                         className="text-xs text-red-600 hover:text-red-800 px-2 py-1 border border-red-200 rounded hover:bg-red-50"
-                        onClick={(e) => {
-                          if (!confirm(`Remove ${filename}?`)) {
-                            e.preventDefault();
-                          }
-                        }}
                       >
                         Remove
                       </button>
