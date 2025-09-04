@@ -1,0 +1,13 @@
+-- Migration: Media visibility controls for chakaiki PDF access (NO-OP)
+-- Date: 2025-09-04
+-- Description: No-op migration - functionality already applied manually
+
+-- This migration is intentionally empty as the required changes
+-- have been applied manually to avoid database compatibility issues.
+-- The actual implemented changes were:
+-- 1. Added file_type, file_size, original_filename columns to media table
+-- 2. Set existing media records to visibility = 'public' where NULL
+-- 3. Added TypeScript types for media visibility controls
+
+-- No database changes needed in this migration file.
+SELECT 1; -- No-op statement to make migration valid
