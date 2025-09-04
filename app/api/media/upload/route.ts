@@ -97,12 +97,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 
-    // Create media record (only basic columns - avoid columns that may not exist in production)
+    // Create media record (using all columns from migrations)
     const { data: mediaRecord, error: mediaError } = await db
       .from('media')
       .insert({
         uri: uploadData.path,
         kind: file.type === 'application/pdf' ? 'pdf' : 'image',
+        bucket: 'media',
+        storage_path: uploadData.path,
+        visibility: visibility as 'public' | 'private',
+        file_type: file.type,
+        file_size: file.size,
+        original_filename: file.name,
         sort_order: 0
       })
       .select()
@@ -111,8 +117,17 @@ export async function POST(request: NextRequest) {
     if (mediaError) {
       // Cleanup uploaded file
       await db.storage.from('media').remove([uploadData.path]);
-      console.error('Media record error:', mediaError);
-      return NextResponse.json({ error: 'Failed to create media record' }, { status: 500 });
+      console.error('Media record error details:', {
+        error: mediaError,
+        message: mediaError.message,
+        details: mediaError.details,
+        hint: mediaError.hint,
+        code: mediaError.code
+      });
+      return NextResponse.json({ 
+        error: 'Failed to create media record',
+        debug: process.env.NODE_ENV === 'development' ? mediaError.message : undefined
+      }, { status: 500 });
     }
 
     // Create link record (only support chakai for now to ensure compatibility)
