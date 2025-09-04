@@ -82,6 +82,18 @@ async function deleteChakai(formData: FormData) {
   return redirect('/admin/chakai');
 }
 
+async function removeChakaiItem(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return notFound();
+  const chakaiId = String(formData.get('id') || ''); // Get from main form's id field
+  const objectId = String(formData.get('object_id') || '');
+  if (!chakaiId || !objectId) return notFound();
+  const db = supabaseAdmin();
+  await db.from('chakai_items').delete().eq('chakai_id', chakaiId).eq('object_id', objectId);
+  return redirect(`/admin/chakai/${chakaiId}`);
+}
+
 export default async function EditChakai({ params }: { params: { id: string } }) {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
@@ -219,7 +231,7 @@ export default async function EditChakai({ params }: { params: { id: string } })
         </section>
         <section className="grid gap-3">
           <h2 className="font-medium">Items used</h2>
-          <SearchSelect name="item_ids" label="Items used" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={items} />
+          <SearchSelect name="item_ids" label="Add items" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={[]} />
           {itemObjects.length ? (
             <div className="grid" style={{ gap: 8 }}>
               {itemObjects.map((o: any) => {
@@ -236,7 +248,17 @@ export default async function EditChakai({ params }: { params: { id: string } })
                     <div className="text-sm">
                       <div>{label}{secondary ? <span className="text-xs text-gray-700 ml-2" lang="en">/ {secondary}</span> : null}{o.local_number ? ` (${o.local_number})` : ''}</div>
                     </div>
-                    <a className="text-xs underline" href={`/admin/${o.token}`}>Edit item</a>
+                    <div className="flex gap-2 items-center">
+                      <a className="text-xs underline" href={`/admin/${o.token}`}>Edit item</a>
+                      <button 
+                        formAction={removeChakaiItem}
+                        name="object_id" 
+                        value={o.id}
+                        className="text-xs underline text-red-600 bg-transparent border-none p-0 cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 );
               })}
