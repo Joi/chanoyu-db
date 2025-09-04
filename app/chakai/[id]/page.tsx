@@ -375,7 +375,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
                     {isPDF ? (
                       <div className="flex gap-2">
                         <a 
-                          href={media.uri} 
+                          href={`/api/media/${media.id}`} 
                           target="_blank" 
                           rel="noreferrer"
                           className="text-xs underline text-blue-600"
@@ -383,7 +383,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
                           View
                         </a>
                         <a 
-                          href={media.uri} 
+                          href={`/api/media/${media.id}?download=true`} 
                           download={filename}
                           className="text-xs underline text-blue-600"
                         >
@@ -392,7 +392,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
                       </div>
                     ) : (
                       <a 
-                        href={media.uri} 
+                        href={`/api/media/${media.id}`} 
                         target="_blank" 
                         rel="noreferrer"
                         className="text-xs underline text-blue-600"
