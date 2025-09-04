@@ -16,4 +16,12 @@ if [ "$run_ci" = "1" ]; then
   echo "Running CI (lint+typecheck+tests+build) locally before push to dev..."
   pnpm ci:local || exit 1
 fi
+
+# Reminder: make sure commit/PR body includes closing keywords
+last_msg="$(git log -1 --pretty=%B)"
+echo "$last_msg" | grep -iE '\b(closes|fixes|resolves)\s+#[0-9]+' >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "⚠️  Reminder: Include 'Closes #<issue>' in your PR description so GitHub will auto-close the Issue."
+fi
+
 exit 0
