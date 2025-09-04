@@ -27,6 +27,13 @@ export default function SearchSelect({
   const [selected, setSelected] = useState<Initial[]>(() => Array.isArray(initial) ? initial : []);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Update selected state when initial prop changes (e.g., after page reload)
+  useEffect(() => {
+    if (Array.isArray(initial)) {
+      setSelected(initial);
+    }
+  }, [initial]);
+
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!containerRef.current) return;
