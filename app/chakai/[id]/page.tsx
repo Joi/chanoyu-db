@@ -176,12 +176,14 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
         const classId = String((lc as any).id);
         const title = String((lc as any).label_ja || (lc as any).label_en || (lc as any).local_number || classId);
         
-        // Find the root ancestor for grouping
+        // Find the root ancestor for grouping (with cycle protection)
         let rootId = classId;
         let current = classId;
-        while (parentMap[current]) {
+        let depth = 0;
+        while (parentMap[current] && depth < 10) { // Max 10 levels to prevent infinite loops
           rootId = parentMap[current];
           current = parentMap[current];
+          depth++;
         }
         
         classMetaById[classId] = {
