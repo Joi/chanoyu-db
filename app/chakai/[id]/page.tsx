@@ -131,46 +131,113 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
     }
   }
 
-  // Group items by Local Class with defined order
+  // Group items by Local Class with proper hierarchy
   let grouped: Array<{ classId: string | null; classTitle: string; items: any[]; sortOrder: number | null }> = [];
   if (itemObjects.length) {
-    const byClass: Record<string, any[]> = {};
-    for (const o of itemObjects) {
-      const cid = (o as any).primary_local_class_id || null;
-      const key = cid ? String(cid) : '__none__';
-      if (!byClass[key]) byClass[key] = [];
-      byClass[key].push(o);
-    }
-    const classIds = Object.keys(byClass).filter((k) => k !== '__none__');
-    let classMetaById: Record<string, { title: string; sortOrder: number | null; parentSortOrder: number | null }> = {};
-    if (classIds.length) {
+    // First, get all Local Classes with their hierarchy info
+    const objectClassIds = itemObjects.map((o: any) => o.primary_local_class_id).filter(Boolean);
+    let classMetaById: Record<string, { title: string; sortOrder: number | null; parentId: string | null; rootId: string }> = {};
+    
+    if (objectClassIds.length) {
       const { data: classes } = await db
         .from('local_classes')
         .select(`
-          id, label_en, label_ja, local_number, sort_order, parent_id,
-          parent:local_classes!parent_id(sort_order)
+          id, label_en, label_ja, local_number, sort_order, parent_id
         `)
-        .in('id', classIds);
+        .in('id', objectClassIds);
+      
+      // Get root classes for proper grouping
+      const allClassIds = (classes || []).map((c: any) => c.id);
+      const { data: hierarchy } = await db
+        .from('local_class_hierarchy')
+        .select('ancestor_id, descendant_id, depth')
+        .in('descendant_id', allClassIds)
+        .eq('depth', 1); // Get immediate parents
+      
+      // Build hierarchy map
+      const parentMap: Record<string, string> = {};
+      for (const h of hierarchy || []) {
+        parentMap[(h as any).descendant_id] = (h as any).ancestor_id;
+      }
+      
+      // Find root classes and build metadata
       for (const lc of classes || []) {
-        const title = String((lc as any).label_ja || (lc as any).label_en || (lc as any).local_number || (lc as any).id);
-        const parentSortOrder = (lc as any).parent?.sort_order ?? null;
-        // Use parent's sort order if this is a child class, otherwise use own sort order
-        const effectiveSortOrder = parentSortOrder ?? (lc as any).sort_order ?? null;
-        classMetaById[String((lc as any).id)] = { 
-          title, 
-          sortOrder: effectiveSortOrder,
-          parentSortOrder 
+        const classId = String((lc as any).id);
+        const title = String((lc as any).label_ja || (lc as any).label_en || (lc as any).local_number || classId);
+        
+        // Find the root ancestor for grouping
+        let rootId = classId;
+        let current = classId;
+        while (parentMap[current]) {
+          rootId = parentMap[current];
+          current = parentMap[current];
+        }
+        
+        classMetaById[classId] = {
+          title,
+          sortOrder: (lc as any).sort_order ?? null,
+          parentId: (lc as any).parent_id,
+          rootId
         };
       }
     }
-    for (const [key, items] of Object.entries(byClass)) {
-      if (key === '__none__') continue;
-      const meta = classMetaById[key] || { title: '—', sortOrder: null, parentSortOrder: null };
-      grouped.push({ classId: key, classTitle: meta.title, items, sortOrder: meta.sortOrder });
+    
+    // Group items by their root ancestor class
+    const byRootClass: Record<string, { meta: any; items: any[] }> = {};
+    
+    for (const o of itemObjects) {
+      const cid = (o as any).primary_local_class_id || null;
+      if (!cid) {
+        // Handle unclassified items
+        if (!byRootClass['__none__']) {
+          byRootClass['__none__'] = { 
+            meta: { title: 'Unclassified', sortOrder: 999999 }, 
+            items: [] 
+          };
+        }
+        byRootClass['__none__'].items.push(o);
+        continue;
+      }
+      
+      const classMeta = classMetaById[String(cid)];
+      if (!classMeta) continue;
+      
+      const rootId = classMeta.rootId;
+      const rootMeta = classMetaById[rootId];
+      
+      if (!byRootClass[rootId]) {
+        byRootClass[rootId] = {
+          meta: rootMeta || { title: '—', sortOrder: null },
+          items: []
+        };
+      }
+      byRootClass[rootId].items.push(o);
     }
-    if (byClass['__none__']) {
-      grouped.push({ classId: null, classTitle: 'Unclassified', items: byClass['__none__'], sortOrder: 999999 });
+    
+    // Convert to grouped array
+    for (const [rootId, group] of Object.entries(byRootClass)) {
+      if (rootId === '__none__') {
+        grouped.push({ 
+          classId: null, 
+          classTitle: 'Unclassified', 
+          items: group.items, 
+          sortOrder: 999999 
+        });
+      } else {
+        grouped.push({ 
+          classId: rootId, 
+          classTitle: group.meta.title, 
+          items: group.items, 
+          sortOrder: group.meta.sortOrder 
+        });
+      }
     }
+    
+    console.log('[ChakaiDetail] Hierarchy debug:', {
+      classMetaById,
+      byRootClass: Object.keys(byRootClass),
+      grouped: grouped.map(g => ({ title: g.classTitle, itemCount: g.items.length, sortOrder: g.sortOrder }))
+    });
     grouped.sort((a, b) => {
       const sa = a.sortOrder == null ? Number.POSITIVE_INFINITY : Number(a.sortOrder);
       const sb = b.sortOrder == null ? Number.POSITIVE_INFINITY : Number(b.sortOrder);
