@@ -41,19 +41,19 @@ create policy media_public_read_chakai on media for select using (
   exists (
     select 1 from chakai_media_links cml
     join chakai c on c.id = cml.chakai_id
-    where cml.media_id = id 
+    where cml.media_id = media.id 
     and c.visibility = 'open'
-    and visibility = 'public'
+    and media.visibility = 'public'
   )
   or exists (
     select 1 from chakai_media_links cml
     join chakai c on c.id = cml.chakai_id
     join chakai_attendees ca on ca.chakai_id = c.id
     join accounts a on a.id = ca.account_id
-    where cml.media_id = id 
+    where cml.media_id = media.id 
     and c.visibility = 'members'
     and a.email = current_setting('request.jwt.claims', true)::json->>'email'
-    and (visibility = 'public' or visibility = 'private')
+    and (media.visibility = 'public' or media.visibility = 'private')
   )
 );
 
