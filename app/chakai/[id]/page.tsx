@@ -78,6 +78,40 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
     .from('chakai_attendees')
     .select('accounts(id, full_name_en, full_name_ja, email)')
     .eq('chakai_id', c.id);
+
+  // Get media attachments for this chakai with visibility controls
+  let chakaiMedia: any[] = [];
+  let canShowPrivateMedia = false;
+  
+  // Check if user can see private media (same logic as main visibility check)
+  if (isPrivileged) {
+    canShowPrivateMedia = true;
+  } else if (email && c.visibility === 'members') {
+    const { data: attendeeCheck } = await db
+      .from('chakai_attendees')
+      .select('chakai_id, accounts!inner(email)')
+      .eq('chakai_id', c.id)
+      .eq('accounts.email', email);
+    canShowPrivateMedia = !!(attendeeCheck && attendeeCheck.length);
+  }
+
+  // Query chakai media based on access permissions
+  if (canShowPrivateMedia) {
+    // User can see all media (public and private)
+    const { data: mediaLinks } = await db
+      .from('chakai_media_links')
+      .select('media_id, media:media!inner(id, uri, kind, file_type, original_filename, visibility, sort_order)')
+      .eq('chakai_id', c.id);
+    chakaiMedia = (mediaLinks || []).map((ml: any) => ml.media).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+  } else {
+    // User can only see public media
+    const { data: mediaLinks } = await db
+      .from('chakai_media_links')
+      .select('media_id, media:media!inner(id, uri, kind, file_type, original_filename, visibility, sort_order)')
+      .eq('chakai_id', c.id)
+      .eq('media.visibility', 'public');
+    chakaiMedia = (mediaLinks || []).map((ml: any) => ml.media).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+  }
   const { data: itemRows } = await db
     .from('chakai_items')
     .select('objects(id, token, title, title_ja, local_number, primary_local_class_id)')
@@ -219,6 +253,78 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
               return <li key={i}>{name}</li>;
             })}
           </ul>
+        )}
+      </section>
+      <section className="mb-6">
+        <h2 className="font-medium">Attachments <span className="text-sm text-gray-700" lang="ja">/ 添付ファイル</span></h2>
+        {!chakaiMedia?.length ? <div className="text-sm">—</div> : (
+          <div className="grid gap-3">
+            {chakaiMedia.map((media: any) => {
+              const isPDF = media.file_type === 'application/pdf' || media.uri.toLowerCase().endsWith('.pdf');
+              const filename = media.original_filename || media.uri.split('/').pop() || 'Download';
+              const isPrivate = media.visibility === 'private';
+              
+              return (
+                <div key={media.id} className="flex items-center gap-3 p-3 border rounded">
+                  <div className="flex-shrink-0">
+                    {isPDF ? (
+                      <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
+                        <span className="text-red-600 text-xs font-medium">PDF</span>
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                        <span className="text-gray-600 text-xs font-medium">FILE</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-grow">
+                    <div className="text-sm font-medium">{filename}</div>
+                    {isPrivate && (
+                      <div className="text-xs text-gray-600 flex items-center gap-1">
+                        <span>🔒</span>
+                        <span>Private - attendees only</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-shrink-0">
+                    {isPDF ? (
+                      <div className="flex gap-2">
+                        <a 
+                          href={media.uri} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-xs underline text-blue-600"
+                        >
+                          View
+                        </a>
+                        <a 
+                          href={media.uri} 
+                          download={filename}
+                          className="text-xs underline text-blue-600"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    ) : (
+                      <a 
+                        href={media.uri} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-xs underline text-blue-600"
+                      >
+                        View
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {!canShowPrivateMedia && (
+              <div className="text-xs text-gray-600 p-2 bg-gray-50 rounded">
+                <span>💡</span> Some attachments may be restricted to event attendees only.
+              </div>
+            )}
+          </div>
         )}
       </section>
       <section className="mb-6">
