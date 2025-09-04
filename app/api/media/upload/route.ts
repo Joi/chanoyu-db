@@ -97,18 +97,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 
-    // Create media record
+    // Create media record (only basic columns - avoid columns that may not exist in production)
     const { data: mediaRecord, error: mediaError } = await db
       .from('media')
       .insert({
         uri: uploadData.path,
         kind: file.type === 'application/pdf' ? 'pdf' : 'image',
-        file_type: file.type,
-        file_size: file.size,
-        original_filename: file.name,
-        visibility: visibility,
-        bucket: 'media',
-        storage_path: uploadData.path
+        sort_order: 0
       })
       .select()
       .single();
@@ -120,30 +115,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create media record' }, { status: 500 });
     }
 
-    // Create link record
-    const linkTables = {
-      'chakai': 'chakai_media_links',
-      'object': 'object_media_links',
-      'location': 'location_media_links'
-    };
+    // Create link record (only support chakai for now to ensure compatibility)
+    if (entityType === 'chakai') {
+      const { error: linkError } = await db
+        .from('chakai_media_links')
+        .insert({
+          chakai_id: entityId,
+          media_id: mediaRecord.id,
+          role: file.type === 'application/pdf' ? 'attachment' : 'related'
+        });
 
-    const linkTable = linkTables[entityType as keyof typeof linkTables];
-    const linkColumn = `${entityType}_id`;
-    
-    const { error: linkError } = await db
-      .from(linkTable)
-      .insert({
-        [linkColumn]: entityId,
-        media_id: mediaRecord.id,
-        role: file.type === 'application/pdf' ? 'attachment' : 'related'
-      });
-
-    if (linkError) {
-      // Cleanup media record and file
+      if (linkError) {
+        // Cleanup media record and file
+        await db.from('media').delete().eq('id', mediaRecord.id);
+        await db.storage.from('media').remove([uploadData.path]);
+        console.error('Link creation error:', linkError);
+        return NextResponse.json({ error: 'Failed to create media link' }, { status: 500 });
+      }
+    } else {
+      // For non-chakai entities, clean up for now since we don't have those link tables ready
       await db.from('media').delete().eq('id', mediaRecord.id);
       await db.storage.from('media').remove([uploadData.path]);
-      console.error('Link creation error:', linkError);
-      return NextResponse.json({ error: 'Failed to create media link' }, { status: 500 });
+      return NextResponse.json({ error: 'Only chakai media uploads supported currently' }, { status: 400 });
     }
 
     return NextResponse.json({
