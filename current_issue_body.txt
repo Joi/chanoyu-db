@@ -1,0 +1,26 @@
+See .agent-os/specs/2025-09-04-chakaiki-pdf-access/spec.md
+
+<!-- AC:BEGIN -->
+- [x] AC-MEDIA-PDF: Update media management UI to handle PDFs
+- [x] AC-VISIBILITY-CONTROLS: Add visibility toggle controls for all media types  
+- [x] AC-PDF-ICONS: Display PDF files with appropriate icons/previews
+- [x] AC-BULK-UPDATES: Enable bulk visibility updates for existing media
+- [x] AC-FILTERING: Improve media organization and filtering
+<!-- AC:END -->
+
+## Testing Notes:
+- Test with mixed media types (images + PDFs)
+- Verify visibility controls work properly
+- Test bulk operations on existing media
+
+## Implementation Summary:
+✅ Enhanced `/app/admin/media/page.tsx` with:
+- PDF detection and red PDF preview cards with icons
+- Visibility badges (🔒 PRIVATE / 🌐 PUBLIC) 
+- Individual visibility toggle controls per media item
+- Bulk operations: Select All + bulk visibility updates
+- Filtering by visibility and file type
+- Improved UI with checkboxes and better organization
+- Server actions for individual and bulk visibility updates
+
+The media management interface now fully supports PDFs with proper icons/previews and comprehensive visibility controls as requested.

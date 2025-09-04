@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase/server';
-import { requireAdmin, requireOwner } from '@/lib/auth';
+import { requireAdmin, requireOwner, currentUserEmail } from '@/lib/auth';
 // import { makeSupabaseThumbUrl } from '@/lib/storage';
 import { parseSupabasePublicUrl } from '@/lib/storage';
 
@@ -103,15 +103,60 @@ async function unlinkLocationAction(formData: FormData) {
 export default async function MediaPage({ params, searchParams }: { params: { id: string }, searchParams?: { [key: string]: string | string[] | undefined } }) {
   const idParam = params.id;
   const db = supabaseAdmin();
+  const email = await currentUserEmail();
+  const isPrivileged = await requireAdmin();
+  const isOwner = await requireOwner();
+  
   // Fetch media row without ambiguous embeds
   const isUuid = /^[0-9a-fA-F-]{36}$/.test(idParam);
   const baseQuery = db
     .from('media')
-    .select('id, uri, kind, copyright_owner, rights_note, bucket, storage_path, license_id, object_id, local_number, token');
+    .select('id, uri, kind, copyright_owner, rights_note, bucket, storage_path, license_id, object_id, local_number, token, visibility');
   const { data: mediaRow, error } = isUuid
     ? await baseQuery.eq('id', idParam).single()
     : await baseQuery.eq('token', idParam).single();
   if (error || !mediaRow) return notFound();
+
+  // Access control enforcement
+  let canAccess = false;
+  
+  // Privileged users can access any media
+  if (isPrivileged || isOwner) {
+    canAccess = true;
+  }
+  // Public media can be accessed by anyone
+  else if (mediaRow.visibility === 'public') {
+    canAccess = true;
+  }
+  // Private media requires additional checks
+  else if (mediaRow.visibility === 'private' && email) {
+    // Check if user is an attendee of any chakai that includes this media
+    const { data: chakaiLinks } = await db
+      .from('chakai_media_links')
+      .select('chakai_id, chakai:chakai!inner(visibility)')
+      .eq('media_id', mediaRow.id);
+    
+    for (const link of chakaiLinks || []) {
+      const chakai = (link as any).chakai;
+      // For member chakai events, check if user is an attendee
+      if (chakai.visibility === 'members') {
+        const { data: attendeeCheck } = await db
+          .from('chakai_attendees')
+          .select('chakai_id, accounts!inner(email)')
+          .eq('chakai_id', (link as any).chakai_id)
+          .eq('accounts.email', email);
+        if (attendeeCheck && attendeeCheck.length) {
+          canAccess = true;
+          break;
+        }
+      }
+    }
+  }
+  
+  // Deny access if user doesn't have permission
+  if (!canAccess) {
+    return notFound();
+  }
 
   // Canonicalize: if requested by UUID and we have a token, redirect to token URL
   if (isUuid && mediaRow.token) {
@@ -159,13 +204,13 @@ export default async function MediaPage({ params, searchParams }: { params: { id
   }
 
   // License info and list for editing
-  const [{ data: licOne }, { data: licList }, isOwner, isAdmin] = await Promise.all([
+  const [{ data: licOne }, { data: licList }, isOwnerEdit, isAdminEdit] = await Promise.all([
     mediaRow.license_id ? db.from('licenses').select('id, code, name, uri').eq('id', mediaRow.license_id).maybeSingle() : Promise.resolve({ data: null }),
     db.from('licenses').select('id, code, name, uri').order('code'),
     requireOwner(),
     requireAdmin(),
   ] as any);
-  const canEdit = Boolean(isOwner || isAdmin);
+  const canEdit = Boolean(isOwnerEdit || isAdminEdit);
 
   async function deleteMediaAction(formData: FormData) {
     'use server';

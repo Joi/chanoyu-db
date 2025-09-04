@@ -403,8 +403,7 @@ async function run() {
       }
     } else {
       const upsert = {
-        token,
-        title: '' as string
+        token
       } as any;
       if (title_ja) upsert.title_ja = title_ja;
       // Assign Collection ID if missing
@@ -415,8 +414,13 @@ async function run() {
         local_number = await nextCollectionId(db, 'I', year);
       }
       if (local_number) upsert.local_number = local_number;
-      // Resolve title last so it can fall back to Collection ID if needed
-      upsert.title = title || local_number || '(untitled)';
+      // Only set title if we have a proper title from Notion
+      // Never overwrite existing database titles with local_number
+      if (title) {
+        upsert.title = title;
+      }
+      // Don't include title in upsert if we don't have a proper title
+      // This prevents overwriting existing titles in the database
       if (craftsman) upsert.craftsman = craftsman;
       if (craftsman_ja) upsert.craftsman_ja = craftsman_ja;
       if (store) upsert.store = store;
@@ -440,7 +444,12 @@ async function run() {
         }
       }
       if (!objRow) {
-        const { data: ins, error: eIns } = await db.from('objects').insert(upsert).select('id, token').single();
+        // For INSERT, we need a title - use fallback only for new items
+        const insertData = { ...upsert };
+        if (!insertData.title) {
+          insertData.title = local_number || '(untitled)';
+        }
+        const { data: ins, error: eIns } = await db.from('objects').insert(insertData).select('id, token').single();
         if (eIns) throw eIns; objRow = ins;
       }
     }

@@ -54,12 +54,18 @@ async function updateChakai(formData: FormData) {
   // Replace attendees/items
   const attendeeIds = String(attendee_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
   const itemIds = String(item_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
+  
   // Use a transaction for consistency
   const client = db; // supabase-js does not expose explicit tx; rely on sequential operations
+  
+  // Delete existing attendees
   const delAtt = await client.from('chakai_attendees').delete().eq('chakai_id', id);
   if (delAtt.error) throw delAtt.error;
+  
+  // Insert new attendees
   if (attendeeIds.length) {
-    const insAtt = await client.from('chakai_attendees').insert(attendeeIds.map((aid) => ({ chakai_id: id, account_id: aid })));
+    const attendeeData = attendeeIds.map((aid) => ({ chakai_id: id, account_id: aid }));
+    const insAtt = await client.from('chakai_attendees').insert(attendeeData);
     if (insAtt.error) throw insAtt.error;
   }
   const delItems = await client.from('chakai_items').delete().eq('chakai_id', id);
@@ -231,7 +237,7 @@ export default async function EditChakai({ params }: { params: { id: string } })
         </section>
         <section className="grid gap-3">
           <h2 className="font-medium">Items used</h2>
-          <SearchSelect name="item_ids" label="Add items" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={[]} />
+          <SearchSelect name="item_ids" label="Add items" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={items} />
           {itemObjects.length ? (
             <div className="grid" style={{ gap: 8 }}>
               {itemObjects.map((o: any) => {

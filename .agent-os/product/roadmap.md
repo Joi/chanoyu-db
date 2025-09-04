@@ -22,7 +22,7 @@
 
 ### Features
 - [ ] Local Classes end-to-end with preferred authority links `[M]`
-- [ ] Members-only visibility for chakai attendees `[S]`
+- [x] Members-only visibility for chakai attendees `[S]`
 - [ ] Robust search across objects/chakai/locations `[M]`
 - [ ] JSON-LD enhancements (authorities from Local Class) `[S]`
 
