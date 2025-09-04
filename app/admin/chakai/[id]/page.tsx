@@ -86,7 +86,7 @@ async function removeChakaiItem(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
   if (!ok) return notFound();
-  const chakaiId = String(formData.get('chakai_id') || '');
+  const chakaiId = String(formData.get('id') || ''); // Get from main form's id field
   const objectId = String(formData.get('object_id') || '');
   if (!chakaiId || !objectId) return notFound();
   const db = supabaseAdmin();
@@ -250,11 +250,14 @@ export default async function EditChakai({ params }: { params: { id: string } })
                     </div>
                     <div className="flex gap-2 items-center">
                       <a className="text-xs underline" href={`/admin/${o.token}`}>Edit item</a>
-                      <form action={removeChakaiItem} className="m-0">
-                        <input type="hidden" name="chakai_id" value={c.id} />
-                        <input type="hidden" name="object_id" value={o.id} />
-                        <button type="submit" className="text-xs underline text-red-600">Remove</button>
-                      </form>
+                      <button 
+                        formAction={removeChakaiItem}
+                        name="object_id" 
+                        value={o.id}
+                        className="text-xs underline text-red-600 bg-transparent border-none p-0 cursor-pointer"
+                      >
+                        Remove
+                      </button>
                     </div>
                   </div>
                 );
