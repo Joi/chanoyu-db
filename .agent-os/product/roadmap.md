@@ -20,9 +20,15 @@
 **Goal:** Strengthen interoperability and nuanced access controls
 **Success Criteria:** Members-only content enforced via RLS and selectively visible
 
+### Foundation Work (Completed)
+- [x] **Database schema for media visibility controls** - *Completed 2025-09-04 (Issue #67, PR #72)*
+  - Media visibility enum types (public/private) implemented
+  - TypeScript interfaces for type safety established
+  - Foundation ready for PDF upload and access control features
+
 ### Features
 - [ ] Local Classes end-to-end with preferred authority links `[M]`
-- [x] Members-only visibility for chakai attendees `[S]`
+- [x] Members-only visibility for chakai attendees `[S]` - *Completed with PDF access control*
 - [ ] Robust search across objects/chakai/locations `[M]`
 - [ ] JSON-LD enhancements (authorities from Local Class) `[S]`
 

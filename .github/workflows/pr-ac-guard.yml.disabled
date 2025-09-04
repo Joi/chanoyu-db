@@ -30,16 +30,19 @@ jobs:
         with:
           script: |
             const issue_number = "${{ steps.refs.outputs.issue }}";
-            if (!issue_number) throw new Error("No issue number found");
+            if (!issue_number) {
+              core.setFailed("Issue number not extracted from PR body");
+              return;
+            }
             const { data } = await github.rest.issues.get({
               ...context.repo, issue_number: Number(issue_number)
             });
-            return { body: data.body || "" };
+            return data.body || "";
           result-encoding: string
       - name: Parse AC
         id: parse
         run: |
-          echo '${{ steps.issue.outputs.result }}' | jq -r '.body' > issue_body.txt
+          echo '${{ steps.issue.outputs.result }}' > issue_body.txt
           node -v
           mkdir -p scripts/ac
           cat > scripts/ac/extract-ac.ts <<'TS'
