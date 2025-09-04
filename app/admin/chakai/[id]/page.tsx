@@ -160,10 +160,10 @@ export default async function EditChakai({ params }: { params: { id: string } })
     }
   }
 
-  // Get existing media attachments (backwards compatible query)
+  // Get existing media attachments with full metadata
   const { data: mediaLinks } = await db
     .from('chakai_media_links')
-    .select('media_id, media:media!inner(id, uri, kind, sort_order)')
+    .select('media_id, media:media!inner(id, uri, kind, sort_order, file_type, original_filename)')
     .eq('chakai_id', c.id);
   const chakaiMedia = (mediaLinks || []).map((ml: any) => ml.media).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
 
@@ -358,22 +358,54 @@ export default async function EditChakai({ params }: { params: { id: string } })
             <h3 className="font-medium text-gray-900 mb-4">Existing Media</h3>
             <div className="space-y-3">
               {chakaiMedia.map((media: any) => {
+                const isPDF = media.file_type === 'application/pdf';
+                const filename = media.original_filename || `media-${media.id}`;
+                const fileType = media.file_type || 'unknown';
+                
                 return (
-                  <div key={media.media_id} className="flex items-center justify-between p-2 border rounded">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        {media.media?.original_filename || `media-${media.media_id}`}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        ({media.media?.file_type || 'unknown'})
-                      </span>
+                  <div key={media.id} className="flex items-center justify-between p-3 border rounded bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        {isPDF ? (
+                          <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
+                            <span className="text-red-600 text-xs font-medium">PDF</span>
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                            <span className="text-blue-600 text-xs font-medium">IMG</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-grow">
+                        <a 
+                          href={`/api/media/${media.id}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {filename}
+                        </a>
+                        <div className="text-xs text-gray-500">
+                          {fileType} • <a 
+                            href={`/api/media/${media.id}?download=true`} 
+                            className="text-blue-600 hover:underline"
+                          >
+                            Download
+                          </a>
+                        </div>
+                      </div>
                     </div>
                     <form action={removeChakaiMedia} className="inline">
                       <input type="hidden" name="id" value={c.id} />
-                      <input type="hidden" name="media_id" value={media.media_id} />
+                      <input type="hidden" name="media_id" value={media.id} />
                       <button 
                         type="submit" 
-                        className="text-xs text-red-600 hover:text-red-800"
+                        className="text-xs text-red-600 hover:text-red-800 px-2 py-1 border border-red-200 rounded hover:bg-red-50"
+                        onClick={(e) => {
+                          if (!confirm(`Remove ${filename}?`)) {
+                            e.preventDefault();
+                          }
+                        }}
                       >
                         Remove
                       </button>
