@@ -146,13 +146,24 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
         `)
         .in('id', objectClassIds);
       
-      // Get root classes for proper grouping
+      // Get hierarchy info to find all ancestors
       const allClassIds = (classes || []).map((c: any) => c.id);
       const { data: hierarchy } = await db
         .from('local_class_hierarchy')
         .select('ancestor_id, descendant_id, depth')
-        .in('descendant_id', allClassIds)
-        .eq('depth', 1); // Get immediate parents
+        .in('descendant_id', allClassIds);
+        
+      // Get all ancestor IDs (including roots) that we need to load
+      const ancestorIds = new Set(allClassIds);
+      for (const h of hierarchy || []) {
+        ancestorIds.add((h as any).ancestor_id);
+      }
+      
+      // Load ALL classes (objects' classes + their ancestors)
+      const { data: allClasses } = await db
+        .from('local_classes')
+        .select('id, label_en, label_ja, local_number, sort_order, parent_id')
+        .in('id', Array.from(ancestorIds));
       
       // Build hierarchy map
       const parentMap: Record<string, string> = {};
@@ -161,7 +172,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       }
       
       // Find root classes and build metadata
-      for (const lc of classes || []) {
+      for (const lc of allClasses || []) {
         const classId = String((lc as any).id);
         const title = String((lc as any).label_ja || (lc as any).label_en || (lc as any).local_number || classId);
         
