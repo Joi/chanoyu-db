@@ -22,6 +22,8 @@ jobs:
             core.setOutput("issue", m ? m[2] : "");
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Fetch Issue JSON
         id: issue
         uses: actions/github-script@v7
