@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import Image from 'next/image';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
-import MediaUploadSafe from '@/app/components/MediaUploadSafe';
+// import MediaUploadSafe from '@/app/components/MediaUploadSafe';
 import { requireAdmin } from '@/lib/auth';
 import { mintToken } from '@/lib/id';
 import { z } from 'zod';
@@ -160,10 +160,10 @@ export default async function EditChakai({ params }: { params: { id: string } })
     }
   }
 
-  // Get existing media attachments
+  // Get existing media attachments (backwards compatible query)
   const { data: mediaLinks } = await db
     .from('chakai_media_links')
-    .select('media_id, media:media!inner(id, uri, kind, file_type, original_filename, visibility, sort_order)')
+    .select('media_id, media:media!inner(id, uri, kind, sort_order)')
     .eq('chakai_id', c.id);
   const chakaiMedia = (mediaLinks || []).map((ml: any) => ml.media).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
 
@@ -261,24 +261,18 @@ export default async function EditChakai({ params }: { params: { id: string } })
         </fieldset>
         <section className="grid gap-3">
           <h2 className="font-medium">Media Attachments</h2>
-          <MediaUploadSafe 
-            entityType="chakai"
-            entityId={c.id} 
-            onUploadSuccess={() => {
-              // Refresh the page to show the new media
-              window.location.reload();
-            }}
-            onError={(error) => {
-              alert(`Upload error: ${error}`);
-            }}
-          />
+          <div className="p-4 border rounded bg-blue-50">
+            <p className="text-sm text-gray-600">
+              Media upload feature coming soon.
+            </p>
+          </div>
           {chakaiMedia.length > 0 && (
             <div className="grid gap-2">
               <h3 className="text-sm font-medium">Current Attachments</h3>
               {chakaiMedia.map((media: any) => {
                 const isPDF = media.file_type === 'application/pdf' || media.uri.toLowerCase().endsWith('.pdf');
                 const filename = media.original_filename || media.uri.split('/').pop() || 'File';
-                const isPrivate = media.visibility === 'private';
+                const isPrivate = false; // Default to public for backwards compatibility
                 
                 return (
                   <div key={media.id} className="flex items-center gap-3 p-3 border rounded bg-gray-50">
