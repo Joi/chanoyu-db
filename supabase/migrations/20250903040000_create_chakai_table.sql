@@ -35,6 +35,8 @@ create table if not exists chakai_attendees (
 do $$
 begin
   if exists (select from information_schema.tables where table_name = 'locations') then
-    execute 'alter table chakai add constraint if not exists chakai_location_id_fkey foreign key (location_id) references locations(id) on delete cascade';
+    if not exists (select from information_schema.table_constraints where constraint_name = 'chakai_location_id_fkey') then
+      execute 'alter table chakai add constraint chakai_location_id_fkey foreign key (location_id) references locations(id) on delete cascade';
+    end if;
   end if;
 end $$;
