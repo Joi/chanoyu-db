@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import Image from 'next/image';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
-import MediaUpload from '@/app/components/MediaUpload';
+// import MediaUpload from '@/app/components/MediaUpload';
 import { requireAdmin } from '@/lib/auth';
 import { mintToken } from '@/lib/id';
 import { z } from 'zod';
@@ -261,7 +261,12 @@ export default async function EditChakai({ params }: { params: { id: string } })
         </fieldset>
         <section className="grid gap-3">
           <h2 className="font-medium">Media Attachments</h2>
-          <MediaUpload 
+          <div className="p-4 border rounded bg-yellow-50">
+            <p className="text-sm text-gray-600">
+              Media upload functionality temporarily disabled for debugging.
+            </p>
+          </div>
+          {/* <MediaUpload 
             entityType="chakai"
             entityId={c.id} 
             onUploadSuccess={() => {
@@ -271,7 +276,7 @@ export default async function EditChakai({ params }: { params: { id: string } })
             onError={(error) => {
               alert(`Upload error: ${error}`);
             }}
-          />
+          /> */}
           {chakaiMedia.length > 0 && (
             <div className="grid gap-2">
               <h3 className="text-sm font-medium">Current Attachments</h3>
