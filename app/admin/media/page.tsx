@@ -124,7 +124,7 @@ export default async function MediaAdminPage() {
     <main className="max-w-5xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Media Management</h1>
       
-      {/* Bulk Operations Bar - trigger CI */}
+      {/* Bulk Operations Bar */}
       <div className="card mb-4" style={{ background: '#f8fafc' }}>
         <h3 className="text-sm font-medium mb-3">Bulk Operations</h3>
         <div className="flex items-center gap-4">
