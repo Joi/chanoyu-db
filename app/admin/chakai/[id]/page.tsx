@@ -54,13 +54,33 @@ async function updateChakai(formData: FormData) {
   // Replace attendees/items
   const attendeeIds = String(attendee_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
   const itemIds = String(item_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
+  
+  console.log('[updateChakai] Processing attendees:', { attendeeIds, rawValue: attendee_ids });
+  
   // Use a transaction for consistency
   const client = db; // supabase-js does not expose explicit tx; rely on sequential operations
+  
+  // Delete existing attendees
   const delAtt = await client.from('chakai_attendees').delete().eq('chakai_id', id);
-  if (delAtt.error) throw delAtt.error;
+  if (delAtt.error) {
+    console.error('[updateChakai] Error deleting attendees:', delAtt.error);
+    throw delAtt.error;
+  }
+  console.log('[updateChakai] Deleted existing attendees:', delAtt);
+  
+  // Insert new attendees
   if (attendeeIds.length) {
-    const insAtt = await client.from('chakai_attendees').insert(attendeeIds.map((aid) => ({ chakai_id: id, account_id: aid })));
-    if (insAtt.error) throw insAtt.error;
+    const attendeeData = attendeeIds.map((aid) => ({ chakai_id: id, account_id: aid }));
+    console.log('[updateChakai] Inserting attendees:', attendeeData);
+    
+    const insAtt = await client.from('chakai_attendees').insert(attendeeData);
+    if (insAtt.error) {
+      console.error('[updateChakai] Error inserting attendees:', insAtt.error);
+      throw insAtt.error;
+    }
+    console.log('[updateChakai] Inserted attendees successfully:', insAtt);
+  } else {
+    console.log('[updateChakai] No attendees to insert');
   }
   const delItems = await client.from('chakai_items').delete().eq('chakai_id', id);
   if (delItems.error) throw delItems.error;
@@ -68,6 +88,8 @@ async function updateChakai(formData: FormData) {
     const insItems = await client.from('chakai_items').insert(itemIds.map((oid) => ({ chakai_id: id, object_id: oid })));
     if (insItems.error) throw insItems.error;
   }
+  
+  console.log('[updateChakai] Update completed successfully, redirecting to', `/chakai/${id}`);
   return redirect(`/chakai/${id}`);
 }
 
@@ -109,7 +131,9 @@ export default async function EditChakai({ params }: { params: { id: string } })
     .from('chakai_attendees')
     .select('accounts(id, full_name_en, full_name_ja, email)')
     .eq('chakai_id', c.id);
+  console.log('[EditChakai] Loaded attendee rows:', attendeeRows);
   const attendees = (attendeeRows || []).map((r: any) => ({ value: r.accounts.id, label: r.accounts.full_name_en || r.accounts.full_name_ja || r.accounts.email }));
+  console.log('[EditChakai] Processed attendees for form:', attendees);
 
   const { data: itemRows } = await db
     .from('chakai_items')
