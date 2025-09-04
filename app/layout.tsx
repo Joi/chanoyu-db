@@ -4,6 +4,7 @@ import { SiteHeader } from '@/src/components/site-header';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/branding';
 import Image from 'next/image';
 import { inter, garamond, notoSansJP, notoSerifJP } from '@/lib/fonts';
+import { Toaster } from 'sonner';
 
 export const metadata = {
   title: APP_NAME,
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${garamond.variable} ${notoSansJP.variable} ${notoSerifJP.variable}`}>
       <body className="font-sans">
         <AppShell header={<SiteHeader />}>{children}</AppShell>
+        <Toaster />
       </body>
     </html>
   );
