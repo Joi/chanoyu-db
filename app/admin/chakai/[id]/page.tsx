@@ -261,17 +261,51 @@ export default async function EditChakai({ params }: { params: { id: string } })
         </fieldset>
         <section className="grid gap-3">
           <h2 className="font-medium">Media Attachments</h2>
-          <MediaUploadSafe 
-            entityType="chakai"
-            entityId={c.id} 
-            onUploadSuccess={() => {
-              // Refresh the page to show the new media
-              window.location.reload();
-            }}
-            onError={(error) => {
-              alert(`Upload error: ${error}`);
-            }}
-          />
+          <div className="border rounded-lg p-4 bg-white shadow-sm">
+            <h3 className="font-medium text-gray-900 mb-4">Add Media Attachment</h3>
+            <form action="/api/media/upload" method="post" encType="multipart/form-data" className="space-y-4">
+              <input type="hidden" name="entityType" value="chakai" />
+              <input type="hidden" name="entityId" value={c.id} />
+              
+              <div>
+                <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2">
+                  File (PDF or Image)
+                </label>
+                <input 
+                  type="file" 
+                  id="file"
+                  name="file" 
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  PDFs (max 10MB), Images (max 5MB)
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="visibility" className="block text-sm font-medium text-gray-700 mb-2">
+                  Visibility
+                </label>
+                <select 
+                  id="visibility"
+                  name="visibility"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="public">Public - visible to everyone</option>
+                  <option value="private">Private - attendees only</option>
+                </select>
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-2 px-4 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
+              >
+                Upload File
+              </button>
+            </form>
+          </div>
           {chakaiMedia.length > 0 && (
             <div className="grid gap-2">
               <h3 className="text-sm font-medium">Current Attachments</h3>
