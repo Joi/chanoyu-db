@@ -59,16 +59,39 @@ async function deleteItem(formData: FormData) {
   revalidatePath('/admin/items');
 }
 
+async function assignLocalClass(formData: FormData) {
+  'use server';
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) return redirect('/login');
+  const objectId = String(formData.get('object_id') || '');
+  const localClassId = String(formData.get('local_class_id') || '').trim();
+  if (!objectId) return;
+  const db = supabaseAdmin();
+  
+  // Set to null if empty string is provided
+  const classId = localClassId || null;
+  
+  await db.from('objects').update({ primary_local_class_id: classId }).eq('id', objectId);
+  revalidatePath('/admin/items');
+}
+
 export default async function ItemsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
   const isOwner = await requireOwner();
   const db = supabaseAdmin();
-  const { data: objs, error: eObjs, count } = await db
-    .from('objects')
-    .select('id, token, title, title_ja, local_number, price, store, location', { count: 'exact' })
-    .order('updated_at', { ascending: false })
-    .limit(200);
+  const [{ data: objs, error: eObjs, count }, { data: localClasses }] = await Promise.all([
+    db
+      .from('objects')
+      .select('id, token, title, title_ja, local_number, price, store, location, primary_local_class_id', { count: 'exact' })
+      .order('updated_at', { ascending: false })
+      .limit(200),
+    db
+      .from('local_classes')
+      .select('id, label_en, label_ja, local_number')
+      .order('sort_order', { ascending: true, nullsFirst: true })
+      .order('local_number')
+  ]);
   if (eObjs) console.error('[admin/items] query error', eObjs.message || eObjs);
   const objectList = Array.isArray(objs) ? objs : [];
   const ids = objectList.map((o: any) => o.id);
@@ -112,18 +135,33 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
                 <div style={{ position: 'relative', width: 80, height: 54, background: '#f5f5f5', border: '1px solid #eee', borderRadius: 6, overflow: 'hidden' }}>
                   {thumb ? <Image src={thumb} alt={o.title} fill sizes="80px" style={{ objectFit: 'cover' }} /> : null}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <a href={`/id/${o.token}`} className="text-sm font-semibold underline">{o.title || o.title_ja || o.local_number || o.token}</a>
-                  {o.title && o.title_ja ? <span className="text-sm" lang="ja">/ {o.title_ja}</span> : null}
-                  <span className="text-xs text-gray-600">· Token: {o.token}</span>
-                  <a href={`/id/${o.token}`} className="text-xs underline" style={{ marginLeft: 'auto' }}>View</a>
-                  <a href={`/admin/${o.token}`} className="text-xs underline">Edit</a>
-                  {isOwner ? (
-                    <form action={deleteItem}>
-                      <input type="hidden" name="object_id" value={o.id} />
-                      <button className="text-red-600 text-xs" type="submit">Delete</button>
-                    </form>
-                  ) : null}
+                <div style={{ display: 'grid', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <a href={`/id/${o.token}`} className="text-sm font-semibold underline">{o.title || o.title_ja || o.local_number || o.token}</a>
+                    {o.title && o.title_ja ? <span className="text-sm" lang="ja">/ {o.title_ja}</span> : null}
+                    <span className="text-xs text-gray-600">· Token: {o.token}</span>
+                    <a href={`/id/${o.token}`} className="text-xs underline" style={{ marginLeft: 'auto' }}>View</a>
+                    <a href={`/admin/${o.token}`} className="text-xs underline">Edit</a>
+                    {isOwner ? (
+                      <form action={deleteItem}>
+                        <input type="hidden" name="object_id" value={o.id} />
+                        <button className="text-red-600 text-xs" type="submit">Delete</button>
+                      </form>
+                    ) : null}
+                  </div>
+                  <form action={assignLocalClass} className="flex items-center gap-2">
+                    <input type="hidden" name="object_id" value={o.id} />
+                    <label className="text-xs text-gray-600">Local Class:</label>
+                    <select name="local_class_id" className="input" style={{ fontSize: '11px', padding: '1px 4px' }} defaultValue={o.primary_local_class_id || ''}>
+                      <option value="">(none)</option>
+                      {(localClasses || []).map((c: any) => (
+                        <option key={c.id} value={c.id}>
+                          {c.label_ja || c.label_en || c.local_number || c.id}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit" className="button secondary" style={{ fontSize: '11px', padding: '1px 6px' }}>Save</button>
+                  </form>
                 </div>
               </div>
             );
@@ -167,6 +205,21 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
                       </span>
                     ) : null}
                     <span>Store: {o.store ?? '—'} · Location: {o.location ?? '—'}</span>
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <form action={assignLocalClass} className="flex items-center gap-2">
+                      <input type="hidden" name="object_id" value={o.id} />
+                      <label className="text-xs text-gray-600">Local Class:</label>
+                      <select name="local_class_id" className="input" style={{ fontSize: '12px', padding: '2px 6px' }} defaultValue={o.primary_local_class_id || ''}>
+                        <option value="">(none)</option>
+                        {(localClasses || []).map((c: any) => (
+                          <option key={c.id} value={c.id}>
+                            {c.label_ja || c.label_en || c.local_number || c.id}
+                          </option>
+                        ))}
+                      </select>
+                      <button type="submit" className="button secondary" style={{ fontSize: '12px', padding: '2px 8px' }}>Save</button>
+                    </form>
                   </div>
                   <div className="grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     {mediaSorted.slice(0, 12).map((m: any) => (
