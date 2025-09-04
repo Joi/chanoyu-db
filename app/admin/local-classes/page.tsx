@@ -8,7 +8,7 @@ import { requireAdmin } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Server action: reorder top-level classes deterministically (1..n)
+// Server action: reorder top-level classes using atomic swap
 async function reorderTopLevelAction(formData: FormData) {
   'use server';
   const ok = await requireAdmin();
@@ -16,24 +16,64 @@ async function reorderTopLevelAction(formData: FormData) {
   const classId = String(formData.get('class_id') || '').trim();
   const direction = String(formData.get('direction') || '').trim();
   if (!classId || (direction !== 'up' && direction !== 'down')) return redirect('/admin/local-classes');
+  
   const db = supabaseAdmin();
+  
+  // Get ordered list of top-level classes
   const { data: rows } = await db
     .from('local_classes')
-    .select('id, sort_order, local_number')
+    .select('id, sort_order')
     .is('parent_id', null)
     .order('sort_order', { ascending: true, nullsFirst: true })
     .order('local_number');
-  const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
+  
+  const list = (rows || []) as Array<{ id: string; sort_order: number | null }>;
   const idx = list.findIndex((r) => String(r.id) === classId);
   if (idx < 0) return redirect('/admin/local-classes');
+  
   const neighbor = direction === 'up' ? idx - 1 : idx + 1;
   if (neighbor < 0 || neighbor >= list.length) return redirect('/admin/local-classes');
-  const orderedIds = list.map((r) => String(r.id));
-  const tmp = orderedIds[idx];
-  orderedIds[idx] = orderedIds[neighbor];
-  orderedIds[neighbor] = tmp;
-  const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
-  await Promise.all(updates);
+  
+  const classId1 = list[idx].id;
+  const classId2 = list[neighbor].id;
+  
+  // Use atomic database function to swap sort_order
+  const { data: result, error } = await db
+    .rpc('swap_local_class_sort_order', {
+      class_id_1: classId1,
+      class_id_2: classId2
+    })
+    .single();
+  
+  if (error) {
+    console.error('[reorder] Database function error:', error);
+    return redirect('/admin/local-classes?error=swap_failed');
+  }
+  
+  // Type the result properly
+  const swapResult = result as {
+    success: boolean;
+    error_message: string;
+    class1_old_sort: number;
+    class1_new_sort: number;
+    class2_old_sort: number;
+    class2_new_sort: number;
+  } | null;
+  
+  if (!swapResult?.success) {
+    console.error('[reorder] Swap failed:', swapResult?.error_message);
+    return redirect('/admin/local-classes?error=swap_failed');
+  }
+  
+  console.log('[reorder] Swap successful:', {
+    class1: classId1,
+    class2: classId2,
+    oldSort1: swapResult.class1_old_sort,
+    newSort1: swapResult.class1_new_sort,
+    oldSort2: swapResult.class2_old_sort,
+    newSort2: swapResult.class2_new_sort
+  });
+  
   revalidatePath('/admin/local-classes');
   redirect('/admin/local-classes');
 }
@@ -43,34 +83,8 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
   if (!ok) return redirect('/login');
   const db = supabaseAdmin();
 
-  // Inline reorder handler via query params to avoid any server action quirks in dev
-  const dir = typeof searchParams?.direction === 'string' ? String(searchParams!.direction) : '';
-  const targetId = typeof searchParams?.class_id === 'string' ? String(searchParams!.class_id) : '';
-  if ((dir === 'up' || dir === 'down') && targetId) {
-    // Normalize legacy empty-string parents to NULL so they are treated as top-level
-    await db.from('local_classes').update({ parent_id: null }).eq('parent_id', '');
-    const { data: rows } = await db
-      .from('local_classes')
-      .select('id, sort_order, local_number, parent_id')
-      .or('parent_id.is.null,parent_id.eq.')
-      .order('sort_order', { ascending: true, nullsFirst: true })
-      .order('local_number');
-    const list = (rows || []) as Array<{ id: string; sort_order: number | null; local_number: string | null }>;
-    const idx = list.findIndex((r) => String(r.id) === targetId);
-    if (idx >= 0) {
-      const neighbor = dir === 'up' ? idx - 1 : idx + 1;
-      if (neighbor >= 0 && neighbor < list.length) {
-        const orderedIds = list.map((r) => String(r.id));
-        const tmp = orderedIds[idx];
-        orderedIds[idx] = orderedIds[neighbor];
-        orderedIds[neighbor] = tmp;
-        const updates = orderedIds.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
-        await Promise.all(updates);
-      }
-    }
-    revalidatePath('/admin/local-classes');
-    return redirect('/admin/local-classes');
-  }
+  // Handle any error messages from reorder operations
+  const errorType = typeof searchParams?.error === 'string' ? searchParams.error : null;
 
   // Sanitize search query using the same logic as the secure API to prevent SQL injection
   const rawQuery = typeof searchParams?.q === 'string' ? String(searchParams!.q) : '';
@@ -91,17 +105,37 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
     const ok = await requireAdmin();
     if (!ok) return redirect('/login');
     const db = supabaseAdmin();
+    
+    // First normalize empty-string parent_ids to NULL
     await db.from('local_classes').update({ parent_id: null }).eq('parent_id', '');
+    
+    // Get all top-level classes ordered by local_number
     const { data: rows } = await db
       .from('local_classes')
       .select('id, local_number')
       .is('parent_id', null)
       .order('local_number');
-    const ids = (rows || []).map((r: any) => String(r.id));
-    const updates = ids.map((id, i) => db.from('local_classes').update({ sort_order: i + 1 }).eq('id', id));
-    await Promise.all(updates);
+    
+    if (!rows || rows.length === 0) {
+      revalidatePath('/admin/local-classes');
+      return redirect('/admin/local-classes?debug=1&error=no_classes');
+    }
+    
+    // Update sort_order sequentially with individual updates to avoid conflicts
+    let updated = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const { error } = await db
+        .from('local_classes')
+        .update({ sort_order: i + 1 })
+        .eq('id', rows[i].id);
+      
+      if (!error) updated++;
+    }
+    
+    console.log(`[normalize] Updated ${updated}/${rows.length} classes`);
+    
     revalidatePath('/admin/local-classes');
-    redirect('/admin/local-classes?debug=1');
+    redirect(`/admin/local-classes?debug=1&normalized=${updated}`);
   }
 
   let query = db
@@ -190,8 +224,16 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                   <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                   {isTop ? (
                     <div className="flex items-center gap-1">
-                      <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(id)}&direction=up`}>↑</a>
-                      <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(id)}&direction=down`}>↓</a>
+                      <form action={reorderTopLevelAction} className="inline">
+                        <input type="hidden" name="class_id" value={id} />
+                        <input type="hidden" name="direction" value="up" />
+                        <button type="submit" className="text-xs underline hover:bg-gray-100 px-1 py-0.5 rounded">↑</button>
+                      </form>
+                      <form action={reorderTopLevelAction} className="inline">
+                        <input type="hidden" name="class_id" value={id} />
+                        <input type="hidden" name="direction" value="down" />
+                        <button type="submit" className="text-xs underline hover:bg-gray-100 px-1 py-0.5 rounded">↓</button>
+                      </form>
                     </div>
                   ) : null}
                 </div>
@@ -214,6 +256,27 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
         <h1 className="text-xl font-semibold">Local Classes</h1>
         <Link className="button" href="/admin/local-classes/new">New Local Class</Link>
       </div>
+      {errorType === 'swap_failed' ? (
+        <div className="card bg-red-50 border-red-200 mb-3">
+          <div className="text-sm text-red-800">
+            <strong>Reorder failed:</strong> Unable to swap class positions. Please try again or check the debug panel.
+          </div>
+        </div>
+      ) : null}
+      {errorType === 'no_classes' ? (
+        <div className="card bg-yellow-50 border-yellow-200 mb-3">
+          <div className="text-sm text-yellow-800">
+            <strong>Normalization skipped:</strong> No top-level classes found.
+          </div>
+        </div>
+      ) : null}
+      {searchParams?.normalized ? (
+        <div className="card bg-green-50 border-green-200 mb-3">
+          <div className="text-sm text-green-800">
+            <strong>Normalization complete:</strong> Updated {searchParams.normalized} classes.
+          </div>
+        </div>
+      ) : null}
       {debug ? (
         <div className="card mb-3 text-xs">
           <div className="font-medium mb-1">Debug: Top-level order (id · local_number · sort_order)</div>
@@ -260,8 +323,16 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
                     <div className="text-xs text-gray-700">{direct} direct · {total} total</div>
                     {(!r.parent_id) ? (
                       <div className="flex items-center gap-1">
-                        <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(String(r.id))}&direction=up`}>↑</a>
-                        <a className="text-xs underline" href={`/admin/local-classes?class_id=${encodeURIComponent(String(r.id))}&direction=down`}>↓</a>
+                        <form action={reorderTopLevelAction} className="inline">
+                          <input type="hidden" name="class_id" value={String(r.id)} />
+                          <input type="hidden" name="direction" value="up" />
+                          <button type="submit" className="text-xs underline hover:bg-gray-100 px-1 py-0.5 rounded">↑</button>
+                        </form>
+                        <form action={reorderTopLevelAction} className="inline">
+                          <input type="hidden" name="class_id" value={String(r.id)} />
+                          <input type="hidden" name="direction" value="down" />
+                          <button type="submit" className="text-xs underline hover:bg-gray-100 px-1 py-0.5 rounded">↓</button>
+                        </form>
                       </div>
                     ) : null}
                   </div>
