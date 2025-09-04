@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check access permissions
-    if (media.visibility === 'private') {
+    if ((media as any).visibility === 'private') {
       // Private media requires admin/owner access or specific entity access
       if (role !== 'admin' && role !== 'owner') {
         // Check if user has access through entity membership (e.g., chakai attendee)
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Create signed URL for file access
     const { data: signedUrl, error: urlError } = await db.storage
       .from('media')
-      .createSignedUrl(media.storage_path, 3600); // 1 hour expiry
+      .createSignedUrl((media as any).storage_path, 3600); // 1 hour expiry
 
     if (urlError || !signedUrl) {
       console.error('Error creating signed URL:', urlError);

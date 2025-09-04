@@ -74,10 +74,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Delete from storage
-    if (media.storage_path) {
+    if ((media as any).storage_path) {
       const { error: storageError } = await db.storage
         .from('media')
-        .remove([media.storage_path]);
+        .remove([(media as any).storage_path]);
 
       if (storageError) {
         console.error('Storage deletion error:', storageError);

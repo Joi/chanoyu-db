@@ -4,16 +4,16 @@ import { getCurrentRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-interface RouteParams {
-  params: {
-    entityType: string;
-    entityId: string;
-  };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest) {
   try {
-    const { entityType, entityId } = params;
+    const { searchParams } = new URL(request.url);
+    const entityType = searchParams.get('entityType');
+    const entityId = searchParams.get('entityId');
+
+    if (!entityType || !entityId) {
+      return NextResponse.json({ error: 'Missing entityType or entityId parameters' }, { status: 400 });
+    }
+
     const { role, account } = await getCurrentRole();
     
     const db = supabaseAdmin();

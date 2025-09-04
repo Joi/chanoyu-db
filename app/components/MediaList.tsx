@@ -47,7 +47,11 @@ export default function MediaList({
   const fetchMedia = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/media/${entityType}/${entityId}`);
+      const params = new URLSearchParams({
+        entityType,
+        entityId
+      });
+      const response = await fetch(`/api/media/list?${params}`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -118,7 +122,7 @@ export default function MediaList({
 
   const downloadFile = async (item: MediaItem) => {
     try {
-      const response = await fetch(`/api/media/file/${item.id}`);
+      const response = await fetch(`/api/media/access/${item.id}`);
       const result = await response.json();
 
       if (!response.ok) {
