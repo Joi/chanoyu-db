@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import Image from 'next/image';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import SearchSelect from '@/app/components/SearchSelect';
+import MediaUpload from '@/app/components/MediaUpload';
 import { requireAdmin } from '@/lib/auth';
 import { mintToken } from '@/lib/id';
 import { z } from 'zod';
@@ -100,6 +101,26 @@ async function removeChakaiItem(formData: FormData) {
   return redirect(`/admin/chakai/${chakaiId}`);
 }
 
+async function removeChakaiMedia(formData: FormData) {
+  'use server';
+  const ok = await requireAdmin();
+  if (!ok) return notFound();
+  const chakaiId = String(formData.get('id') || '');
+  const mediaId = String(formData.get('media_id') || '');
+  if (!chakaiId || !mediaId) return notFound();
+  
+  // Use the DELETE endpoint we created
+  const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/chakai/${chakaiId}/media?mediaId=${mediaId}`, {
+    method: 'DELETE',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to remove media');
+  }
+  
+  return redirect(`/admin/chakai/${chakaiId}`);
+}
+
 export default async function EditChakai({ params }: { params: { id: string } }) {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
@@ -138,6 +159,13 @@ export default async function EditChakai({ params }: { params: { id: string } })
       if (!thumbByObject[oid]) thumbByObject[oid] = (m as any).uri || null;
     }
   }
+
+  // Get existing media attachments
+  const { data: mediaLinks } = await db
+    .from('chakai_media_links')
+    .select('media_id, media:media!inner(id, uri, kind, file_type, original_filename, visibility, sort_order)')
+    .eq('chakai_id', c.id);
+  const chakaiMedia = (mediaLinks || []).map((ml: any) => ml.media).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
 
   const date = c.event_date ? new Date(c.event_date).toISOString().slice(0, 10) : '';
   const time = c.start_time ? String(c.start_time).slice(0, 5) : '';
@@ -231,6 +259,76 @@ export default async function EditChakai({ params }: { params: { id: string } })
             ) : null}
           </div>
         </fieldset>
+        <section className="grid gap-3">
+          <h2 className="font-medium">Media Attachments</h2>
+          <MediaUpload 
+            chakaiId={c.id} 
+            onUploadSuccess={() => {
+              // Refresh the page to show the new media
+              window.location.reload();
+            }}
+            onError={(error) => {
+              alert(`Upload error: ${error}`);
+            }}
+          />
+          {chakaiMedia.length > 0 && (
+            <div className="grid gap-2">
+              <h3 className="text-sm font-medium">Current Attachments</h3>
+              {chakaiMedia.map((media: any) => {
+                const isPDF = media.file_type === 'application/pdf' || media.uri.toLowerCase().endsWith('.pdf');
+                const filename = media.original_filename || media.uri.split('/').pop() || 'File';
+                const isPrivate = media.visibility === 'private';
+                
+                return (
+                  <div key={media.id} className="flex items-center gap-3 p-3 border rounded bg-gray-50">
+                    <div className="flex-shrink-0">
+                      {isPDF ? (
+                        <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
+                          <span className="text-red-600 text-xs font-medium">PDF</span>
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                          <span className="text-gray-600 text-xs font-medium">IMG</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-grow">
+                      <div className="text-sm font-medium">{filename}</div>
+                      <div className="text-xs text-gray-600 flex items-center gap-2">
+                        <span>{isPrivate ? '🔒 Private' : '🌐 Public'}</span>
+                        <span>•</span>
+                        <span>{media.file_type}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <a 
+                        href={`/api/media/${media.id}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-xs underline text-blue-600"
+                      >
+                        View
+                      </a>
+                      <button 
+                        formAction={removeChakaiMedia}
+                        name="media_id" 
+                        value={media.id}
+                        className="text-xs underline text-red-600 bg-transparent border-none p-0 cursor-pointer"
+                        onClick={(e) => {
+                          if (!confirm(`Remove ${filename}?`)) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
         <section className="grid gap-3">
           <h2 className="font-medium">Attendees</h2>
           <SearchSelect name="attendee_ids" label="Attendees" searchPath="/api/search/accounts" labelFields={["full_name_en","full_name_ja","email"]} valueKey="id" initial={attendees} />
