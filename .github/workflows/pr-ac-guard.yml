@@ -22,14 +22,17 @@ jobs:
             core.setOutput("issue", m ? m[2] : "");
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Fetch Issue JSON
         id: issue
         uses: actions/github-script@v7
         with:
           script: |
-            const issue_number = core.getInput('issue', { required: true });
+            const issue_number = "${{ steps.refs.outputs.issue }}";
+            if (!issue_number) throw new Error("No issue number found");
             const { data } = await github.rest.issues.get({
-              ...context.repo, issue_number: Number(issue_number || "${{ steps.refs.outputs.issue }}")
+              ...context.repo, issue_number: Number(issue_number)
             });
             return { body: data.body || "" };
           result-encoding: string
