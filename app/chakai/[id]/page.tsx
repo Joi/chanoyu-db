@@ -142,20 +142,30 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       byClass[key].push(o);
     }
     const classIds = Object.keys(byClass).filter((k) => k !== '__none__');
-    let classMetaById: Record<string, { title: string; sortOrder: number | null }> = {};
+    let classMetaById: Record<string, { title: string; sortOrder: number | null; parentSortOrder: number | null }> = {};
     if (classIds.length) {
       const { data: classes } = await db
         .from('local_classes')
-        .select('id, label_en, label_ja, local_number, sort_order')
+        .select(`
+          id, label_en, label_ja, local_number, sort_order, parent_id,
+          parent:local_classes!parent_id(sort_order)
+        `)
         .in('id', classIds);
       for (const lc of classes || []) {
         const title = String((lc as any).label_ja || (lc as any).label_en || (lc as any).local_number || (lc as any).id);
-        classMetaById[String((lc as any).id)] = { title, sortOrder: (lc as any).sort_order ?? null };
+        const parentSortOrder = (lc as any).parent?.sort_order ?? null;
+        // Use parent's sort order if this is a child class, otherwise use own sort order
+        const effectiveSortOrder = parentSortOrder ?? (lc as any).sort_order ?? null;
+        classMetaById[String((lc as any).id)] = { 
+          title, 
+          sortOrder: effectiveSortOrder,
+          parentSortOrder 
+        };
       }
     }
     for (const [key, items] of Object.entries(byClass)) {
       if (key === '__none__') continue;
-      const meta = classMetaById[key] || { title: '—', sortOrder: null };
+      const meta = classMetaById[key] || { title: '—', sortOrder: null, parentSortOrder: null };
       grouped.push({ classId: key, classTitle: meta.title, items, sortOrder: meta.sortOrder });
     }
     if (byClass['__none__']) {
