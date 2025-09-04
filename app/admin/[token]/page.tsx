@@ -719,41 +719,59 @@ export default async function AdminObjectPage({ params, searchParams }: { params
 
         {/* Removed direct per-object classification UI; prefer Local Class links */}
 
-        <section>
-          <h3 className="text-md font-semibold mt-4">Chakai</h3>
-          <form action={updateObjectChakaiLinks} className="card">
-            <input type="hidden" name="object_token" value={token} />
-            <div className="grid gap-2">
-              <SearchSelect
-                name="chakai_ids"
-                label="Select Chakai events"
-                searchPath="/api/search/chakai"
-                valueKey="id"
-                labelFields={["name_ja","name_en","local_number"]}
-                initial={chakaiInitial}
-              />
-              <SubmitButton label="Save" pendingLabel="Saving..." />
-            </div>
-          </form>
-          {chakaiList.length ? (
-            <div className="mt-2 grid" style={{ gap: 8 }}>
-              {chakaiList.map((c: any) => {
-                const title = c.name_ja || c.name_en || '(untitled)';
-                return (
-                  <div key={c.id} className="text-sm">
-                    <a className="underline" href={`/chakai/${(c as any).token || c.id}`}>{title}{c.local_number ? ` (${c.local_number})` : ''}</a>
-                    <a className="underline ml-2 text-xs" href={`/admin/chakai/${c.id}`}>Edit</a>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
-        </section>
+        <div>
+          <section>
+            <h3 className="text-md font-semibold mt-4">Chakai</h3>
+            <form action={updateObjectChakaiLinks} className="card">
+              <input type="hidden" name="object_token" value={token} />
+              <div className="grid gap-2">
+                <SearchSelect
+                  name="chakai_ids"
+                  label="Select Chakai events"
+                  searchPath="/api/search/chakai"
+                  valueKey="id"
+                  labelFields={["name_ja","name_en","local_number"]}
+                  initial={chakaiInitial}
+                />
+                <div className="flex justify-end">
+                  <SubmitButton label="Save" pendingLabel="Saving..." />
+                </div>
+              </div>
+            </form>
+            {chakaiList.length ? (
+              <div className="mt-2 grid" style={{ gap: 8 }}>
+                {chakaiList.map((c: any) => {
+                  const title = c.name_ja || c.name_en || '(untitled)';
+                  return (
+                    <div key={c.id} className="text-sm">
+                      <a className="underline" href={`/chakai/${(c as any).token || c.id}`}>{title}{c.local_number ? ` (${c.local_number})` : ''}</a>
+                      <a className="underline ml-2 text-xs" href={`/admin/chakai/${c.id}`}>Edit</a>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </section>
+
+          <section className="card mt-4">
+            <h3 className="text-md font-semibold mb-3">Primary Local Class</h3>
+            <form action={savePrimaryLocalClassAction} className="grid gap-3">
+              <input type="hidden" name="object_token" value={token} />
+              <select name="local_class_id" className="input" defaultValue={object.primary_local_class_id || ''}>
+                <option value="">(none)</option>
+                {(allLocalClasses || []).map((c: any) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label_ja || c.label_en || c.local_number || c.id}
+                  </option>
+                ))}
+              </select>
+              <div className="flex justify-end">
+                <SubmitButton label="Save" pendingLabel="Saving..." />
+              </div>
+            </form>
+          </section>
+        </div>
       </div>
-      <section className="card mt-4">
-        {/* Local Class change moved to Local Classes admin; avoid redundant UI here */}
-        <div className="text-sm text-muted-foreground">Manage the primary Local Class from the Local Classes section.</div>
-      </section>
     </main>
   );
 }

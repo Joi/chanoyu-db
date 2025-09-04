@@ -17,7 +17,22 @@ async function createLocalClassAction(formData: FormData) {
   const parent_id = parentRaw.split(',').map((s) => s.trim()).filter(Boolean)[0] || null;
   const db = supabaseAdmin();
   const token = mintToken();
-  const { data: created, error } = await db.from('local_classes').insert({ token, label_en, label_ja, description, parent_id }).select('id').single();
+  
+  // For top-level classes, assign the next available sort_order
+  let sort_order = null;
+  if (!parent_id) {
+    const { data: maxSortResult } = await db
+      .from('local_classes')
+      .select('sort_order')
+      .is('parent_id', null)
+      .order('sort_order', { ascending: false, nullsFirst: false })
+      .limit(1);
+    
+    const maxSort = maxSortResult?.[0]?.sort_order;
+    sort_order = (maxSort ? maxSort + 1 : 1);
+  }
+  
+  const { data: created, error } = await db.from('local_classes').insert({ token, label_en, label_ja, description, parent_id, sort_order }).select('id').single();
   if (error) {
     console.error('[local-classes:create] error', error.message || error);
     redirect(`/admin/local-classes/new?error=create`);
