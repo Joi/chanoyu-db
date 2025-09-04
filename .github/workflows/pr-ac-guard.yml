@@ -27,9 +27,10 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const issue_number = core.getInput('issue', { required: true });
+            const issue_number = "${{ steps.refs.outputs.issue }}";
+            if (!issue_number) throw new Error("No issue number found");
             const { data } = await github.rest.issues.get({
-              ...context.repo, issue_number: Number(issue_number || "${{ steps.refs.outputs.issue }}")
+              ...context.repo, issue_number: Number(issue_number)
             });
             return { body: data.body || "" };
           result-encoding: string
