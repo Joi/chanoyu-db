@@ -131,7 +131,6 @@ export default async function MediaAdminPage() {
           <button 
             id="selectAll" 
             className="text-sm text-blue-600" 
-            onClick={() => (window as any).toggleSelectAll()}
             type="button"
           >
             Select All
@@ -158,12 +157,12 @@ export default async function MediaAdminPage() {
       <div className="card mb-4" style={{ background: '#f8fafc' }}>
         <h3 className="text-sm font-medium mb-3">Filters</h3>
         <div className="flex items-center gap-4">
-          <select id="visibilityFilter" className="input text-sm" style={{ padding: '4px 8px' }} onChange={() => (window as any).filterMedia()}>
+          <select id="visibilityFilter" className="input text-sm" style={{ padding: '4px 8px' }}>
             <option value="">All Visibility</option>
             <option value="public">Public Only</option>
             <option value="private">Private Only</option>
           </select>
-          <select id="fileTypeFilter" className="input text-sm" style={{ padding: '4px 8px' }} onChange={() => (window as any).filterMedia()}>
+          <select id="fileTypeFilter" className="input text-sm" style={{ padding: '4px 8px' }}>
             <option value="">All File Types</option>
             <option value="pdf">PDFs Only</option>
             <option value="image">Images Only</option>
@@ -190,7 +189,6 @@ export default async function MediaAdminPage() {
                 type="checkbox" 
                 className="media-checkbox" 
                 data-id={m.id}
-                onChange={() => (window as any).updateSelectedCount()} 
               />
             </div>
             
@@ -306,40 +304,50 @@ export default async function MediaAdminPage() {
       {/* JavaScript for interactive functionality */}
       <script dangerouslySetInnerHTML={{
         __html: `
-          window.updateSelectedCount = function() {
-            const checkboxes = document.querySelectorAll('.media-checkbox:checked');
-            const count = checkboxes.length;
-            document.getElementById('selectedCount').textContent = count;
-            const selectedIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-id'));
-            document.getElementById('selectedIds').value = selectedIds.join(',');
-          };
-          
-          window.toggleSelectAll = function() {
-            const checkboxes = document.querySelectorAll('.media-checkbox');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            checkboxes.forEach(cb => cb.checked = !allChecked);
-            window.updateSelectedCount();
-          };
-          
-          window.filterMedia = function() {
-            const visibilityFilter = document.getElementById('visibilityFilter').value;
-            const fileTypeFilter = document.getElementById('fileTypeFilter').value;
-            const mediaItems = document.querySelectorAll('.media-item');
+          document.addEventListener('DOMContentLoaded', function() {
+            function updateSelectedCount() {
+              const checkboxes = document.querySelectorAll('.media-checkbox:checked');
+              const count = checkboxes.length;
+              document.getElementById('selectedCount').textContent = count;
+              const selectedIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-id'));
+              document.getElementById('selectedIds').value = selectedIds.join(',');
+            }
             
-            mediaItems.forEach(item => {
-              let show = true;
+            function toggleSelectAll() {
+              const checkboxes = document.querySelectorAll('.media-checkbox');
+              const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+              checkboxes.forEach(cb => cb.checked = !allChecked);
+              updateSelectedCount();
+            }
+            
+            function filterMedia() {
+              const visibilityFilter = document.getElementById('visibilityFilter').value;
+              const fileTypeFilter = document.getElementById('fileTypeFilter').value;
+              const mediaItems = document.querySelectorAll('.media-item');
               
-              if (visibilityFilter && item.getAttribute('data-visibility') !== visibilityFilter) {
-                show = false;
-              }
-              
-              if (fileTypeFilter && item.getAttribute('data-file-type') !== fileTypeFilter) {
-                show = false;
-              }
-              
-              item.style.display = show ? 'block' : 'none';
+              mediaItems.forEach(item => {
+                let show = true;
+                
+                if (visibilityFilter && item.getAttribute('data-visibility') !== visibilityFilter) {
+                  show = false;
+                }
+                
+                if (fileTypeFilter && item.getAttribute('data-file-type') !== fileTypeFilter) {
+                  show = false;
+                }
+                
+                item.style.display = show ? 'block' : 'none';
+              });
+            }
+            
+            // Attach event listeners
+            document.getElementById('selectAll').addEventListener('click', toggleSelectAll);
+            document.getElementById('visibilityFilter').addEventListener('change', filterMedia);
+            document.getElementById('fileTypeFilter').addEventListener('change', filterMedia);
+            document.querySelectorAll('.media-checkbox').forEach(cb => {
+              cb.addEventListener('change', updateSelectedCount);
             });
-          };
+          });
         `
       }} />
     </main>
