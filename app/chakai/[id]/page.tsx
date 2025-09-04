@@ -112,11 +112,16 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
       .eq('media.visibility', 'public');
     chakaiMedia = (mediaLinks || []).map((ml: any) => ml.media).sort((a: any, b: any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
   }
-  const { data: itemRows } = await db
+  const { data: itemRows, error: itemError } = await db
     .from('chakai_items')
     .select('objects(id, token, title, title_ja, local_number, primary_local_class_id)')
     .eq('chakai_id', c.id);
+  
+  console.log('[ChakaiDetail] Items query result:', { itemRows, itemError, chakaiId: c.id });
+  
   const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
+  
+  console.log('[ChakaiDetail] Processed itemObjects:', itemObjects);
   let thumbByObject: Record<string, string | null> = {};
   if (itemObjects.length) {
     const ids = itemObjects.map((o: any) => o.id);

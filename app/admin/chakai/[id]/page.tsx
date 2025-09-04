@@ -117,12 +117,17 @@ export default async function EditChakai({ params }: { params: { id: string } })
     .eq('chakai_id', c.id);
   const attendees = (attendeeRows || []).map((r: any) => ({ value: r.accounts.id, label: r.accounts.full_name_en || r.accounts.full_name_ja || r.accounts.email }));
 
-  const { data: itemRows } = await db
+  const { data: itemRows, error: itemError } = await db
     .from('chakai_items')
     .select('objects(id, token, title, title_ja, local_number)')
     .eq('chakai_id', c.id);
+  
+  console.log('[EditChakai] Items query result:', { itemRows, itemError, chakaiId: c.id });
+  
   const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
   const items = itemObjects.map((o: any) => ({ value: o.id, label: o.title || o.title_ja || o.local_number || o.token }));
+  
+  console.log('[EditChakai] Processed items:', { itemObjects, items });
 
   // Thumbnails for selected items (primary image = lowest sort_order)
   let thumbByObject: Record<string, string | null> = {};
@@ -237,7 +242,7 @@ export default async function EditChakai({ params }: { params: { id: string } })
         </section>
         <section className="grid gap-3">
           <h2 className="font-medium">Items used</h2>
-          <SearchSelect name="item_ids" label="Add items" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={[]} />
+          <SearchSelect name="item_ids" label="Add items" searchPath="/api/search/objects" labelFields={["title","title_ja","local_number","token"]} valueKey="id" initial={items} />
           {itemObjects.length ? (
             <div className="grid" style={{ gap: 8 }}>
               {itemObjects.map((o: any) => {
