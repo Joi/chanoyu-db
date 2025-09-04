@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       .from('media')
       .insert({
         uri: uploadData.path,
-        kind: file.type.startsWith('image/') ? 'image' : 'file',
+        kind: 'image',
         bucket: 'media',
         storage_path: uploadData.path,
         visibility: visibility as 'public' | 'private',
