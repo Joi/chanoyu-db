@@ -260,111 +260,6 @@ export default async function EditChakai({ params }: { params: { id: string } })
           </div>
         </fieldset>
         <section className="grid gap-3">
-          <h2 className="font-medium">Media Attachments</h2>
-          <div className="border rounded-lg p-4 bg-white shadow-sm">
-            <h3 className="font-medium text-gray-900 mb-4">Add Media Attachment</h3>
-            <form action="/api/media/upload" method="post" encType="multipart/form-data" className="space-y-4">
-              <input type="hidden" name="entityType" value="chakai" />
-              <input type="hidden" name="entityId" value={c.id} />
-              
-              <div>
-                <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2">
-                  File (PDF or Image)
-                </label>
-                <input 
-                  type="file" 
-                  id="file"
-                  name="file" 
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  PDFs (max 10MB), Images (max 5MB)
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="visibility" className="block text-sm font-medium text-gray-700 mb-2">
-                  Visibility
-                </label>
-                <select 
-                  id="visibility"
-                  name="visibility"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="public">Public - visible to everyone</option>
-                  <option value="private">Private - attendees only</option>
-                </select>
-              </div>
-
-              <button 
-                type="submit" 
-                className="w-full py-2 px-4 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
-              >
-                Upload File
-              </button>
-            </form>
-          </div>
-          {chakaiMedia.length > 0 && (
-            <div className="grid gap-2">
-              <h3 className="text-sm font-medium">Current Attachments</h3>
-              {chakaiMedia.map((media: any) => {
-                const isPDF = media.file_type === 'application/pdf' || media.uri.toLowerCase().endsWith('.pdf');
-                const filename = media.original_filename || media.uri.split('/').pop() || 'File';
-                const isPrivate = false; // Default to public for backwards compatibility
-                
-                return (
-                  <div key={media.id} className="flex items-center gap-3 p-3 border rounded bg-gray-50">
-                    <div className="flex-shrink-0">
-                      {isPDF ? (
-                        <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
-                          <span className="text-red-600 text-xs font-medium">PDF</span>
-                        </div>
-                      ) : (
-                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                          <span className="text-gray-600 text-xs font-medium">IMG</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-grow">
-                      <div className="text-sm font-medium">{filename}</div>
-                      <div className="text-xs text-gray-600 flex items-center gap-2">
-                        <span>{isPrivate ? '🔒 Private' : '🌐 Public'}</span>
-                        <span>•</span>
-                        <span>{media.file_type}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <a 
-                        href={`/api/media/${media.id}`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="text-xs underline text-blue-600"
-                      >
-                        View
-                      </a>
-                      <button 
-                        formAction={removeChakaiMedia}
-                        name="media_id" 
-                        value={media.id}
-                        className="text-xs underline text-red-600 bg-transparent border-none p-0 cursor-pointer"
-                        onClick={(e) => {
-                          if (!confirm(`Remove ${filename}?`)) {
-                            e.preventDefault();
-                          }
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-        <section className="grid gap-3">
           <h2 className="font-medium">Attendees</h2>
           <SearchSelect name="attendee_ids" label="Attendees" searchPath="/api/search/accounts" labelFields={["full_name_en","full_name_ja","email"]} valueKey="id" initial={attendees} />
         </section>
@@ -409,6 +304,88 @@ export default async function EditChakai({ params }: { params: { id: string } })
           <a className="button secondary" href={`/chakai/${c.id}`}>Cancel</a>
         </div>
       </form>
+
+      {/* Media Upload Form - Separate from main form */}
+      <section className="grid gap-3 mt-6">
+        <h2 className="font-medium">Media Attachments</h2>
+        <div className="border rounded-lg p-4 bg-white shadow-sm">
+          <h3 className="font-medium text-gray-900 mb-4">Add Media Attachment</h3>
+          <form action="/api/media/upload" method="post" encType="multipart/form-data" className="space-y-4">
+            <input type="hidden" name="entityType" value="chakai" />
+            <input type="hidden" name="entityId" value={c.id} />
+            
+            <div>
+              <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2">
+                File (PDF or Image)
+              </label>
+              <input 
+                type="file" 
+                id="file"
+                name="file" 
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                PDFs (max 10MB), Images (max 5MB)
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="visibility" className="block text-sm font-medium text-gray-700 mb-2">
+                Visibility
+              </label>
+              <select 
+                id="visibility"
+                name="visibility"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="public">Public - visible to everyone</option>
+                <option value="private">Private - attendees only</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full py-2 px-4 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
+            >
+              Upload File
+            </button>
+          </form>
+        </div>
+        {chakaiMedia.length > 0 && (
+          <div className="border rounded-lg p-4 bg-white shadow-sm">
+            <h3 className="font-medium text-gray-900 mb-4">Existing Media</h3>
+            <div className="space-y-3">
+              {chakaiMedia.map((media: any) => {
+                return (
+                  <div key={media.media_id} className="flex items-center justify-between p-2 border rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {media.media?.original_filename || `media-${media.media_id}`}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({media.media?.file_type || 'unknown'})
+                      </span>
+                    </div>
+                    <form action={removeChakaiMedia} className="inline">
+                      <input type="hidden" name="id" value={c.id} />
+                      <input type="hidden" name="media_id" value={media.media_id} />
+                      <button 
+                        type="submit" 
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </form>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+
       <form action={deleteChakai} className="mt-6">
         <input type="hidden" name="id" value={c.id} />
         <button className="text-sm text-red-600 underline" type="submit">Delete Chakai</button>
