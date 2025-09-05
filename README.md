@@ -124,9 +124,9 @@ Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
 ### Ops workflow cheat sheet
 
 See `docs/WORKFLOW.md` for a concise reference covering:
-- Branching (`dev` → Preview, `main` → Production)
+- Branching (feature branches → Preview, `main` → Production)
 - Vercel domain mapping and envs
-- Daily loop (local dev → push to `dev` → Preview → PR to `main`)
+- Daily loop (local dev → push feature branch → Preview → PR to `main`)
 - Shortcut deploys with `vercel` / `vercel --prebuilt` / `vercel --prod`
 
 

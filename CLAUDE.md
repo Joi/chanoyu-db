@@ -9,7 +9,7 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 ### Project Structure
 - **Frontend**: Next.js App Router with TypeScript
 - **Database**: Supabase (Postgres with RLS)
-- **Deployment**: Vercel (dev branch → preview, main → production)
+- **Deployment**: Vercel (feature branches → preview, main → production)
 - **Storage**: Supabase Storage for images
 
 ### Important Files
@@ -43,7 +43,7 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 ### Planning & Tasks (Updated)
 
 - Use GitHub Issues as the source of truth (no local markdown task lists).
-- Create a feature branch from `dev` for each feature and open a PR to `dev`.
+- Create a feature branch from `main` for each feature and open a PR to `main`.
 - Specs live under `.agent-os/specs/YYYY-MM-DD-slug/` and are linked from the initial Spec issue.
 - Prefer the `gh` CLI or GitHub UI to create issues with labels like `type:*`, `area:*`, `priority:*`, `state:*`, and `feature:<slug>`.
 ```
@@ -57,8 +57,8 @@ Always provide:
 ### Testing Approach
 - Local first: `pnpm dev`
 - Check types: `pnpm typecheck`
-- Deploy to preview: `git push origin dev`
-- Test on dev.collection.ito.com before PR
+- Deploy to preview: `git push origin feature-branch-name`
+- Test on preview URL from feature branch deployment
 
 ## Common Patterns
 
