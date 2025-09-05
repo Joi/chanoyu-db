@@ -2,7 +2,7 @@ name: Preview (Vercel CLI)
 
 on:
   push:
-    branches: [dev]
+    branches-ignore: [main]
 
 concurrency:
   group: vercel-preview-${{ github.ref }}

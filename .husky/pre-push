@@ -8,12 +8,13 @@ run_ci=0
 # Read refs from stdin to detect branch
 while read local_ref local_sha remote_ref remote_sha; do
   case "$remote_ref" in
-    refs/heads/dev) run_ci=1 ;;
+    refs/heads/main) run_ci=1 ;;
+    refs/heads/feature/*) run_ci=1 ;;
   esac
 done
 
 if [ "$run_ci" = "1" ]; then
-  echo "Running CI (lint+typecheck+tests+build) locally before push to dev..."
+  echo "Running CI (lint+typecheck+tests+build) locally before push..."
   pnpm ci:local || exit 1
 fi
 
