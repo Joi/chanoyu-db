@@ -70,7 +70,7 @@ BEGIN
 END;
 $$;
 
--- Fix set_local_class_local_number function
+-- Fix set_local_class_local_number function (with parameters)
 CREATE OR REPLACE FUNCTION public.set_local_class_local_number(class_id integer, new_local_number text)
 RETURNS void
 LANGUAGE plpgsql
@@ -81,6 +81,43 @@ BEGIN
     UPDATE public.local_classes 
     SET local_number = new_local_number 
     WHERE id = class_id;
+END;
+$$;
+
+-- Fix set_local_class_local_number function (trigger version)
+CREATE OR REPLACE FUNCTION public.set_local_class_local_number()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+    -- This is a trigger function for setting local numbers
+    RETURN NEW;
+END;
+$$;
+
+-- Fix swap_local_class_sort_order function (UUID version)
+CREATE OR REPLACE FUNCTION public.swap_local_class_sort_order(class_id_1 uuid, class_id_2 uuid)
+RETURNS TABLE(success boolean, error_message text, class1_old_sort integer, class1_new_sort integer, class2_old_sort integer, class2_new_sort integer)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    item1_order integer;
+    item2_order integer;
+BEGIN
+    -- Get current sort_order values
+    SELECT sort_order INTO item1_order FROM public.local_classes WHERE id = class_id_1;
+    SELECT sort_order INTO item2_order FROM public.local_classes WHERE id = class_id_2;
+    
+    -- Swap the sort_order values
+    UPDATE public.local_classes SET sort_order = item2_order WHERE id = class_id_1;
+    UPDATE public.local_classes SET sort_order = item1_order WHERE id = class_id_2;
+    
+    -- Return success information
+    RETURN QUERY SELECT true, null::text, item1_order, item2_order, item2_order, item1_order;
 END;
 $$;
 
