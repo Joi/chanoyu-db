@@ -49,9 +49,15 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 ```
 
 ### Database Changes
+**IMPORTANT: Always work with LOCAL Docker Postgres only for SQL operations**
+- Use connection string from `.env.local.dev`: `LOCAL_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+- Never touch remote/production database directly
+- Always use `supabase status` to ensure local environment is running
+- Create migrations in `/supabase/migrations/` for deployment
+
 Always provide:
-1. Current schema (from Supabase dashboard)
-2. RLS policies that need updating
+1. Current schema (from local database)
+2. RLS policies that need updating  
 3. Whether this affects public visibility
 
 ### Testing Approach
