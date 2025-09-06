@@ -24,9 +24,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [dev, main]
+    branches: [main]
   push:
-    branches: [dev]
+    branches: [main]
 
 jobs:
   changes:
@@ -40,7 +40,7 @@ jobs:
           fetch-depth: 2
       - id: diff
         run: |
-          git diff --name-only origin/${{ github.base_ref || 'dev' }}...HEAD | jq -Rsc 'split("\n")' > files.json
+          git diff --name-only origin/${{ github.base_ref || 'main' }}...HEAD | jq -Rsc 'split("\n")' > files.json
           echo "files=$(cat files.json)" >> $GITHUB_OUTPUT
 
   node:

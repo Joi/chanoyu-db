@@ -9,6 +9,7 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 ### Project Structure
 - **Frontend**: Next.js App Router with TypeScript
 - **Database**: Supabase (Postgres with RLS)
+- **Local Development**: Docker-based Supabase (Postgres 17.4, full stack)
 - **Deployment**: Vercel (feature branches → preview, main → production)
 - **Storage**: Supabase Storage for images
 
@@ -17,6 +18,18 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 - `/lib` - Shared utilities and Supabase client
 - `/scripts` - Data ingestion scripts (Notion, Google Sheets)
 - `/supabase` - Database migrations and types
+- `/docs/SUPABASE_WORKFLOW.md` - Complete Supabase development workflow
+
+### Tech Stack
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL 17.4 via Supabase
+- **Local Development**: Docker (Supabase CLI)
+- **Authentication**: Supabase Auth
+- **Storage**: Supabase Storage
+- **Deployment**: Vercel
+- **Styling**: Tailwind CSS
+- **Package Manager**: pnpm
 
 ### Current Focus Areas
 1. Object management (tea utensils)
@@ -43,7 +56,9 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 ### Planning & Tasks (Updated)
 
 - Use GitHub Issues as the source of truth (no local markdown task lists).
-- Create a feature branch from `main` for each feature and open a PR to `main`.
+- Create descriptive feature branches directly from `main`, connected to GitHub issues.
+- Branch naming: `feature/descriptive-name-123` (where 123 is the issue number).
+- Open PR directly to `main` (no persistent dev branch).
 - Specs live under `.agent-os/specs/YYYY-MM-DD-slug/` and are linked from the initial Spec issue.
 - Prefer the `gh` CLI or GitHub UI to create issues with labels like `type:*`, `area:*`, `priority:*`, `state:*`, and `feature:<slug>`.
 ```
@@ -54,6 +69,14 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 - Never touch remote/production database directly
 - Always use `supabase status` to ensure local environment is running
 - Create migrations in `/supabase/migrations/` for deployment
+- See `/docs/SUPABASE_WORKFLOW.md` for complete workflow
+
+**Development Workflow:**
+1. Create descriptive feature branch from `main` (connected to GitHub issue)
+2. Test migrations locally with `supabase db reset`
+3. Backup remote database before deployment
+4. Apply migrations to remote after local testing
+5. Direct PR workflow: feature → main
 
 Always provide:
 1. Current schema (from local database)
@@ -63,8 +86,9 @@ Always provide:
 ### Testing Approach
 - Local first: `pnpm dev`
 - Check types: `pnpm typecheck`
-- Deploy to preview: `git push origin feature-branch-name`
-- Test on preview URL from feature branch deployment
+- Deploy to preview: `git push origin feature/descriptive-name-123`
+- Test on Vercel preview URL (automatically generated for all branches)
+- Direct PR to main after testing
 
 ## Common Patterns
 
