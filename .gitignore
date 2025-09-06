@@ -52,3 +52,4 @@ supabase/.temp/
 
 .vercel
 .env*.local
+backup_before_security_fixes.sql
