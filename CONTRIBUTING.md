@@ -22,15 +22,20 @@ cp .env.example .env.local
 ### 2. Branch Strategy
 
 - `main` - Production (don't commit directly)
-- `dev` - Development/Preview (main work branch)
-- Feature branches optional for large changes
+- Descriptive feature branches from `main` for all changes
+- Branch naming: `feature/descriptive-name-123` (where 123 is issue number)
+- No persistent dev branch
 
 ### 3. Daily Workflow
 
 ```bash
-# Start on dev branch
-git checkout dev
-git pull origin dev
+# Start from main branch and create feature branch
+git checkout main
+git pull origin main
+git checkout -b feature/your-feature-name-123
+
+# Ensure local Docker Supabase is running
+supabase status
 
 # Make your changes
 pnpm dev  # Start local server
@@ -41,19 +46,22 @@ pnpm lint       # Check code style
 
 # Commit and push
 git add .
-git commit -m "feat: description of change"
-git push origin dev
+git commit -m "feat: description of change (closes #123)"
+git push origin feature/your-feature-name-123
 
-# Check preview at dev.collection.ito.com
+# Check Vercel's automatic preview deployment for your branch
 ```
 
 ### 4. Making a PR to Production
 
-1. Test thoroughly on dev.collection.ito.com
-2. Create PR from `dev` to `main` on GitHub
-3. Add description of changes
+1. Test thoroughly on your branch's Vercel preview URL
+2. Create PR from feature branch to `main` on GitHub using:
+   ```bash
+   gh pr create --base main --head feature/your-feature-name-123
+   ```
+3. Add description of changes and link to issues (e.g., "Closes #123")
 4. Wait for review/approval
-5. Merge when approved
+5. Merge when approved (feature branch will be auto-deleted)
 
 ## Monorepo boundaries and PR guidance
 
@@ -133,7 +141,7 @@ We use Claude and Cursor for development. See `CLAUDE.md` for guidelines.
 Before pushing:
 - [ ] Code runs locally without errors
 - [ ] TypeScript has no errors
-- [ ] Tested on dev branch
+- [ ] Tested on feature branch preview
 - [ ] Checked mobile responsiveness
 - [ ] Verified database queries work
 - [ ] Images load correctly

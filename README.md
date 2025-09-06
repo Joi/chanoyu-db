@@ -124,9 +124,10 @@ Example JSON-LD (served at `/id/{token}` with `Accept: application/ld+json`):
 ### Ops workflow cheat sheet
 
 See `docs/WORKFLOW.md` for a concise reference covering:
-- Branching (feature branches → Preview, `main` → Production)
-- Vercel domain mapping and envs
-- Daily loop (local dev → push feature branch → Preview → PR to `main`)
+- Branching (descriptive feature branches from `main` → automatic Preview, `main` → Production)
+- Vercel domain mapping and automatic preview deployments
+- Daily loop (local dev with Docker Supabase → push feature branch → Preview → PR to `main`)
+- Database development with `docs/SUPABASE_WORKFLOW.md`
 - Shortcut deploys with `vercel` / `vercel --prebuilt` / `vercel --prod`
 
 
@@ -161,9 +162,9 @@ Run:
     pnpm dev
     # open http://localhost:3000
 
-### Minimal UI Polish (feature/minimal-ui-polish)
+### Minimal UI Polish
 
-This branch adds minimal design tokens, fonts via `next/font` (Inter, EB Garamond, Noto Sans/Serif JP), UI primitives (`Container`, `Title`, `Muted`, `Separator`, `Button`), a public Objects grid at `/objects`, a redesigned object detail page at `/id/{token}`, and a mobile sheet navigation with integrated object search.
+This feature adds minimal design tokens, fonts via `next/font` (Inter, EB Garamond, Noto Sans/Serif JP), UI primitives (`Container`, `Title`, `Muted`, `Separator`, `Button`), a public Objects grid at `/objects`, a redesigned object detail page at `/id/{token}`, and a mobile sheet navigation with integrated object search.
 
 Admin pages:
 - `/admin/chakai` — list, add via `/admin/chakai/new`, edit via `/admin/chakai/[id]`

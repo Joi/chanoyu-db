@@ -20,7 +20,7 @@ DATE=$(date +%F)
 SPEC_DIR=".agent-os/specs/${DATE}-${SLUG}"
 BRANCH="feature/${SLUG}"
 
-git checkout dev >/dev/null 2>&1 || git checkout -B dev
+git checkout main >/dev/null 2>&1 || git checkout -B main
 git pull --ff-only || true
 
 git checkout -b "$BRANCH" || git checkout "$BRANCH"
@@ -96,7 +96,7 @@ Spec: ${ISSUE_URL}
 EOF
 
 gh pr create \
-  --base dev \
+  --base main \
   --head "$BRANCH" \
   --title "feat(${SLUG}): ${TITLE}" \
   --body-file "$PR_BODY_FILE" \

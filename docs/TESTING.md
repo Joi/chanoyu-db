@@ -25,10 +25,11 @@ pnpm test -- chakai
 
 ### Before PR to Main
 1. All of the above
-2. Test on preview (dev.collection.ito.com)
+2. Test on your feature branch's Vercel preview URL
 3. Check mobile view
 4. Verify images load
 5. Test any new features end-to-end
+6. Verify local Docker Supabase migrations work
 
 ## Manual Testing Checklist
 

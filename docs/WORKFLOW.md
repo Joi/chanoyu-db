@@ -2,16 +2,15 @@
 
 ## Environments
 
-- dev (local): run on your laptop for fast iteration
-- preview (Vercel): hosted builds for non‑prod (tracks the `dev` branch)
+- local: run on your laptop for fast iteration (using Docker Supabase)
+- preview (Vercel): hosted builds for feature branches (automatic preview deployments)
 - prod (Vercel): hosted Production (tracks the `main` branch)
 
 ## One‑time setup
 
 ```bash
-# ensure branches exist and are tracked
+# ensure main branch exists and is tracked
 git checkout -B main && git push -u origin main
-git checkout -B dev  && git push -u origin dev
 ```
 
 Vercel project settings:
@@ -19,33 +18,35 @@ Vercel project settings:
 - Git → Production Branch: `main` (auto‑deploy on push: ON)
 - Domains:
   - `collection.ito.com` → connect to Environment: Production
-  - `dev.collection.ito.com` → connect to Environment: Preview → Assign to Branch: `dev`
-- Environment Variables: set the SAME values in Production and Preview (single Supabase)
+- Environment Variables: set values in Production environment
+- Automatic Preview Deployments: ON (creates previews for all branches)
 
 ## Daily dev loop
 
 ```bash
-# 1) work locally
+# 1) work locally with Docker Supabase
+supabase status  # ensure local environment is running
 pnpm dev
 
-# 2) push to preview (dev branch)
-git checkout dev
-git add -A && git commit -m "feat: ..."
-git push origin dev
-# → Vercel builds Preview → visit https://dev.collection.ito.com
+# 2) create feature branch from main and push for preview
+git checkout main && git pull origin main
+git checkout -b feature/descriptive-name-123
+git add -A && git commit -m "feat: add feature description (closes #123)"
+git push origin feature/descriptive-name-123
+# → Vercel automatically creates preview deployment for the branch
 ```
 
 ## Feature branch workflow with GitHub Issues
 
 - Source of truth for planning: GitHub Issues (no local markdown task lists).
-- Branch per feature from `dev`; open PR to `dev`; later merge `dev → main`.
+- Create descriptive feature branches directly from `main`; open PR directly to `main`.
 - Specs live under `.agent-os/specs/YYYY-MM-DD-slug/` and are linked from the initial Spec issue.
 
 Feature branch naming:
 
 ```bash
-git checkout dev
-git checkout -b feature/<slug>
+git checkout main && git pull origin main
+git checkout -b feature/descriptive-name-123  # 123 = issue number
 ```
 
 Labels (suggested):
@@ -65,10 +66,10 @@ scripts/feature-bootstrap.sh <slug> "Human-friendly feature title"
 ```
 
 This will:
-- Create/checkout `feature/<slug>` from `dev`
+- Create/checkout `feature/<slug>` from `main`
 - Create a spec folder `.agent-os/specs/YYYY-MM-DD-<slug>/`
 - Open an initial Spec issue labeled `feature:<slug>` and `state:needs-spec`
-- Open a draft PR `feature/<slug> → dev`
+- Open a draft PR `feature/<slug> → main`
 
 Optional: fast preview deploy from your working tree (skips GitHub build queue)
 
@@ -80,7 +81,7 @@ npm run build && vercel --prebuilt
 
 ## Preview verification before promoting to production
 
-Run this after you're done with local dev and before you merge `dev → main` to ensure Vercel Preview matches local.
+Run this after you're done with local dev and before you merge to `main` to ensure Vercel Preview matches local.
 
 ```bash
 # 0) ensure local tree is linked to the correct Vercel project
@@ -95,7 +96,7 @@ pnpm lint && pnpm typecheck && pnpm test
 vercel build --yes
 
 # 3) deploy to Preview and verify
-git push origin dev             # preferred: triggers Vercel Preview build for the commit
+git push origin feature/your-branch-name    # triggers Vercel Preview build for the branch
 # or deploy your local prebuilt output if needed:
 # vercel deploy --prebuilt --yes
 
@@ -104,8 +105,8 @@ vercel ls | cat                 # find the latest preview URL
 vercel inspect <deployment-url> | cat
 vercel logs <deployment-url> --since 15m | cat
 
-# 5) manual smoke test at your dev domain (mapped to Preview)
-# open: https://dev.collection.ito.com
+# 5) manual smoke test at the generated preview URL
+# Vercel provides unique URLs for each branch deployment
 ```
 
 ## Promote to production
@@ -113,14 +114,14 @@ vercel logs <deployment-url> --since 15m | cat
 Preferred (via PR using GitHub CLI):
 
 ```bash
-# create a PR from dev → main that closes an issue (e.g., #34)
-git checkout dev && git push origin dev
+# create a PR from feature branch → main that closes an issue (e.g., #34)
+git push origin feature/descriptive-name-34
 cat > /tmp/pr_body.md <<'EOF'
 This implements the migration to Local Classes.
 
 Closes #34.
 EOF
-gh pr create --base main --head dev --title "feat: remove direct classification links" --body-file /tmp/pr_body.md
+gh pr create --base main --head feature/descriptive-name-34 --title "feat: remove direct classification links" --body-file /tmp/pr_body.md
 
 # review status
 gh pr view --web
@@ -128,27 +129,25 @@ gh pr view --web
 # after checks pass, merge the PR (squash by default)
 gh pr merge --squash --delete-branch
 
-# pull latest main and dev locally
+# pull latest main locally
 git checkout main && git pull --ff-only
-git checkout dev && git pull --ff-only
 ```
 
 ### Local Classes rollout notes
 
-- After merging the Local Classes feature to `dev`, apply the SQL (idempotent) to the main dev Supabase project:
+- After merging the Local Classes feature to `main`, apply the SQL (idempotent) to the production Supabase project:
   - Run the core schema block (tables, sequence, triggers, RLS)
   - If `objects` exists, run the counts views block
   - Then: `notify pgrst, 'reload schema'; notify pgrst, 'reload config';`
 - Verify:
   - Admin → Local Classes: create/edit classes; attach AAT/Wikidata via pulldown; set preferred; bottom shows items in class
   - Admin → Object: top shows current Local Class (linked), breadcrumb, and external links; change Local Class via pulldown at bottom
-- When stable, open PR `dev → main` and repeat SQL on prod Supabase if needed
-Direct (CLI merge):
+Direct (CLI merge) - Not recommended, use PR workflow instead:
 
 ```bash
 git checkout main
 git pull --ff-only
-git merge --no-ff dev
+git merge --no-ff feature/branch-name
 git push origin main
 # → Vercel builds Production → https://collection.ito.com
 ```

@@ -19,12 +19,12 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "Temporarily stashed local changes as $AUTO_STASH_REF"
 fi
 
-# Ensure dev exists locally and is up to date
+# Ensure main exists locally and is up to date
 git fetch --all --prune
-if ! git show-ref --verify --quiet refs/heads/dev; then
-  git checkout -B dev origin/dev || git checkout -B dev
+if ! git show-ref --verify --quiet refs/heads/main; then
+  git checkout -B main origin/main || git checkout -B main
 else
-  git checkout dev
+  git checkout main
   git pull --ff-only || true
 fi
 
@@ -32,7 +32,7 @@ fi
 if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
   git checkout "${BRANCH}"
 else
-  git checkout -b "${BRANCH}" dev
+  git checkout -b "${BRANCH}" main
 fi
 
 # Set upstream if not set
