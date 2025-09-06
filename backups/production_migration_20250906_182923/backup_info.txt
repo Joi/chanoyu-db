@@ -1,0 +1,22 @@
+# Production Database Backup Manifest
+Generated: Sat Sep  6 18:29:32 JST 2025
+Project: ropxawmhtemygmrojlhu
+Backup Directory: backups/production_migration_20250906_182923
+
+## File Listing
+total 1048
+drwxr-xr-x@ 7 joi  staff     224 Sep  6 18:29 .
+drwxr-xr-x@ 3 joi  staff      96 Sep  6 18:29 ..
+-rw-r--r--@ 1 joi  staff   31483 Sep  6 18:29 auth_reference_backup.sql
+-rw-r--r--@ 1 joi  staff  350731 Sep  6 18:29 data_only_backup.sql
+-rw-r--r--@ 1 joi  staff   52363 Sep  6 18:29 full_database_backup.sql
+-rw-r--r--@ 1 joi  staff   51743 Sep  6 18:29 public_schema_backup.sql
+
+## Backup Verification
+✅ auth_reference_backup.sql - OK (    1075 lines, 31K)
+✅ data_only_backup.sql - OK (    1156 lines, 343K)
+✅ full_database_backup.sql - OK (    1873 lines, 51K)
+✅ public_schema_backup.sql - OK (    1634 lines, 51K)
+
+## Data Counts (for verification)
+Data count verification will be performed during migration validation
