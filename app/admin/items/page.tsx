@@ -94,6 +94,132 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
   ]);
   if (eObjs) console.error('[admin/items] query error', eObjs.message || eObjs);
   const objectList = Array.isArray(objs) ? objs : [];
+
+  // Group objects by their root ancestor local class (similar to chakai detail page)
+  let groupedObjects: Array<{ classId: string | null; classTitle: string; items: any[]; sortOrder: number | null }> = [];
+  if (objectList.length) {
+    // Get all Local Classes with their hierarchy info
+    const objectClassIds = objectList.map((o: any) => o.primary_local_class_id).filter(Boolean);
+    let classMetaById: Record<string, { title: string; sortOrder: number | null; parentId: string | null; rootId: string }> = {};
+    
+    if (objectClassIds.length) {
+      const { data: classes } = await db
+        .from('local_classes')
+        .select(`
+          id, label_en, label_ja, local_number, sort_order, parent_id
+        `)
+        .in('id', objectClassIds);
+      
+      // Get hierarchy info to find all ancestors
+      const allClassIds = (classes || []).map((c: any) => c.id);
+      const { data: hierarchy } = await db
+        .from('local_class_hierarchy')
+        .select('ancestor_id, descendant_id, depth')
+        .in('descendant_id', allClassIds);
+        
+      // Get all ancestor IDs (including roots) that we need to load
+      const ancestorIds = new Set(allClassIds);
+      for (const h of hierarchy || []) {
+        ancestorIds.add((h as any).ancestor_id);
+      }
+      
+      // Load ALL classes (objects' classes + their ancestors)
+      const { data: allClasses } = await db
+        .from('local_classes')
+        .select('id, label_en, label_ja, local_number, sort_order, parent_id')
+        .in('id', Array.from(ancestorIds));
+      
+      // Build hierarchy map
+      const parentMap: Record<string, string> = {};
+      for (const h of hierarchy || []) {
+        parentMap[(h as any).descendant_id] = (h as any).ancestor_id;
+      }
+      
+      // Find root classes and build metadata
+      for (const lc of allClasses || []) {
+        const classId = String((lc as any).id);
+        const title = String((lc as any).label_ja || (lc as any).label_en || (lc as any).local_number || classId);
+        
+        // Find the root ancestor for grouping (with cycle protection)
+        let rootId = classId;
+        let current = classId;
+        let depth = 0;
+        while (parentMap[current] && depth < 10) { // Max 10 levels to prevent infinite loops
+          rootId = parentMap[current];
+          current = parentMap[current];
+          depth++;
+        }
+        
+        classMetaById[classId] = {
+          title,
+          sortOrder: (lc as any).sort_order ?? null,
+          parentId: (lc as any).parent_id,
+          rootId
+        };
+      }
+    }
+    
+    // Group items by their root ancestor class
+    const byRootClass: Record<string, { meta: any; items: any[] }> = {};
+    
+    for (const o of objectList) {
+      const cid = (o as any).primary_local_class_id || null;
+      if (!cid) {
+        // Handle unclassified items
+        if (!byRootClass['__none__']) {
+          byRootClass['__none__'] = { 
+            meta: { title: 'Unclassified', sortOrder: 999999 }, 
+            items: [] 
+          };
+        }
+        byRootClass['__none__'].items.push(o);
+        continue;
+      }
+      
+      const classMeta = classMetaById[String(cid)];
+      if (!classMeta) continue;
+      
+      const rootId = classMeta.rootId;
+      const rootMeta = classMetaById[rootId];
+      
+      if (!byRootClass[rootId]) {
+        byRootClass[rootId] = {
+          meta: rootMeta || { title: '—', sortOrder: null },
+          items: []
+        };
+      }
+      byRootClass[rootId].items.push(o);
+    }
+    
+    // Convert to grouped array
+    for (const [rootId, group] of Object.entries(byRootClass)) {
+      if (rootId === '__none__') {
+        groupedObjects.push({ 
+          classId: null, 
+          classTitle: 'Unclassified', 
+          items: group.items, 
+          sortOrder: 999999 
+        });
+      } else {
+        groupedObjects.push({ 
+          classId: rootId, 
+          classTitle: group.meta.title, 
+          items: group.items, 
+          sortOrder: group.meta.sortOrder 
+        });
+      }
+    }
+    
+    groupedObjects.sort((a, b) => {
+      const sa = a.sortOrder == null ? Number.POSITIVE_INFINITY : Number(a.sortOrder);
+      const sb = b.sortOrder == null ? Number.POSITIVE_INFINITY : Number(b.sortOrder);
+      if (sa !== sb) return sa - sb;
+      return a.classTitle.localeCompare(b.classTitle);
+    });
+  } else {
+    // No objects, show empty state
+    groupedObjects = [];
+  }
   const ids = objectList.map((o: any) => o.id);
   let mediaByObject: Record<string, any[]> = {};
   if (ids.length) {
@@ -119,14 +245,23 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
         <a className={mode === 'compact' ? 'underline' : ''} href="/admin/items?mode=compact">Compact list</a>
         <a className={mode === 'gallery' ? 'underline' : ''} href="/admin/items?mode=gallery">Gallery list</a>
       </nav>
-      {!objectList.length ? (
+      {!groupedObjects.length ? (
         <div className="card" style={{ background: '#fff7ed', borderColor: '#fed7aa', marginBottom: 12 }}>
           {typeof count === 'number' ? `No items found (count=${count}).` : 'No items to display.'} Try refreshing or ingesting from Notion.
         </div>
       ) : null}
       {mode === 'compact' ? (
-        <div className="grid" style={{ gap: 8 }}>
-          {objectList.map((o: any) => {
+        <div className="space-y-6">
+          {!groupedObjects.length ? (
+            <div className="text-sm text-gray-600">No items to display.</div>
+          ) : (
+            groupedObjects.map((group) => (
+              <div key={String(group.classId || 'none')} className="space-y-3">
+                <h2 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-1">
+                  {group.classTitle} ({group.items.length})
+                </h2>
+                <div className="grid" style={{ gap: 8 }}>
+                  {group.items.map((o: any) => {
             const mediaSorted = (mediaByObject[o.id] || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
             const primary = mediaSorted[0];
             const thumb = primary?.uri;
@@ -161,15 +296,28 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
                       ))}
                     </select>
                     <button type="submit" className="button secondary" style={{ fontSize: '11px', padding: '1px 6px' }}>Save</button>
-                  </form>
+                    </form>
+                  </div>
+                </div>
+                    );
+                  })}
                 </div>
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
       ) : (
-        <div className="grid" style={{ gap: 12 }}>
-          {objectList.map((o: any) => {
+        <div className="space-y-8">
+          {!groupedObjects.length ? (
+            <div className="text-sm text-gray-600">No items to display.</div>
+          ) : (
+            groupedObjects.map((group) => (
+              <div key={String(group.classId || 'none')} className="space-y-4">
+                <h2 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                  {group.classTitle} ({group.items.length})
+                </h2>
+                <div className="grid" style={{ gap: 12 }}>
+                  {group.items.map((o: any) => {
             const mediaSorted = (mediaByObject[o.id] || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
             const thumb = mediaSorted[0]?.uri;
             return (
@@ -241,10 +389,14 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
                       </div>
                     ))}
                   </div>
+                  </div>
+                </div>
+                    );
+                  })}
                 </div>
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
       )}
     </main>
