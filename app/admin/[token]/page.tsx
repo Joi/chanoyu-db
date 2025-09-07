@@ -642,15 +642,18 @@ export default async function AdminObjectPage({ params, searchParams }: { params
                   <Input id="event_date" name="event_date" defaultValue={object.event_date || ''} />
                 </div>
 
+                {/* TEMPORARILY HIDDEN: Tag field not fully implemented yet (Issue #94)
+                    TODO: Re-enable when proper tagging functionality is complete
                 <div className="grid gap-2">
                   <Label htmlFor="tags">Tags (comma separated)</Label>
                   <Input id="tags" name="tags" defaultValue={(object.tags || []).join(', ')} />
                 </div>
+                */}
 
                 {isOwner ? (
                   <div className="grid gap-2">
                     <Label htmlFor="price">Price</Label>
-                    <PriceInput defaultValue={object.price ?? ''} />
+                    <PriceInput defaultValue={object.price ?? ''} canEdit={true} />
                   </div>
                 ) : null}
 
