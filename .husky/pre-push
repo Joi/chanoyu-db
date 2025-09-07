@@ -23,8 +23,7 @@ if command -v gh >/dev/null 2>&1; then
   open_issues=$(gh issue list --limit 1 --json number --jq 'length' 2>/dev/null || echo "0")
   if [ "$open_issues" -gt 0 ]; then
     last_msg="$(git log -1 --pretty=%B)"
-    echo "$last_msg" | grep -iE '\b(closes|fixes|resolves)\s+#[0-9]+' >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    if ! echo "$last_msg" | grep -iE '\b(closes|fixes|resolves)\s+#[0-9]+' >/dev/null 2>&1; then
       echo "⚠️  Reminder: Include 'Closes #<issue>' in your PR description so GitHub will auto-close the Issue."
     fi
   fi
