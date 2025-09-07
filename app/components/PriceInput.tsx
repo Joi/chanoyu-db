@@ -42,11 +42,9 @@ export default function PriceInput({ name = 'price', defaultValue, className, in
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
       />
-      {preview ? (
-        <span className="text-xs text-gray-600" title={shouldShowValue ? '' : canEdit ? 'Focus input to reveal price' : 'Click Show to reveal price'}>
-          {shouldShowValue ? preview : '••••••'}
-        </span>
-      ) : null}
+      <span className="text-xs text-gray-600" title={shouldShowValue ? '' : canEdit ? 'Focus input to reveal price' : 'Click Show to reveal price'}>
+        {shouldShowValue ? (preview || '—') : '••••••'}
+      </span>
       <button
         type="button"
         aria-label={hidden ? 'Show price' : 'Hide price'}
