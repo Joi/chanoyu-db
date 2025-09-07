@@ -35,20 +35,29 @@ async function createLocalClassAction(formData: FormData) {
   const { data: created, error } = await db.from('local_classes').insert({ token, label_en, label_ja, description, parent_id, sort_order }).select('id').single();
   if (error) {
     console.error('[local-classes:create] error', error.message || error);
-    redirect(`/admin/local-classes/new?error=create`);
+    const detail = encodeURIComponent(error.message || 'Unknown database error');
+    redirect(`/admin/local-classes/new?error=create&detail=${detail}`);
   }
   const classification_id = String(formData.get('existing_classification_id') || '').trim();
   if (created?.id && classification_id) {
-    await db.from('local_class_links').upsert({ local_class_id: created.id, classification_id });
+    const { error: linkError } = await db.from('local_class_links').upsert({ local_class_id: created.id, classification_id });
+    if (linkError) {
+      console.error('[local-classes:create] classification link error', linkError.message || linkError);
+      // Continue despite link error, as the main class was created successfully
+    }
   }
   revalidatePath('/admin/local-classes');
   redirect(`/admin/local-classes?saved=create`);
 }
 
-export default async function NewLocalClassPage() {
+export default async function NewLocalClassPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
   const ok = await requireAdmin();
   if (!ok) return redirect('/login');
   const db = supabaseAdmin();
+  
+  // Handle error messages from form submission
+  const error = typeof searchParams?.error === 'string' ? searchParams.error : null;
+  const detail = typeof searchParams?.detail === 'string' ? decodeURIComponent(searchParams.detail) : null;
   // For ease-of-use, provide pulldowns of existing classes and AAT/Wikidata
   const [{ data: classes }, { data: ext }] = await Promise.all([
     db.from('local_classes').select('id, label_en, label_ja, local_number').order('local_number').limit(1000),
@@ -57,6 +66,18 @@ export default async function NewLocalClassPage() {
   return (
     <main className="max-w-3xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-3">Create Local Class</h1>
+      {error === 'create' ? (
+        <div className="card bg-red-50 border-red-200 mb-3">
+          <div className="text-sm text-red-800">
+            <strong>Creation failed:</strong> Unable to create local class. Please check your input and try again.
+            {detail ? (
+              <div className="mt-1 text-xs opacity-75">
+                Details: {detail}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <form action={createLocalClassAction} className="grid gap-2 card">
         <label className="label">Label (EN)</label>
         <input name="label_en" className="input" />

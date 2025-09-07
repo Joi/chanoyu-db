@@ -85,6 +85,9 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
 
   // Handle any error messages from reorder operations
   const errorType = typeof searchParams?.error === 'string' ? searchParams.error : null;
+  
+  // Handle success messages
+  const saved = typeof searchParams?.saved === 'string' ? searchParams.saved : null;
 
   // Sanitize search query using the same logic as the secure API to prevent SQL injection
   const rawQuery = typeof searchParams?.q === 'string' ? String(searchParams!.q) : '';
@@ -267,6 +270,13 @@ export default async function LocalClassesIndex({ searchParams }: { searchParams
         <div className="card bg-yellow-50 border-yellow-200 mb-3">
           <div className="text-sm text-yellow-800">
             <strong>Normalization skipped:</strong> No top-level classes found.
+          </div>
+        </div>
+      ) : null}
+      {saved === 'create' ? (
+        <div className="card bg-green-50 border-green-200 mb-3">
+          <div className="text-sm text-green-800">
+            <strong>Success:</strong> Local class created successfully.
           </div>
         </div>
       ) : null}
