@@ -274,17 +274,23 @@ export default async function MediaPage({ params, searchParams }: { params: { id
         <>
           <form action={updateMediaAction} className="card space-y-2" style={{ marginTop: 12 }}>
             <input type="hidden" name="media_id" value={mediaRow.id} />
-            <label className="label">Copyright owner</label>
-            <input name="copyright_owner" className="input" defaultValue={mediaRow.copyright_owner || ''} />
-            <label className="label">License</label>
-            <select name="license_id" className="input" defaultValue={mediaRow.license_id || ''}>
-              <option value="">Select license</option>
-              {(licList || []).map((lic: any) => (
-                <option key={lic.id} value={lic.id}>{lic.code} — {lic.name}</option>
-              ))}
-            </select>
-            <label className="label">Rights/metadata note</label>
-            <textarea name="rights_note" className="textarea" defaultValue={mediaRow.rights_note || ''} />
+            <div className="space-y-1">
+              <label className="label">Copyright owner</label>
+              <input name="copyright_owner" className="input" defaultValue={mediaRow.copyright_owner || ''} />
+            </div>
+            <div className="space-y-1">
+              <label className="label">License</label>
+              <select name="license_id" className="input" defaultValue={mediaRow.license_id || ''}>
+                <option value="">Select license</option>
+                {(licList || []).map((lic: any) => (
+                  <option key={lic.id} value={lic.id}>{lic.code} — {lic.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="label">Rights/metadata note</label>
+              <textarea name="rights_note" className="textarea" defaultValue={mediaRow.rights_note || ''} />
+            </div>
             <div><button className="button" type="submit">Save</button></div>
           </form>
 
@@ -292,8 +298,10 @@ export default async function MediaPage({ params, searchParams }: { params: { id
             <h3 className="text-md font-semibold mb-2">Link this media to another object</h3>
             <form action={linkObjectAction} className="space-y-2">
               <input type="hidden" name="media_id" value={mediaRow.id} />
-              <label className="label">Object token</label>
-              <input name="object_token" className="input" placeholder="e.g., n887frf17nth" />
+              <div className="space-y-1">
+                <label className="label">Object token</label>
+                <input name="object_token" className="input" placeholder="e.g., n887frf17nth" />
+              </div>
               <button className="button" type="submit">Link object</button>
             </form>
           </div>
