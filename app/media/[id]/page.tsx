@@ -274,12 +274,12 @@ export default async function MediaPage({ params, searchParams }: { params: { id
         <>
           <form action={updateMediaAction} className="card space-y-2" style={{ marginTop: 12 }}>
             <input type="hidden" name="media_id" value={mediaRow.id} />
-            <div className="space-y-1">
-              <label className="label">Copyright owner</label>
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="label" style={{ display: 'block', marginBottom: '0.5rem' }}>Copyright owner</label>
               <input name="copyright_owner" className="input" defaultValue={mediaRow.copyright_owner || ''} />
             </div>
-            <div className="space-y-1">
-              <label className="label">License</label>
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="label" style={{ display: 'block', marginBottom: '0.5rem' }}>License</label>
               <select name="license_id" className="input" defaultValue={mediaRow.license_id || ''}>
                 <option value="">Select license</option>
                 {(licList || []).map((lic: any) => (
@@ -287,8 +287,8 @@ export default async function MediaPage({ params, searchParams }: { params: { id
                 ))}
               </select>
             </div>
-            <div className="space-y-1">
-              <label className="label">Rights/metadata note</label>
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="label" style={{ display: 'block', marginBottom: '0.5rem' }}>Rights/metadata note</label>
               <textarea name="rights_note" className="textarea" defaultValue={mediaRow.rights_note || ''} />
             </div>
             <div><button className="button" type="submit">Save</button></div>
@@ -298,8 +298,8 @@ export default async function MediaPage({ params, searchParams }: { params: { id
             <h3 className="text-md font-semibold mb-2">Link this media to another object</h3>
             <form action={linkObjectAction} className="space-y-2">
               <input type="hidden" name="media_id" value={mediaRow.id} />
-              <div className="space-y-1">
-                <label className="label">Object token</label>
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="label" style={{ display: 'block', marginBottom: '0.5rem' }}>Object token</label>
                 <input name="object_token" className="input" placeholder="e.g., n887frf17nth" />
               </div>
               <button className="button" type="submit">Link object</button>

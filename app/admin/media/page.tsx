@@ -270,16 +270,16 @@ export default async function MediaAdminPage() {
               <form action={saveMedia} style={{ marginTop: 8 }}>
                 <input type="hidden" name="id" value={m.id} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-                  <div className="space-y-1">
-                    <label className="label" htmlFor={`copyright_owner_${m.id}`}>Copyright owner</label>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label className="label" htmlFor={`copyright_owner_${m.id}`} style={{ display: 'block', marginBottom: '0.25rem' }}>Copyright owner</label>
                     <input id={`copyright_owner_${m.id}`} name="copyright_owner" className="input" placeholder="Copyright owner" defaultValue={m.copyright_owner || ''} style={{ fontSize: 14 }} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="label" htmlFor={`rights_note_${m.id}`}>Rights note</label>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label className="label" htmlFor={`rights_note_${m.id}`} style={{ display: 'block', marginBottom: '0.25rem' }}>Rights note</label>
                     <input id={`rights_note_${m.id}`} name="rights_note" className="input" placeholder="Rights note" defaultValue={m.rights_note || ''} style={{ fontSize: 14 }} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="label" htmlFor={`license_id_${m.id}`}>License</label>
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <label className="label" htmlFor={`license_id_${m.id}`} style={{ display: 'block', marginBottom: '0.25rem' }}>License</label>
                     <select id={`license_id_${m.id}`} name="license_id" className="input" defaultValue={m.license_id || ''} style={{ fontSize: 14 }}>
                       <option value="">(none)</option>
                       {(ccLicenses || []).map((lic: any) => (
