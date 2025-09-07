@@ -650,7 +650,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
                 {isOwner ? (
                   <div className="grid gap-2">
                     <Label htmlFor="price">Price</Label>
-                    <PriceInput defaultValue={object.price ?? ''} />
+                    <PriceInput defaultValue={object.price ?? ''} canEdit={true} />
                   </div>
                 ) : null}
 
