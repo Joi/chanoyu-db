@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 import { currentUserEmail, requireAdmin, requireOwner } from '@/lib/auth';
 import Link from 'next/link';
 import Image from 'next/image';
+import ChakaiPhotoSection from './ChakaiPhotoSection';
 
 export default async function ChakaiDetailPage({ params }: { params: { id: string } }) {
   const raw = params.id;
@@ -340,78 +341,13 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
           </ul>
         )}
       </section>
-      <section className="mb-6">
-        <h2 className="font-medium">Attachments <span className="text-sm text-gray-700" lang="ja">/ 添付ファイル</span></h2>
-        {!chakaiMedia?.length ? <div className="text-sm">—</div> : (
-          <div className="grid gap-3">
-            {chakaiMedia.map((media: any) => {
-              const isPDF = media.file_type === 'application/pdf' || media.uri.toLowerCase().endsWith('.pdf');
-              const filename = media.original_filename || media.uri.split('/').pop() || 'Download';
-              const isPrivate = media.visibility === 'private';
-              
-              return (
-                <div key={media.id} className="flex items-center gap-3 p-3 border rounded">
-                  <div className="flex-shrink-0">
-                    {isPDF ? (
-                      <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
-                        <span className="text-red-600 text-xs font-medium">PDF</span>
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                        <span className="text-gray-600 text-xs font-medium">FILE</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <div className="text-sm font-medium">{filename}</div>
-                    {isPrivate && (
-                      <div className="text-xs text-gray-600 flex items-center gap-1">
-                        <span>🔒</span>
-                        <span>Private - attendees only</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0">
-                    {isPDF ? (
-                      <div className="flex gap-2">
-                        <a 
-                          href={`/api/media/${media.id}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="text-xs underline text-blue-600"
-                        >
-                          View
-                        </a>
-                        <a 
-                          href={`/api/media/${media.id}?download=true`} 
-                          download={filename}
-                          className="text-xs underline text-blue-600"
-                        >
-                          Download
-                        </a>
-                      </div>
-                    ) : (
-                      <a 
-                        href={`/api/media/${media.id}`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="text-xs underline text-blue-600"
-                      >
-                        View
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {!canShowPrivateMedia && (
-              <div className="text-xs text-gray-600 p-2 bg-gray-50 rounded">
-                <span>💡</span> Some attachments may be restricted to event attendees only.
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+      <ChakaiPhotoSection 
+        chakai={c}
+        media={chakaiMedia}
+        canShowPrivateMedia={canShowPrivateMedia}
+        userEmail={email}
+        isPrivileged={isPrivileged}
+      />
       <section className="mb-6">
         <h2 className="font-medium">Items used</h2>
         {!itemObjects?.length ? <div className="text-sm">—</div> : (
