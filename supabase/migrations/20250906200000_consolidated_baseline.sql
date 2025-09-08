@@ -93,6 +93,9 @@ create table if not exists accounts (
 -- Local Classes (Metaclassification) 
 create sequence if not exists local_class_local_seq;
 
+-- Media sequence
+create sequence if not exists media_local_seq;
+
 create table if not exists local_classes (
     id uuid primary key default gen_random_uuid(),
     token text unique,
@@ -242,7 +245,9 @@ create table if not exists local_class_hierarchy (
 create table if not exists local_class_links (
     local_class_id uuid not null references local_classes(id) on delete cascade,
     classification_id uuid not null references classifications(id) on delete cascade,
-    role text not null default 'narrower',
+    is_preferred boolean default false,
+    confidence smallint,
+    note text,
     primary key (local_class_id, classification_id)
 );
 
@@ -345,6 +350,15 @@ begin
         new.local_number := 'ITO-C-' || lpad(nextval('local_class_local_seq')::text, 5, '0');
     end if;
     return new;
+end;
+$$ language plpgsql security definer set search_path = '';
+
+create or replace function set_media_local_number() returns trigger as $$
+begin
+  if new.local_number is null then
+    new.local_number := 'ITO-M-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('public.media_local_seq')::text, 5, '0');
+  end if;
+  return new;
 end;
 $$ language plpgsql security definer set search_path = '';
 
@@ -472,6 +486,16 @@ do $$ begin
     ) then 
         create trigger lc_before_update_parent_trigger before
         update on local_classes for each row execute function lc_before_update_parent();
+    end if;
+end $$;
+
+do $$ begin
+    if not exists (
+        select 1 from pg_trigger
+        where tgname = 'trg_media_local_number'
+    ) then
+        create trigger trg_media_local_number before
+        insert on media for each row execute function set_media_local_number();
     end if;
 end $$;
 
