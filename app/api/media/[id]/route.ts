@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     console.log('[media] Fetching media record for ID:', mediaId);
     const { data: media, error: mediaError } = await db
       .from('media')
-      .select('id, uri, file_type, original_filename, storage_path, bucket')
+      .select('id, uri, file_type, original_filename, storage_path, bucket, visibility')
       .eq('id', mediaId)
       .single();
 
@@ -29,41 +29,42 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     console.log('[media] Found media record:', media);
 
-    // Get the chakai this media is linked to
-    const { data: linkData, error: linkError } = await db
-      .from('chakai_media_links')
-      .select('chakai_id, chakai:chakai!inner(id, visibility)')
-      .eq('media_id', mediaId)
-      .single();
-
-    if (linkError || !linkData) {
-      console.error('[media] Media link not found:', linkError);
-      return NextResponse.json({ error: 'Media not found' }, { status: 404 });
-    }
-
-    const chakai = linkData.chakai as any;
-    
-    // Apply the same access control logic as the main app
+    // Apply access control based on media visibility and chakai links
     let canAccessMedia = false;
 
     if (isPrivileged) {
       // Admins/owners can access all media
       canAccessMedia = true;
-    } else if (chakai.visibility === 'open') {
-      // For open chakai, users can access media (simplified for now)
-      canAccessMedia = true;
-    } else if (chakai.visibility === 'members' && email) {
-      // For members-only chakai, check if user is an attendee
-      const { data: attendeeCheck } = await db
-        .from('chakai_attendees')
-        .select('chakai_id, accounts!inner(email)')
-        .eq('chakai_id', chakai.id)
-        .eq('accounts.email', email)
-        .single();
-
-      if (attendeeCheck) {
-        // Attendees can access media
+    } else {
+      // Check if media has public visibility
+      if (media.visibility === 'public') {
         canAccessMedia = true;
+      } else if (media.visibility === 'private' && email) {
+        // For private media, check if user has access through chakai attendance
+        const { data: chakaiLinks } = await db
+          .from('chakai_media_links')
+          .select('chakai_id, chakai:chakai!inner(id, visibility)')
+          .eq('media_id', mediaId);
+
+        for (const linkData of chakaiLinks || []) {
+          const chakai = linkData.chakai as any;
+          
+          if (chakai.visibility === 'open') {
+            canAccessMedia = true;
+            break;
+          } else if (chakai.visibility === 'members') {
+            const { data: attendeeCheck } = await db
+              .from('chakai_attendees')
+              .select('chakai_id, accounts!inner(email)')
+              .eq('chakai_id', chakai.id)
+              .eq('accounts.email', email);
+
+            if (attendeeCheck && attendeeCheck.length > 0) {
+              canAccessMedia = true;
+              break;
+            }
+          }
+        }
       }
     }
 

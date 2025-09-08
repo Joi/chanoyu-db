@@ -242,8 +242,8 @@ export default async function MediaPage({ params, searchParams }: { params: { id
       ) : null}
       {mediaRow.uri ? (
         <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f5f5f5', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
-          <a href={`/api/media/${mediaRow.id}`} target="_blank" rel="noreferrer">
-            <Image src={`/api/media/${mediaRow.id}`} alt={associations[0]?.object?.title || 'Image'} fill sizes="(max-width: 768px) 100vw, 640px" style={{ objectFit: 'contain', background: '#fff' }} />
+          <a href={mediaRow.visibility === 'public' ? mediaRow.uri : `/api/media/${mediaRow.id}`} target="_blank" rel="noreferrer">
+            <Image src={mediaRow.visibility === 'public' ? mediaRow.uri : `/api/media/${mediaRow.id}`} alt={associations[0]?.object?.title || 'Image'} fill sizes="(max-width: 768px) 100vw, 640px" style={{ objectFit: 'contain', background: '#fff' }} />
           </a>
         </div>
       ) : null}
