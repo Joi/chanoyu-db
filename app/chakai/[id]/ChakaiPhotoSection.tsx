@@ -82,9 +82,7 @@ export default function ChakaiPhotoSection({
                 <div key={photo.id} className="relative group">
                   <div className="relative aspect-square bg-gray-100 rounded overflow-hidden">
                     <a 
-                      href={`/api/media/${photo.id}`} 
-                      target="_blank" 
-                      rel="noreferrer"
+                      href={`/media/${photo.id}`} 
                       className="block w-full h-full"
                     >
                       <Image 
@@ -102,7 +100,9 @@ export default function ChakaiPhotoSection({
                     )}
                   </div>
                   <div className="mt-1 text-xs text-gray-600 truncate">
-                    {filename}
+                    <a href={`/media/${photo.id}`} className="hover:underline">
+                      {filename}
+                    </a>
                   </div>
                 </div>
               )
