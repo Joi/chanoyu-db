@@ -114,7 +114,10 @@ export default async function ItemsPage({ searchParams }: { searchParams?: { [ke
 
   return (
     <main className="max-w-5xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">Items</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold">Items</h1>
+        <a href="/admin/items/new" className="button">New Item</a>
+      </div>
       <nav className="mb-4" style={{ display: 'flex', gap: 12 }}>
         <a className={mode === 'compact' ? 'underline' : ''} href="/admin/items?mode=compact">Compact list</a>
         <a className={mode === 'gallery' ? 'underline' : ''} href="/admin/items?mode=gallery">Gallery list</a>
