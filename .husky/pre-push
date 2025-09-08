@@ -15,7 +15,13 @@ done
 
 if [ "$run_ci" = "1" ]; then
   echo "Running CI (lint+typecheck+tests+build) locally before push..."
-  pnpm ci:local || exit 1
+  pnpm ci:local
+  ci_exit_code=$?
+  if [ $ci_exit_code -ne 0 ]; then
+    echo "❌ CI failed with exit code $ci_exit_code"
+    exit 1
+  fi
+  echo "✅ CI passed successfully"
 fi
 
 # Reminder: make sure commit/PR body includes closing keywords (only if there are open issues)
@@ -23,10 +29,13 @@ if command -v gh >/dev/null 2>&1; then
   open_issues=$(gh issue list --limit 1 --json number --jq 'length' 2>/dev/null || echo "0")
   if [ "$open_issues" -gt 0 ]; then
     last_msg="$(git log -1 --pretty=%B)"
-    if ! echo "$last_msg" | grep -iE '\b(closes|fixes|resolves)\s+#[0-9]+' >/dev/null 2>&1; then
+    if echo "$last_msg" | grep -iE '\b(closes|fixes|resolves)\s+#[0-9]+' >/dev/null 2>&1; then
+      echo "✅ Commit message includes issue closing keywords"
+    else
       echo "⚠️  Reminder: Include 'Closes #<issue>' in your PR description so GitHub will auto-close the Issue."
     fi
   fi
 fi
 
+echo "✅ Pre-push hook completed successfully"
 exit 0

@@ -132,9 +132,39 @@ Use the project-manager subagent to read @.agent-os/product/roadmap.md and mark 
 
 </step>
 
-<step number="5" subagent="project-manager" name="document_recap">
+<step number="5" subagent="project-manager" name="archive_completed_spec">
 
-### Step 5: Create Recap Document
+### Step 5: Archive Completed Specification
+
+Use the project-manager subagent to move the completed spec folder to .agent-os/backups/specs/ now that implementation is complete and will be merged.
+
+<instructions>
+  ACTION: Use project-manager subagent
+  REQUEST: "Archive completed spec to backups:
+            - Move [SPEC_FOLDER_PATH] to .agent-os/backups/specs/
+            - Preserve all documentation for historical reference
+            - This keeps active specs directory clean"
+  WAIT: For spec archival completion
+  PROCESS: Verify spec moved to backups location
+</instructions>
+
+<archive_criteria>
+  <timing>after all tasks completed and PR created</timing>
+  <location>.agent-os/backups/specs/</location>
+  <preservation>maintain all files and subdirectories</preservation>
+</archive_criteria>
+
+<purpose>
+  <active_specs>keep only in-progress work visible</active_specs>
+  <historical_access>maintain completed specs for reference</historical_access>
+  <organization>clear separation of active vs completed work</organization>
+</purpose>
+
+</step>
+
+<step number="6" subagent="project-manager" name="document_recap">
+
+### Step 6: Create Recap Document
 
 Use the project-manager subagent to create a recap document in .agent-os/recaps/ folder that summarizes what was built for this spec.
 
@@ -177,9 +207,9 @@ Use the project-manager subagent to create a recap document in .agent-os/recaps/
 
 </step>
 
-<step number="7" subagent="project-manager" name="completion_summary">
+<step number="8" subagent="project-manager" name="completion_summary">
 
-### Step 7: Completion Summary
+### Step 8: Completion Summary
 
 Use the project-manager subagent to create a structured summary message with emojis showing what was done, any issues, testing instructions, and PR link.
 
@@ -225,9 +255,9 @@ Use the project-manager subagent to create a structured summary message with emo
 
 </step>
 
-<step number="8" subagent="project-manager" name="completion_notification">
+<step number="9" subagent="project-manager" name="completion_notification">
 
-### Step 8: Task Completion Notification
+### Step 9: Task Completion Notification
 
 Use the project-manager subagent to play a system sound to alert the user that tasks are complete.
 

@@ -43,12 +43,12 @@ export default async function AdminHome() {
         <Card href="/admin/chakai" title="Chakai" subtitle="茶会 — Oversee gatherings" />
         <Card href="/admin/tea-rooms" title="Tea Rooms" subtitle="茶室 — Rooms and places" />
         <Card href="/admin/items" title="Items" subtitle="道具 — Inventory and details" />
+        <Card href="/admin/items/new" title="New Item" subtitle="新アイテム — Create new item" />
         <Card href="/admin/media" title="Media" subtitle="メディア — Library and linking" />
         <Card href="/admin/local-classes" title="Local Classes" subtitle="ローカル分類 — Project taxonomy (preferred external link)" />
         <Card href="/admin/classifications" title="Classifications" subtitle="分類 — AAT/Wikidata authorities" />
         <Card href="/admin/tea-schools" title="Tea Schools" subtitle="流派 — Lineages and schools" />
         <Card href="/lookup" title="Lookup" subtitle="用語検索 — Category lookup" />
-        {/* Removed direct create object shortcut; use Items page */}
       </section>
       <form action={signOut} className="mt-6">
         <button className="text-sm underline" type="submit">Sign out</button>
