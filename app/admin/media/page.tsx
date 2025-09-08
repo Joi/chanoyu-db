@@ -52,23 +52,6 @@ async function updateVisibility(formData: FormData) {
   revalidatePath('/admin/media');
 }
 
-async function bulkUpdateVisibility(formData: FormData) {
-  'use server';
-  const ok = await requireAdmin();
-  if (!ok) return redirect('/login');
-  const visibility = String(formData.get('visibility') || 'public');
-  const selectedIds = String(formData.get('selectedIds') || '').split(',').filter(Boolean);
-  if (!selectedIds.length) return;
-  const db = supabaseAdmin();
-  const { error } = await db
-    .from('media')
-    .update({ visibility })
-    .in('id', selectedIds);
-  if (error) {
-    console.error('[admin/media] bulk visibility update error', error.message || error);
-  }
-  revalidatePath('/admin/media');
-}
 
 async function deleteMedia(formData: FormData) {
   'use server';
@@ -124,34 +107,6 @@ export default async function MediaAdminPage() {
     <main className="max-w-5xl mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Media Management</h1>
       
-      {/* Bulk Operations Bar */}
-      <div className="card mb-4" style={{ background: '#f8fafc' }}>
-        <h3 className="text-sm font-medium mb-3">Bulk Operations</h3>
-        <div className="flex items-center gap-4">
-          <button 
-            id="selectAll" 
-            className="text-sm text-blue-600" 
-            type="button"
-          >
-            Select All
-          </button>
-          <div className="flex items-center gap-2">
-            <form action={bulkUpdateVisibility} className="flex items-center gap-2">
-              <input type="hidden" name="selectedIds" id="selectedIds" />
-              <select name="visibility" className="input text-sm" style={{ padding: '4px 8px' }}>
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-              </select>
-              <button type="submit" className="btn-secondary text-sm" style={{ padding: '4px 12px' }}>
-                Update Selected
-              </button>
-            </form>
-          </div>
-          <div className="text-sm text-gray-500">
-            <span id="selectedCount">0</span> items selected
-          </div>
-        </div>
-      </div>
 
       {/* Filter Bar */}
       <div className="card mb-4" style={{ background: '#f8fafc' }}>
@@ -183,14 +138,6 @@ export default async function MediaAdminPage() {
           const isImage = m.file_type?.startsWith('image/') || (!isPDF && m.uri);
           return (
           <div key={m.id} className="card media-item" data-visibility={m.visibility} data-file-type={isPDF ? 'pdf' : isImage ? 'image' : 'other'}>
-            {/* Selection Checkbox */}
-            <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }}>
-              <input 
-                type="checkbox" 
-                className="media-checkbox" 
-                data-id={m.id}
-              />
-            </div>
             
             {/* Media Preview */}
             <div style={{ position: 'relative', width: '100%', paddingTop: '66%', background: '#f5f5f5', borderRadius: 4, overflow: 'hidden' }}>
@@ -305,21 +252,6 @@ export default async function MediaAdminPage() {
       <script dangerouslySetInnerHTML={{
         __html: `
           document.addEventListener('DOMContentLoaded', function() {
-            function updateSelectedCount() {
-              const checkboxes = document.querySelectorAll('.media-checkbox:checked');
-              const count = checkboxes.length;
-              document.getElementById('selectedCount').textContent = count;
-              const selectedIds = Array.from(checkboxes).map(cb => cb.getAttribute('data-id'));
-              document.getElementById('selectedIds').value = selectedIds.join(',');
-            }
-            
-            function toggleSelectAll() {
-              const checkboxes = document.querySelectorAll('.media-checkbox');
-              const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-              checkboxes.forEach(cb => cb.checked = !allChecked);
-              updateSelectedCount();
-            }
-            
             function filterMedia() {
               const visibilityFilter = document.getElementById('visibilityFilter').value;
               const fileTypeFilter = document.getElementById('fileTypeFilter').value;
@@ -341,12 +273,8 @@ export default async function MediaAdminPage() {
             }
             
             // Attach event listeners
-            document.getElementById('selectAll').addEventListener('click', toggleSelectAll);
             document.getElementById('visibilityFilter').addEventListener('change', filterMedia);
             document.getElementById('fileTypeFilter').addEventListener('change', filterMedia);
-            document.querySelectorAll('.media-checkbox').forEach(cb => {
-              cb.addEventListener('change', updateSelectedCount);
-            });
           });
         `
       }} />
