@@ -363,8 +363,6 @@ async function run() {
     if (!notes && summaryEnExplicit) notes = summaryEnExplicit;
     if (!notes_ja && summaryJaExplicit) notes_ja = summaryJaExplicit;
     const url = propText(getProp(props, ['URL', 'Url']) || {});
-    const tagsCsv = propText(getProp(props, ['Tags', 'タグ']) || {});
-    const tags = tagsCsv ? tagsCsv.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
     const tokenProp = props[TOKEN_PROP];
     const urlProp = props[URL_PROP];
     const existingTokenRaw = propText(tokenProp) || propText(urlProp);
@@ -430,7 +428,6 @@ async function run() {
       if (notes) upsert.notes = notes;
       if (notes_ja) upsert.notes_ja = notes_ja;
       if (url) upsert.url = url;
-      if (tags && tags.length) upsert.tags = tags;
 
       const { data: existingByToken } = await db.from('objects').select('id, token').eq('token', token).maybeSingle();
       if (existingByToken?.id) {
