@@ -26,15 +26,12 @@ export default async function ObjectPage({ params }: Props) {
     .from('objects')
     .select(
       `id, token, local_number, title, title_ja, visibility,
-       price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url,
+       price, store, store_ja, location, location_ja, craftsman, craftsman_ja, event_date, notes, notes_ja, url,
        primary_local_class_id`
     )
     .eq('token', token)
     .single();
 
-  // Debug: Log auth and data state (remove this later)
-  console.log('DEBUG auth:', { isOwner, isAdmin, visibility: data?.visibility, error: error?.message, hasData: !!data });
-  
   // If not an object token, try locations (tea rooms) or chakai and redirect
   if (error || !data || (data.visibility !== 'public' && !isOwner && !isAdmin)) {
     // Tea room by token → redirect to tea room page
@@ -183,12 +180,6 @@ export default async function ObjectPage({ params }: Props) {
                 <div>
                   <dt className="text-sm text-muted-foreground">URL</dt>
                   <dd><a className="underline" href={data.url} target="_blank" rel="noreferrer">{data.url}</a></dd>
-                </div>
-              ) : null}
-              {Array.isArray(data.tags) && data.tags.length ? (
-                <div>
-                  <dt className="text-sm text-muted-foreground">Tags</dt>
-                  <dd>{data.tags.join(', ')}</dd>
                 </div>
               ) : null}
               {(isAdmin || isOwner) && (data.store || data.store_ja) ? (
