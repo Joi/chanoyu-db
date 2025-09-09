@@ -13,6 +13,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'prod-files-secure.s3.us-west-2.amazonaws.com' },
       // Creative Commons license buttons
       { protocol: 'https', hostname: 'licensebuttons.net' },
+      // Test images for local development
+      { protocol: 'https', hostname: 'picsum.photos' },
     ],
   },
 };
