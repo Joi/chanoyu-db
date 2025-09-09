@@ -39,7 +39,8 @@ export default async function AdminHome() {
         </p>
       </header>
       <section className="grid" style={{ gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-        <Card href="/admin/members" title="Members" subtitle="会員 — People and profiles" />
+        <Card href="/members" title="Members" subtitle="会員 — Social directory and connections" />
+        <Card href="/admin/members" title="Manage Members" subtitle="会員管理 — Add, edit, and manage user accounts" />
         <Card href="/admin/chakai" title="Chakai" subtitle="茶会 — Oversee gatherings" />
         <Card href="/admin/tea-rooms" title="Tea Rooms" subtitle="茶室 — Rooms and places" />
         <Card href="/admin/items" title="Items" subtitle="道具 — Inventory and details" />

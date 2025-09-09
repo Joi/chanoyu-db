@@ -4,6 +4,7 @@ import { currentUserEmail, requireAdmin, requireOwner } from '@/lib/auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import ChakaiPhotoSection from './ChakaiPhotoSection';
+import MemberDiscovery from '@/app/components/MemberDiscovery';
 
 export default async function ChakaiDetailPage({ params }: { params: { id: string } }) {
   const raw = params.id;
@@ -77,7 +78,7 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
   }
   const { data: attendees } = await db
     .from('chakai_attendees')
-    .select('accounts(id, full_name_en, full_name_ja, email)')
+    .select('accounts(id, full_name_en, full_name_ja, email, profile_picture_id)')
     .eq('chakai_id', c.id);
 
   // Get media attachments for this chakai with visibility controls
@@ -117,10 +118,10 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
     .from('chakai_items')
     .select('objects(id, token, title, title_ja, local_number, primary_local_class_id)')
     .eq('chakai_id', c.id);
-  const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects);
+  const itemObjects: any[] = (itemRows || []).map((r: any) => r.objects).filter(Boolean);
   let thumbByObject: Record<string, string | null> = {};
   if (itemObjects.length) {
-    const ids = itemObjects.map((o: any) => o.id);
+    const ids = itemObjects.filter(o => o && o.id).map((o: any) => o.id);
     const { data: mediaRows } = await db
       .from('media')
       .select('object_id, uri, sort_order')
@@ -330,16 +331,11 @@ export default async function ChakaiDetailPage({ params }: { params: { id: strin
         </section>
       ) : null}
       <section className="mb-6">
-        <h2 className="font-medium">Attendees</h2>
-        {!attendees?.length ? <div className="text-sm">—</div> : (
-          <ul className="list-disc pl-5 text-sm">
-            {attendees!.map((r: any, i: number) => {
-              const a = (r as any).accounts;
-              const name = a.full_name_en || a.full_name_ja || a.email;
-              return <li key={i}>{name}</li>;
-            })}
-          </ul>
-        )}
+        <MemberDiscovery 
+          initialMembers={attendees?.map((r: any) => r.accounts).filter(Boolean) || []}
+          currentUserEmail={email}
+          title="Attendees"
+        />
       </section>
       <ChakaiPhotoSection 
         chakai={c}
