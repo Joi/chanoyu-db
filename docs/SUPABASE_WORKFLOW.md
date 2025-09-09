@@ -230,6 +230,8 @@ SUPABASE_SERVICE_ROLE_KEY=[production-service-role-key]
 - Use feature branches for all database changes
 - Test application thoroughly after migrations
 - Use `LOCAL_DATABASE_URL` for all SQL operations during development
+- Verify schema consistency between local and production before releases
+- Remove unused columns/fields from application code if they don't exist in production
 
 ### DON'T ❌
 
@@ -238,6 +240,7 @@ SUPABASE_SERVICE_ROLE_KEY=[production-service-role-key]
 - Don't apply untested migrations to remote database
 - Don't commit secrets or production credentials
 - Don't use remote database for development or testing
+- Don't reference database columns in application code without verifying they exist in production
 
 ## Troubleshooting
 
@@ -278,6 +281,31 @@ supabase db link --project-ref ropxawmhtemygmrojlhu
 # Check connection
 supabase projects list
 ```
+
+### Schema Drift Issues
+
+If you encounter errors like "column does not exist" in production:
+
+```bash
+# Check schema differences between local and remote
+supabase db diff --remote
+
+# Identify missing columns or tables
+# Remove references to non-existent columns from application code
+# OR create migration to add missing columns to production
+
+# Example: Remove unused column references
+# Instead of: SELECT id, title, tags FROM objects
+# Use: SELECT id, title FROM objects
+
+# Apply missing migrations to production (with caution)
+supabase db push --remote
+```
+
+**Common causes of schema drift:**
+- Local development schema includes columns not in production
+- Migrations created locally but not applied to production
+- Manual schema changes in local development without migrations
 
 ## CLI Commands Reference
 
