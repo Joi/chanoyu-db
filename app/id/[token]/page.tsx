@@ -32,6 +32,9 @@ export default async function ObjectPage({ params }: Props) {
     .eq('token', token)
     .single();
 
+  // Debug: Log auth and data state (remove this later)
+  console.log('DEBUG auth:', { isOwner, isAdmin, visibility: data?.visibility, error: error?.message, hasData: !!data });
+  
   // If not an object token, try locations (tea rooms) or chakai and redirect
   if (error || !data || (data.visibility !== 'public' && !isOwner && !isAdmin)) {
     // Tea room by token → redirect to tea room page
