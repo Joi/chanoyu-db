@@ -35,7 +35,6 @@ const objectUpdateSchema = z.object({
   notes: z.string().max(5000).optional(),
   notes_ja: z.string().max(5000).optional(),
   url: z.string().url().max(500).optional().or(z.literal('')),
-  tags: z.string().optional(),
   store: z.string().max(255).optional(),
   store_ja: z.string().max(255).optional(),
   location: z.string().max(255).optional(),
@@ -343,14 +342,12 @@ async function updateObjectAction(formData: FormData) {
   const notes = String(formData.get('notes') || '');
   const notes_ja = String(formData.get('notes_ja') || '');
   const url = String(formData.get('url') || '');
-  const tagsRaw = String(formData.get('tags') || '');
   const store = String(formData.get('store') || '');
   const store_ja = String(formData.get('store_ja') || '');
   const location = String(formData.get('location') || '');
   const location_ja = String(formData.get('location_ja') || '');
   const priceStr = String(formData.get('price') || '').trim();
   const price = priceStr ? Number(priceStr) : null;
-  const tags = tagsRaw.trim() ? tagsRaw.split(',').map((s) => s.trim()).filter((s) => s.length > 0) : null;
   const db = supabaseAdmin();
   const { data: obj } = await db.from('objects').select('id').eq('token', token).single();
   if (!obj) return;
@@ -364,7 +361,6 @@ async function updateObjectAction(formData: FormData) {
     notes: toNull(notes),
     notes_ja: toNull(notes_ja),
     url: toNull(url),
-    tags,
   };
   if (okAdmin || okOwner) {
     update.store = toNull(store);
@@ -406,7 +402,7 @@ export default async function AdminObjectPage({ params, searchParams }: { params
     db
       .from('objects')
       .select(
-        `id, token, local_number, title, title_ja, price, store, store_ja, location, location_ja, tags, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility,
+        `id, token, local_number, title, title_ja, price, store, store_ja, location, location_ja, craftsman, craftsman_ja, event_date, notes, notes_ja, url, visibility,
          primary_local_class_id`
       )
       .eq('token', token)
