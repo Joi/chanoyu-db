@@ -21,11 +21,13 @@ As a user, I want to connect with other members I've met at chakai events, so th
 
 When I attend a chakai with other members, I should be able to send connection requests to other attendees. Recipients can accept or decline these requests, and I should see pending requests on my profile page. This creates a social network within the tea ceremony community.
 
-### Database Cleanup
+### Database changes and cleanup
 
 As a system administrator, I want to remove unused database fields and properly structure media storage, so that the database remains clean and performant.
 
 The unused tag field should be completely removed from the database schema, and profile pictures should be stored using a consistent media system with proper access controls.
+
+Any photo should be taggable with members by members themselves or connections of members. The tagged people on any media object should appear to members themselves and their connections. The tags represent people who are in the photo.
 
 ## Spec Scope
 
@@ -33,11 +35,11 @@ The unused tag field should be completely removed from the database schema, and 
 2. **Friends Connection System** - Create friends table with connection requests, acceptance, and display of social connections
 3. **Database Schema Cleanup** - Remove tag field from relevant tables and establish proper media storage structure
 4. **Connection Request UI** - Add interface for sending, viewing, and managing friend requests on profile pages
+5. **Member Tags on Media Objects** - Add a member_tag element for media objects that show connections between members and media objects.
 
 ## Out of Scope
 
 - Advanced social features (messaging, groups, etc.)
-- Photo tagging or recognition features
 - Bulk connection imports
 - Complex privacy controls beyond basic visibility
 - Migration of existing tag data (field will be removed)
@@ -48,3 +50,4 @@ The unused tag field should be completely removed from the database schema, and 
 2. Users can send and accept connection requests with other members, with requests managed through profile pages
 3. Database schema is cleaned up with tag field removed and profile media properly structured
 4. Social connections are visible and manageable through user interface
+5. People can tag photos with their own or their connections member names
