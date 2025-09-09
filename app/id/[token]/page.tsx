@@ -17,6 +17,10 @@ export default async function ObjectPage({ params }: Props) {
   const { token } = params;
 
   const db = supabaseAdmin();
+  
+  // Check auth first
+  const [isOwner, isAdmin] = await Promise.all([requireOwner(), requireAdmin()]);
+  
   // Fetch object core fields first (avoid ambiguous media join)
   const { data, error } = await db
     .from('objects')
@@ -29,7 +33,7 @@ export default async function ObjectPage({ params }: Props) {
     .single();
 
   // If not an object token, try locations (tea rooms) or chakai and redirect
-  if (error || !data || data.visibility !== 'public') {
+  if (error || !data || (data.visibility !== 'public' && !isOwner && !isAdmin)) {
     // Tea room by token → redirect to tea room page
     const { data: loc } = await db
       .from('locations')
@@ -50,8 +54,6 @@ export default async function ObjectPage({ params }: Props) {
     }
     return notFound();
   }
-
-  const [isOwner, isAdmin] = await Promise.all([requireOwner(), requireAdmin()]);
 
   // Fetch media separately to avoid relationship ambiguity
   const { data: mediaRows } = await db
