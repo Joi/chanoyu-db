@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 
 type ObjectSearchResult = {
   id: string;
@@ -76,6 +77,9 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
 
   return (
     <nav className="flex gap-3 items-center" ref={ref}>
+      <Link href="/" className="font-semibold text-lg hover:opacity-90 mr-4">
+        Ito Chanoyu
+      </Link>
       <button
         className="md:hidden inline-flex items-center justify-center rounded-lg px-3 py-2 border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         aria-label="Open menu"
@@ -83,11 +87,11 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
       >
         Menu
       </button>
-      <a className="font-medium text-sm hidden md:inline" href="/members">Members</a>
-      <a className="font-medium text-sm hidden md:inline" href="/objects">Objects</a>
-      <a className="font-medium text-sm hidden md:inline" href="/chakai">Chakai</a>
-      <a className="font-medium text-sm hidden md:inline" href="/media">Media</a>
-      <a className="hidden md:inline btn btn-outline text-sm" href="/lookup" role="button">Lookup</a>
+      <Link className="font-medium text-sm hidden md:inline" href="/members">Members</Link>
+      <Link className="font-medium text-sm hidden md:inline" href="/objects">Objects</Link>
+      <Link className="font-medium text-sm hidden md:inline" href="/chakai">Chakai</Link>
+      <Link className="font-medium text-sm hidden md:inline" href="/media">Media</Link>
+      <Link className="hidden md:inline btn btn-outline text-sm" href="/lookup" role="button">Lookup</Link>
 
       <div className="relative hidden md:block">
         <input
@@ -108,9 +112,9 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
               results.map((r) => {
                 const label = String(r.title || r.title_ja || r.local_number || r.token);
                 return (
-                  <a key={r.id} href={`/id/${r.token}`} className="block px-2 py-1 text-sm hover:bg-muted" onClick={() => setOpenSearch(false)}>
+                  <Link key={r.id} href={`/id/${r.token}`} className="block px-2 py-1 text-sm hover:bg-muted" onClick={() => setOpenSearch(false)}>
                     {label}
-                  </a>
+                  </Link>
                 );
               })
             ) : null}
@@ -123,22 +127,22 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
           <details className="nav-group relative group" role="menu">
             <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Admin</summary>
             <div className="hidden group-open:block absolute left-0 mt-1 bg-card border border-border rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin">Admin</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes" title="Project taxonomy (ローカル分類)">Local Classes</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications" title="External authorities (AAT/Wikidata) — 分類（標準語彙）">Classifications</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin">Admin</Link>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/chakai">Chakai</Link>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/items">Items</Link>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/media">Media</Link>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes" title="Project taxonomy (ローカル分類)">Local Classes</Link>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications" title="External authorities (AAT/Wikidata) — 分類（標準語彙）">Classifications</Link>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</Link>
+              <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Manage Members</Link>
             </div>
           </details>
         ) : (
           <>
-            <a className="font-medium text-sm hidden md:inline" href="/members">Members</a>
-            <a className="font-medium text-sm hidden md:inline" href="/objects">Objects</a>
-            <a className="font-medium text-sm hidden md:inline" href="/chakai">Chakai</a>
-            <a className="font-medium text-sm hidden md:inline" href="/media">Media</a>
+            <Link className="font-medium text-sm hidden md:inline" href="/members">Members</Link>
+            <Link className="font-medium text-sm hidden md:inline" href="/objects">Objects</Link>
+            <Link className="font-medium text-sm hidden md:inline" href="/chakai">Chakai</Link>
+            <Link className="font-medium text-sm hidden md:inline" href="/media">Media</Link>
           </>
         )
       ) : null}
@@ -146,18 +150,18 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
       {isLoggedIn ? (
         <details className="nav-group relative group" role="menu">
           <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Account</summary>
-          <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-[color:var(--line)] rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
-            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/members">Members</a> : null}
-            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/objects">Objects</a> : null}
-            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/chakai">Chakai</a> : null}
-            {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/media">Media</a> : null}
+          <div className="hidden group-open:block absolute left-0 mt-1 bg-card border border-border rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
+            {!isAdmin ? <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/members">Members</Link> : null}
+            {!isAdmin ? <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/objects">Objects</Link> : null}
+            {!isAdmin ? <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/chakai">Chakai</Link> : null}
+            {!isAdmin ? <Link className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/media">Media</Link> : null}
             <form action="/logout" method="post">
               <button className="block w-full text-left px-2 py-1 text-sm hover:bg-gray-50 rounded" type="submit">Sign out</button>
             </form>
           </div>
         </details>
       ) : (
-        <a className="hidden md:inline btn btn-primary text-sm" href="/login" role="button">Login</a>
+        <Link className="hidden md:inline btn btn-primary text-sm" href="/login" role="button">Login</Link>
       )}
 
       {mobileOpen ? (
@@ -175,29 +179,29 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search objects"
             />
-            <a href="/members" className="text-sm">Members</a>
-            <a href="/objects" className="text-sm">Objects</a>
-            <a href="/chakai" className="text-sm">Chakai</a>
-            <a href="/media" className="text-sm">Media</a>
-            <a href="/lookup" className="text-sm">Lookup</a>
+            <Link href="/members" className="text-sm">Members</Link>
+            <Link href="/objects" className="text-sm">Objects</Link>
+            <Link href="/chakai" className="text-sm">Chakai</Link>
+            <Link href="/media" className="text-sm">Media</Link>
+            <Link href="/lookup" className="text-sm">Lookup</Link>
             {isLoggedIn ? (
               isAdmin ? (
                 <div className="grid gap-1">
-                  <a className="text-sm" href="/admin">Admin</a>
-                  <a className="text-sm" href="/admin/chakai">Chakai</a>
-                  <a className="text-sm" href="/admin/items">Items</a>
-                  <a className="text-sm" href="/admin/media">Media</a>
-                  <a className="text-sm" href="/admin/local-classes">Local Classes</a>
-                  <a className="text-sm" href="/admin/classifications">Classifications</a>
-                  <a className="text-sm" href="/admin/tea-schools">Tea Schools</a>
-                  <a className="text-sm" href="/admin/members">Members</a>
+                  <Link className="text-sm" href="/admin">Admin</Link>
+                  <Link className="text-sm" href="/admin/chakai">Chakai</Link>
+                  <Link className="text-sm" href="/admin/items">Items</Link>
+                  <Link className="text-sm" href="/admin/media">Media</Link>
+                  <Link className="text-sm" href="/admin/local-classes">Local Classes</Link>
+                  <Link className="text-sm" href="/admin/classifications">Classifications</Link>
+                  <Link className="text-sm" href="/admin/tea-schools">Tea Schools</Link>
+                  <Link className="text-sm" href="/admin/members">Manage Members</Link>
                 </div>
               ) : (
                 <div className="grid gap-1">
-                  <a className="text-sm" href="/members">Members</a>
-                  <a className="text-sm" href="/objects">Objects</a>
-                  <a className="text-sm" href="/chakai">Chakai</a>
-                  <a className="text-sm" href="/media">Media</a>
+                  <Link className="text-sm" href="/members">Members</Link>
+                  <Link className="text-sm" href="/objects">Objects</Link>
+                  <Link className="text-sm" href="/chakai">Chakai</Link>
+                  <Link className="text-sm" href="/media">Media</Link>
                 </div>
               )
             ) : null}
@@ -206,7 +210,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
                 <button className="text-sm underline" type="submit">Sign out</button>
               </form>
             ) : (
-              <a className="text-sm" href="/login">Login</a>
+              <Link className="text-sm" href="/login">Login</Link>
             )}
             {openSearch ? (
               <div className="mt-2 border-t border-border pt-2 max-h-48 overflow-auto">
@@ -216,9 +220,9 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
                   results.map((r) => {
                     const label = String(r.title || r.title_ja || r.local_number || r.token);
                     return (
-                      <a key={r.id} href={`/id/${r.token}`} className="block px-1 py-1 text-sm hover:bg-muted" onClick={() => setMobileOpen(false)}>
+                      <Link key={r.id} href={`/id/${r.token}`} className="block px-1 py-1 text-sm hover:bg-muted" onClick={() => setMobileOpen(false)}>
                         {label}
-                      </a>
+                      </Link>
                     );
                   })
                 ) : null}
