@@ -78,6 +78,7 @@ export interface CurrentAccount {
   full_name_en?: string | null;
   full_name_ja?: string | null;
   tea_school_id?: string | null;
+  profile_picture_id?: string | null;
 }
 
 export interface CurrentRoleResult {
@@ -96,7 +97,7 @@ export async function getCurrentRole(): Promise<CurrentRoleResult> {
     const db = supabaseAdmin();
     const { data } = await db
       .from('accounts')
-      .select('id,email,role,full_name_en,full_name_ja,tea_school_id')
+      .select('id,email,role,full_name_en,full_name_ja,tea_school_id,profile_picture_id')
       .eq('email', email)
       .maybeSingle();
     if (!data) return { role: 'visitor', accountId: null, account: null };
