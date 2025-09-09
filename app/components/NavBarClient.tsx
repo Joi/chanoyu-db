@@ -76,6 +76,9 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
 
   return (
     <nav className="flex gap-3 items-center" ref={ref}>
+      <a href="/" className="font-semibold text-lg hover:opacity-90 mr-4">
+        Ito Chanoyu
+      </a>
       <button
         className="md:hidden inline-flex items-center justify-center rounded-lg px-3 py-2 border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         aria-label="Open menu"
@@ -130,7 +133,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/local-classes" title="Project taxonomy (ローカル分類)">Local Classes</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/classifications" title="External authorities (AAT/Wikidata) — 分類（標準語彙）">Classifications</a>
               <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/tea-schools">Tea Schools</a>
-              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Members</a>
+              <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/admin/members">Manage Members</a>
             </div>
           </details>
         ) : (
@@ -146,7 +149,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
       {isLoggedIn ? (
         <details className="nav-group relative group" role="menu">
           <summary className="list-none cursor-pointer font-medium [&::-webkit-details-marker]:hidden" role="button" aria-haspopup="true">Account</summary>
-          <div className="hidden group-open:block absolute left-0 mt-1 bg-white border border-[color:var(--line)] rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
+          <div className="hidden group-open:block absolute left-0 mt-1 bg-card border border-border rounded-md shadow-lg p-2 min-w-[220px] z-20" role="menu">
             {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/members">Members</a> : null}
             {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/objects">Objects</a> : null}
             {!isAdmin ? <a className="block px-2 py-1 text-sm hover:bg-gray-50 rounded" href="/chakai">Chakai</a> : null}
@@ -190,7 +193,7 @@ export default function NavBarClient({ isLoggedIn, isAdmin }: { isLoggedIn: bool
                   <a className="text-sm" href="/admin/local-classes">Local Classes</a>
                   <a className="text-sm" href="/admin/classifications">Classifications</a>
                   <a className="text-sm" href="/admin/tea-schools">Tea Schools</a>
-                  <a className="text-sm" href="/admin/members">Members</a>
+                  <a className="text-sm" href="/admin/members">Manage Members</a>
                 </div>
               ) : (
                 <div className="grid gap-1">
