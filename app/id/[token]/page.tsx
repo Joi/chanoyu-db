@@ -6,6 +6,7 @@ import RevealPrice from '@/app/components/RevealPrice';
 import Container from '@/app/components/Container'
 import Title from '@/app/components/Title'
 import Separator from '@/app/components/Separator'
+import ObjectImageGallery from '@/app/components/ObjectImageGallery'
 // import { makeSupabaseThumbUrl } from '@/lib/storage';
 import { requireAdmin, requireOwner } from '@/lib/auth';
 
@@ -61,7 +62,6 @@ export default async function ObjectPage({ params }: Props) {
     .select('id, kind, uri, sort_order, object_id')
     .eq('object_id', data.id);
   const media = (mediaRows ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-  const img = media[0]?.uri as string | undefined;
   // Resolve Local Class info and external links
   let localClassTitle: string = '';
   let localClassBreadcrumb: string[] = [];
@@ -123,13 +123,15 @@ export default async function ObjectPage({ params }: Props) {
             <h2 className="text-sm font-semibold mb-1">Classification</h2>
             <div className="grid gap-2">
               {localClassTitle ? (
-                <div className="text-sm">{localClassTitle}</div>
+                <div className="text-sm">
+                  {localClassBreadcrumb.length ? (
+                    <span className="text-xs text-muted-foreground">{localClassBreadcrumb.join(' → ')} → </span>
+                  ) : null}
+                  <span className="font-medium">{localClassTitle}</span>
+                </div>
               ) : (
                 <div className="text-xs text-muted-foreground">No local class selected</div>
               )}
-              {localClassBreadcrumb.length ? (
-                <div className="text-xs text-muted-foreground">{localClassBreadcrumb.join(' / ')}</div>
-              ) : null}
               {localClassExternal.length ? (
                 <div className="flex flex-wrap gap-2 text-xs">
                   {localClassExternal.map((c: any) => (
@@ -143,13 +145,10 @@ export default async function ObjectPage({ params }: Props) {
           </div>
         </header>
 
-        {img ? (
-          <div className="relative w-full aspect-[4/3] bg-background rounded-lg overflow-hidden border border-border">
-            <a href={img} target="_blank" rel="noreferrer">
-              <Image src={img} alt={data.title || ''} fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" />
-            </a>
-          </div>
-        ) : null}
+        <ObjectImageGallery 
+          media={media} 
+          title={data.title || data.title_ja || data.local_number || data.token} 
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <section>

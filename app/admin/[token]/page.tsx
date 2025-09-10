@@ -517,13 +517,15 @@ export default async function AdminObjectPage({ params, searchParams }: { params
         <h2 className="text-sm font-semibold mb-1">Classification</h2>
         <div className="grid gap-2">
           {localClassTitle ? (
-            <div className="text-sm">Current: <a className="underline" href={`/admin/local-classes/${String(object.primary_local_class_id)}`}>{localClassTitle}</a></div>
+            <div className="text-sm">
+              Current: {localClassBreadcrumb.length ? (
+                <span className="text-xs text-gray-600">{localClassBreadcrumb.join(' → ')} → </span>
+              ) : null}
+              <a className="underline font-medium" href={`/admin/local-classes/${String(object.primary_local_class_id)}`}>{localClassTitle}</a>
+            </div>
           ) : (
             <div className="text-xs text-gray-600">No local class selected</div>
           )}
-          {localClassBreadcrumb.length ? (
-            <div className="text-xs text-gray-600">{localClassBreadcrumb.join(' / ')}</div>
-          ) : null}
           {localClassExternal.length ? (
             <div className="flex flex-wrap gap-2 text-xs">
               {localClassExternal.map((c: any) => (
