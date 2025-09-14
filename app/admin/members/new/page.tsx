@@ -26,8 +26,11 @@ async function createMember(formData: FormData) {
   const password = String(formData.get('password') || '');
 
   // Validate required fields
-  if (!email || !password) {
-    throw new Error('Email and password are required');
+  if (!email) {
+    return redirect('/admin/members/new?error=missing_email');
+  }
+  if (!password) {
+    return redirect('/admin/members/new?error=missing_password');
   }
 
   // Admins can create guests and admins; only owners can create owners
@@ -47,23 +50,41 @@ async function createMember(formData: FormData) {
   });
 
   if (error) {
-    throw new Error(`Failed to create member: ${error.message}`);
+    if (error.code === '23505') { // Unique constraint violation
+      return redirect('/admin/members/new?error=email_exists');
+    }
+    return redirect(`/admin/members/new?error=db_error&detail=${encodeURIComponent(error.message)}`);
   }
 
   revalidatePath('/admin/members');
-  redirect('/admin/members');
+  redirect('/admin/members?success=member_created');
 }
 
-export default async function NewMemberPage() {
+export default async function NewMemberPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
   const isAdmin = await requireAdmin();
   if (!isAdmin) return redirect('/login');
   const isOwner = await requireOwner();
   const db = supabaseAdmin();
   const { data: schools } = await db.from('tea_schools').select('id, name_en, name_ja').order('name_en');
 
+  const error = typeof searchParams?.error === 'string' ? searchParams.error : undefined;
+  const detail = typeof searchParams?.detail === 'string' ? decodeURIComponent(searchParams.detail) : undefined;
+
   return (
     <main className="max-w-md mx-auto p-6">
       <h1 className="text-xl font-semibold mb-4">Add member</h1>
+      {error === 'missing_email' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Email is required.</div>
+      ) : null}
+      {error === 'missing_password' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Password is required.</div>
+      ) : null}
+      {error === 'email_exists' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>A member with this email already exists.</div>
+      ) : null}
+      {error === 'db_error' ? (
+        <div className="card" style={{ background: '#fef2f2', borderColor: '#fecaca', marginBottom: 12 }}>Database error: {detail}</div>
+      ) : null}
       <form action={createMember} className="grid" style={{ gap: 12 }}>
         <input name="email" className="input" placeholder="email" />
         <select name="role" className="input" defaultValue={isOwner ? 'admin' : 'guest'}>
