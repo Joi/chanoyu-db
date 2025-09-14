@@ -24,12 +24,34 @@ async function createMember(formData: FormData) {
   const bio = String(formData.get('bio') || '').trim() || null;
   const bio_ja = String(formData.get('bio_ja') || '').trim() || null;
   const password = String(formData.get('password') || '');
-  if (!email || !password) return;
+
+  // Validate required fields
+  if (!email || !password) {
+    throw new Error('Email and password are required');
+  }
+
   // Admins can create guests and admins; only owners can create owners
   if (!isOwner && role === 'owner') role = 'admin';
+
   const db = supabaseAdmin();
-  await db.from('accounts').insert({ email, full_name_en, full_name_ja, tea_school_id, website, bio, bio_ja, role, password_hash: hashPassword(password) });
+  const { data, error } = await db.from('accounts').insert({
+    email,
+    full_name_en,
+    full_name_ja,
+    tea_school_id,
+    website,
+    bio,
+    bio_ja,
+    role,
+    password_hash: hashPassword(password)
+  });
+
+  if (error) {
+    throw new Error(`Failed to create member: ${error.message}`);
+  }
+
   revalidatePath('/admin/members');
+  redirect('/admin/members');
 }
 
 export default async function NewMemberPage() {
