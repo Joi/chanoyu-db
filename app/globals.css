@@ -17,31 +17,32 @@ html, body { padding: 0; margin: 0 }
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    /* joi.ito.com design system - adapted to HSL tokens */
+    --background: 0 0% 98%; /* #fafafa converted to HSL */
+    --foreground: 0 0% 6.7%; /* #111111 converted to HSL */
+    --card: 0 0% 100%; /* white cards on #fafafa background */
+    --card-foreground: 0 0% 6.7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --popover-foreground: 0 0% 6.7%;
+    --primary: 200 67% 36%; /* #1A80B4 converted to HSL */
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 193 97% 46%; /* #0299ce converted to HSL */
+    --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted-foreground: 0 0% 40%;
     --accent: 0 0% 96.1%;
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --ring: 200 67% 36%; /* matches primary */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 1.25rem; /* 20px joi signature rounded corners */
   }
   .dark {
     --background: 0 0% 3.9%;

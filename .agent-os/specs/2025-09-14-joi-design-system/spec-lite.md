@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Transform the chanoyu collection site to adopt joi.ito.com's refined design language, featuring the signature #fafafa background, blue accent palette (#1A80B4/#0299ce), Avenir/Montserrat typography, gradient headers, and 20px rounded corner patterns. Implement enhanced deployment automation with GitHub Actions workflows for testing, preview deployments, and production releases. Create a cohesive visual experience that maintains brand consistency across Joi's digital properties while elevating the cultural presentation of the tea ceremony collection.
