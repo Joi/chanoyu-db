@@ -18,10 +18,18 @@ const config: Config = {
   			link: '#0645AD',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
+  			// joi.ito.com design system colors
   			primaryBlue: '#1A80B4',
+  			secondaryBlue: '#0299ce',
   			hoverBlue: '#146087',
   			sectionBg: '#f5f5f5',
   			borderGray: '#e5e5e5',
+  			// joi brand color palette
+  			joi: {
+  				blue: '#1A80B4',
+  				lightBlue: '#0299ce',
+  				background: '#fafafa',
+  			},
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
@@ -62,7 +70,16 @@ const config: Config = {
   			}
   		},
   		fontFamily: {
+  			// joi.ito.com design system typography
   			sans: [
+  				'Avenir', // System font (if available)
+  				'var(--font-montserrat)', // Google Fonts fallback
+  				'var(--font-noto-sans-jp)', // Japanese support
+  				'system-ui',
+  				'sans-serif'
+  			],
+  			// Legacy Inter support (for compatibility)
+  			inter: [
   				'var(--font-inter)',
   				'var(--font-noto-sans-jp)',
   				'system-ui',
@@ -77,7 +94,10 @@ const config: Config = {
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			sm: 'calc(var(--radius) - 4px)',
+  			// joi.ito.com signature rounded corners
+  			joi: '20px',
+  			'20': '20px',
   		}
   	}
   },

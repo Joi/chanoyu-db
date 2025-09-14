@@ -1,4 +1,4 @@
-import { Inter, EB_Garamond, Noto_Sans_JP, Noto_Serif_JP } from 'next/font/google'
+import { Inter, EB_Garamond, Montserrat, Noto_Sans_JP, Noto_Serif_JP } from 'next/font/google'
 
 export const inter = Inter({
   subsets: ['latin'],
@@ -10,6 +10,13 @@ export const garamond = EB_Garamond({
   subsets: ['latin'],
   variable: '--font-garamond',
   display: 'swap',
+})
+
+export const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
 })
 
 export const notoSansJP = Noto_Sans_JP({
