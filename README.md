@@ -2,6 +2,7 @@
 
 Unified database to manage tea utensil items linking them to Wikilinks and Getty AAT classifications, people, 茶会/chakai, tea room locations — providing publicly accessible canonical links as well as access-controlled pages for 茶会/chakai and items.
 
+- **Version:** 1.4.0 (see [CHANGELOG.md](CHANGELOG.md) for details)
 - **Frontend/API:** Next.js (App Router, TypeScript) on Vercel
 - **Data:** Supabase (Postgres + RLS, Storage for images)
 - **Identifiers:** Stable HTTPS IDs today (`/id/{token}`), ARK-ready (`/ark:/NAAN/{name}`)
@@ -192,15 +193,10 @@ Verify:
 
 ## Ingest pipelines (Notion + Google Sheets)
 
-This repo includes both TypeScript and Python utilities for ingestion. The Python tools are colocated under `ingestion/` with their own setup and docs, and are intended for local-only operations. See `ingestion/README.md`.
-
-TypeScript utilities:
+TypeScript utilities for data ingestion:
 - `scripts/ingest-notion.ts` — imports pages, mirrors images (HEIC→JPEG), writes Collection Token back to Notion
 - `scripts/convert-heic-existing.ts` — converts existing HEIC media rows to JPEG in Supabase Storage and updates URIs
-- `scripts/ingest-sheets.ts` — imports valuations from Google Sheets (TBD example)
-
-Python utilities (local):
-- `main.py`, `src/`, `scripts/`, `tests/` — merge Notion + Sheets → JSON outputs → export a worksheet; see `ingestion/README.md` for setup and environment separation
+- `scripts/ingest-sheets.ts` — imports valuations from Google Sheets
 
 ---
 

@@ -1,18 +1,16 @@
-# CI in a Monorepo (Node + Python + SQL)
+# CI for Next.js + TypeScript + SQL
 
 These examples show how to run only the relevant jobs when certain paths change. They assume GitHub Actions but the patterns map to any CI.
 
 ## Goals
 
-- Run Node checks when app code changes
-- Run Python checks when ingestion code changes
-- Always run SQL checks when database schema changes
-- Keep jobs fast and independent; cache dependencies per language
+- Run Node/TypeScript checks when app code changes
+- Run SQL checks when database schema changes
+- Keep jobs fast and independent; cache dependencies
 
 ## Path filters
 
-- Node: `app/**`, `lib/**`, `components/**`, `package.json`, `pnpm-lock.yaml`, `tsconfig.json`
-- Python: `ingestion/**`, `requirements*.txt`, `src/**`, `tests/**` (Python tests)
+- Node/TypeScript: `app/**`, `lib/**`, `components/**`, `scripts/**`, `package.json`, `pnpm-lock.yaml`, `tsconfig.json`
 - SQL: `supabase/**`
 
 ## Example: Combined workflow
@@ -56,19 +54,6 @@ jobs:
       - run: corepack enable && pnpm i --frozen-lockfile
       - run: pnpm lint && pnpm typecheck && pnpm test --if-present
 
-  python:
-    needs: changes
-    env:
-      FILES_CHANGED: ${{ needs.changes.outputs.files }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-      - run: pip install -r requirements.txt -r requirements-dev.txt
-      - run: pytest -q
-
   sql:
     needs: changes
     env:
@@ -85,5 +70,5 @@ jobs:
 Notes:
 
 - Replace `origin/${{ github.base_ref || 'dev' }}` with a default branch appropriate for your PR target
-- Consider adding `sqlfluff` for SQL linting and `ruff`/`black` for Python style if not already configured
+- Consider adding `sqlfluff` for SQL linting if not already configured
 - For more granular triggers, use `on.push.paths` and `on.pull_request.paths` with path globs
