@@ -2,6 +2,8 @@
 
 Unified database to manage tea utensil items linking them to Wikilinks and Getty AAT classifications, people, 茶会/chakai, tea room locations — providing publicly accessible canonical links as well as access-controlled pages for 茶会/chakai and items.
 
+_This is also an experiment and work in progress on Vibe coding and how to use various AI tools and AI coding methods. There's a fair amount of SLOP and remnants of trial and error with different tools. Any contributions and discussion about process and tools for AI coding also very welcome._
+
 - **Version:** 1.4.0 (see [CHANGELOG.md](CHANGELOG.md) for details)
 - **Frontend/API:** Next.js (App Router, TypeScript) on Vercel
 - **Data:** Supabase (Postgres + RLS, Storage for images)
