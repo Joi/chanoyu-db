@@ -29,15 +29,13 @@ jobs:
     name: Node (Next.js)
     needs: changes
     runs-on: ubuntu-latest
-    env:
-      FILES_CHANGED: ${{ needs.changes.outputs.files }}
     if: >-
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'app/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'lib/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'components/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'package.json') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'pnpm-lock.yaml') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'tsconfig.json')
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'app/') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'lib/') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'components/') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'package.json') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'pnpm-lock.yaml') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'tsconfig.json')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,13 +53,11 @@ jobs:
     name: SQL (Supabase)
     needs: changes
     runs-on: ubuntu-latest
-    env:
-      FILES_CHANGED: ${{ needs.changes.outputs.files }}
-    if: contains(join(fromJson(env.FILES_CHANGED), '\n'), 'supabase/')
+    if: contains(join(fromJson(needs.changes.outputs.files), '\n'), 'supabase/')
     steps:
       - uses: actions/checkout@v4
       - name: Lint SQL (listing placeholder)
         run: |
-          echo "SQL files changed:" 
+          echo "SQL files changed:"
           git ls-files supabase/**/*.sql | cat
           # TODO: integrate sqlfluff or pgformatter for real linting
