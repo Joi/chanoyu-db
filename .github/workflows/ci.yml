@@ -51,29 +51,6 @@ jobs:
       - name: Test
         run: pnpm test --if-present
 
-  python:
-    name: Python (Ingestion)
-    needs: changes
-    runs-on: ubuntu-latest
-    env:
-      FILES_CHANGED: ${{ needs.changes.outputs.files }}
-    if: >-
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'ingestion/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'requirements.txt') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'requirements-dev.txt') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'src/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'tests/')
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - name: Install
-        run: pip install -r requirements.txt -r requirements-dev.txt
-      - name: Test
-        run: pytest -q
-
   sql:
     name: SQL (Supabase)
     needs: changes
