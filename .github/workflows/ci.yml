@@ -15,13 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - id: diff
         shell: bash
         run: |
           BASE_REF="${{ github.base_ref }}"
           if [ -z "$BASE_REF" ]; then BASE_REF=main; fi
-          git fetch origin "$BASE_REF" --depth=1
+          git fetch origin "$BASE_REF" --depth=100
           git diff --name-only origin/$BASE_REF...HEAD | jq -Rsc 'split("\n")' > files.json
           echo "files=$(cat files.json)" >> $GITHUB_OUTPUT
 
@@ -43,7 +43,7 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: "22"
           cache: "pnpm"
       - name: Install
         run: corepack enable && pnpm i --frozen-lockfile
