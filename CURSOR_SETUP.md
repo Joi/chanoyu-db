@@ -1,3 +1,15 @@
+# [DEPRECATED] Cursor Setup for Chanoyu-DB
+
+> **Deprecation Notice:** This project now primarily uses Claude Code and amplifier tools for AI-assisted development.
+> Cursor users can still use this setup, but we recommend:
+> 1. Using Claude Code for AI collaboration
+> 2. Using amplifier tools in `/tools/` for code generation
+> 3. Following the guidance in `CLAUDE.md`
+>
+> This document is maintained for existing Cursor users but is no longer the recommended approach.
+
+---
+
 # Cursor Configuration for Chanoyu-DB
 
 ## Quick Setup

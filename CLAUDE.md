@@ -1,5 +1,8 @@
 # Claude/AI Assistant Guidelines
 
+> **Note:** This project now uses amplifier tools and Claude Code for AI-assisted development.
+> The `.agent-os/` pattern is deprecated. See `/tools/README.md` for the current workflow.
+
 ## Quick Context
 
 This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections. The main developer uses Cursor and Claude for development assistance.
@@ -53,14 +56,26 @@ This is a Next.js + Supabase app for managing tea ceremony (chanoyu) collections
 2. Have it suggest database schema changes
 3. Implement in steps: database → API → UI
 
-### Planning & Tasks (Updated)
+### Planning & Tasks (Amplifier Workflow)
 
-- Use GitHub Issues as the source of truth (no local markdown task lists).
-- Create descriptive feature branches directly from `main`, connected to GitHub issues.
-- Branch naming: `feature/descriptive-name-123` (where 123 is the issue number).
-- Open PR directly to `main` (no persistent dev branch).
-- Specs live under `.agent-os/specs/YYYY-MM-DD-slug/` and are linked from the initial Spec issue.
-- Prefer the `gh` CLI or GitHub UI to create issues with labels like `type:*`, `area:*`, `priority:*`, `state:*`, and `feature:<slug>`.
+- **GitHub Issues** - Source of truth for feature planning
+- **Feature branches** - Create from `main` for new work
+- **Amplifier tools** - Use AI-powered development tools in `/tools/`
+
+#### Using Amplifier Tools
+
+```bash
+# One-time setup
+make tools-setup
+
+# Generate tests for components
+make generate-test COMPONENT=app/admin/objects/page.tsx
+
+# See all available tools
+cat tools/README.md
+```
+
+**DEPRECATED:** The `.agent-os/specs/` pattern is legacy. While existing specs are preserved for reference, new work should use the amplifier tools workflow.
 ```
 
 ### Database Changes

@@ -26,7 +26,31 @@ cp .env.example .env.local
 - Branch naming: `feature/descriptive-name-123` (where 123 is issue number)
 - No persistent dev branch
 
-### 3. Daily Workflow
+### 3. Development Workflow (Amplifier Tools)
+
+We use **amplifier tools** for AI-powered development acceleration:
+
+```bash
+# One-time setup
+make tools-setup
+
+# Generate tests (recommended for new components)
+make generate-test COMPONENT=app/components/MyComponent.tsx
+
+# Review and customize the generated code
+vim tests/components/MyComponent.test.tsx
+```
+
+**Benefits:**
+- Tools understand our project patterns
+- Generate code following conventions
+- Reduce boilerplate work
+- See `/tools/README.md` for all available tools
+
+**For Contributors Not Using Amplifier:**
+You can still contribute using traditional methods. The amplifier tools are optional but recommended for faster development.
+
+### 4. Daily Workflow
 
 ```bash
 # Start from main branch and create feature branch
@@ -52,7 +76,7 @@ git push origin feature/your-feature-name-123
 # Check Vercel's automatic preview deployment for your branch
 ```
 
-### 4. Making a PR to Production
+### 5. Making a PR to Production
 
 1. Test thoroughly on your branch's Vercel preview URL
 2. Create PR from feature branch to `main` on GitHub using:
@@ -86,6 +110,40 @@ We use Claude and Cursor for development. See `CLAUDE.md` for guidelines.
 - Keep tasks small and focused
 - Test AI-generated code locally first
 - Review database queries carefully
+
+## Design System
+
+We follow the **Tea Ceremony Design System** (introduced in v1.5.0):
+
+### Core Philosophy
+- **渋い (Shibui)** - Subtle, unobtrusive elegance
+- **侘び (Wabi)** - Beauty in imperfection and naturalness
+- **幽玄 (Yugen)** - Profound grace and mysterious depth
+- **間 (Ma)** - Negative space, pause, breathing room
+
+### Color Usage
+```tsx
+// Use tea ceremony colors
+<div className="bg-wabi text-yugen border-shibui">
+  <button className="bg-matcha text-white">Action</button>
+</div>
+```
+
+### Spacing
+```tsx
+// Use ma spacing for breathing room
+<div className="pa-md">Natural padding</div>
+<section className="ma-lg">Contemplative margin</section>
+```
+
+### Bilingual Labels
+```tsx
+import BilingualLabel from '@/app/components/BilingualLabel'
+
+<BilingualLabel en="Title" ja="タイトル" htmlFor="title" required />
+```
+
+**Full documentation:** [docs/TEA_CEREMONY_DESIGN_SYSTEM.md](docs/TEA_CEREMONY_DESIGN_SYSTEM.md)
 
 ## Code Style
 

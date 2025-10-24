@@ -4,14 +4,29 @@ Unified database to manage tea utensil items linking them to Wikilinks and Getty
 
 _This is also an experiment and work in progress on Vibe coding and how to use various AI tools and AI coding methods. There's a fair amount of SLOP and remnants of trial and error with different tools. Any contributions and discussion about process and tools for AI coding also very welcome._
 
-- **Version:** 1.4.0 (see [CHANGELOG.md](CHANGELOG.md) for details)
+- **Version:** 1.6.0 (see [CHANGELOG.md](CHANGELOG.md) for details)
 - **Frontend/API:** Next.js (App Router, TypeScript) on Vercel
 - **Data:** Supabase (Postgres + RLS, Storage for images)
 - **Identifiers:** Stable HTTPS IDs today (`/id/{token}`), ARK-ready (`/ark:/NAAN/{name}`)
 - **Interoperability:** Linked Art JSON-LD; categories via Local Classes (mapped to AAT/Wikidata)
 - **Ingest:** Notion (images/fields) + Google Sheets (valuations) → mirrored into Supabase
 
-> This software powers the public site for Ito Chanoyu: `https://chanoyu.ito.com/` (Ito Chanoyu DB). While built for our use, it is open source and designed to be portable so others can run their own instance. Please comment, open PRs, and contribute.
+This software powers the public site for Ito Chanoyu: `https://chanoyu.ito.com/` (Ito Chanoyu DB). Version 1.6.0 features enhanced admin UX with tea ceremony design system and amplifier tools for AI-powered development.
+
+> While built for our use, it is open source and designed to be portable so others can run their own instance. Please comment, open PRs, and contribute.
+
+## Recent Updates
+
+**v1.6.0 (October 2025)** - Enhanced Admin UX
+- FormCard and BilingualLabel components
+- Card-based object edit layout
+- Navbar auto-close improvements
+
+**v1.5.0 (October 2025)** - Tea Ceremony Design Revolution
+- Design system aligned with tea ceremony aesthetics (shibui, wabi, yugen, matcha)
+- Ma-based spacing philosophy
+- Bilingual typography with structural support
+- See [TEA_CEREMONY_DESIGN_SYSTEM.md](docs/TEA_CEREMONY_DESIGN_SYSTEM.md)
 
 Branding (env-driven):
 
@@ -290,6 +305,22 @@ Conventions
 - Linked Art — JSON-LD profile implementing CIDOC-CRM for art/heritage  
 - IIIF — Interoperable image framework (manifests and tiling/viewers)  
 - LIDO — Lightweight Information Describing Objects (XML for harvesting)
+
+---
+
+## Development Tools (Amplifier)
+
+This project includes AI-powered development tools:
+
+```bash
+# Set up amplifier tools
+make tools-setup
+
+# Generate tests for React components
+make generate-test COMPONENT=app/components/Card.tsx
+```
+
+See [tools/README.md](tools/README.md) for complete documentation.
 
 ---
 
