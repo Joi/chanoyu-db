@@ -1,0 +1,8 @@
+# Amplifier Tools Dependencies
+# Install with: pip install -r tools/requirements.txt
+
+# Claude Code SDK
+anthropic>=0.39.0
+
+# Python utilities
+python-dotenv>=1.0.0

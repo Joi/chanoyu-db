@@ -43,6 +43,7 @@ data/*.json
 
 # Python virtualenv
 .venv/
+.venv-tools/
 __pycache__/
 *.pyc
 

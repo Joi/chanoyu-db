@@ -1,18 +1,9 @@
 import { requireAdmin, requireOwner, logout } from '@/lib/auth';
-import Link from 'next/link';
+import Card from '@/app/components/Card';
 
 async function signOut() {
   'use server';
   await logout();
-}
-
-function Card({ href, title, subtitle }: { href: string; title: string; subtitle: string }) {
-  return (
-    <Link href={href} className="card hover:shadow-sm transition-shadow" style={{ display: 'block' }}>
-      <div className="font-medium">{title}</div>
-      <div className="text-sm text-gray-700" lang="ja">{subtitle}</div>
-    </Link>
-  );
 }
 
 export default async function AdminHome() {
@@ -27,18 +18,30 @@ export default async function AdminHome() {
   const isOwner = await requireOwner();
 
   return (
-    <main className="max-w-5xl mx-auto my-10 px-6">
-      <header className="mb-4">
-        <h1 className="text-xl font-semibold">Admin — 管理</h1>
-        <p className="text-sm text-gray-700 mt-1" lang="en">
-          Local Class (ローカル分類) is our project’s category. Each item selects one primary Local Class. It may link to a preferred external Classification (AAT/Wikidata). Classifications (分類) are canonical external authorities; Items inherit via Local Classes.
-        </p>
-        <p className="text-sm text-gray-700 mt-1" lang="ja">
-          Local Classes（ローカル分類）は本プロジェクトの分類体系です。各アイテムは一つの主要ローカル分類を選びます。
-          Classifications（分類; AAT/Wikidata）は外部の権威データで、ローカル分類から代表リンクとして参照します。
-        </p>
+    <main className="max-w-5xl mx-auto pa-lg">
+      {/* Header with ma-md spacing (natural breath) */}
+      <header className="mb-8">
+        <h1 className="text-2xl font-semibold text-yugen mb-3">
+          <span lang="en">Admin</span>
+          {' — '}
+          <span lang="ja">管理</span>
+        </h1>
+
+        <div className="space-y-2 text-muted-foreground text-sm">
+          <p lang="en">
+            Local Class (ローカル分類) is our project&apos;s category. Each item selects one primary Local Class.
+            It may link to a preferred external Classification (AAT/Wikidata). Classifications (分類) are
+            canonical external authorities; Items inherit via Local Classes.
+          </p>
+          <p lang="ja">
+            Local Classes（ローカル分類）は本プロジェクトの分類体系です。各アイテムは一つの主要ローカル分類を選びます。
+            Classifications（分類; AAT/Wikidata）は外部の権威データで、ローカル分類から代表リンクとして参照します。
+          </p>
+        </div>
       </header>
-      <section className="grid" style={{ gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+
+      {/* Card grid with ma-md gap (natural breath between cards) */}
+      <section className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <Card href="/members" title="Members" subtitle="会員 — Social directory and connections" />
         <Card href="/admin/members" title="Manage Members" subtitle="会員管理 — Add, edit, and manage user accounts" />
         <Card href="/admin/chakai" title="Chakai" subtitle="茶会 — Oversee gatherings" />
@@ -51,8 +54,12 @@ export default async function AdminHome() {
         <Card href="/admin/tea-schools" title="Tea Schools" subtitle="流派 — Lineages and schools" />
         <Card href="/lookup" title="Lookup" subtitle="用語検索 — Category lookup" />
       </section>
-      <form action={signOut} className="mt-6">
-        <button className="text-sm underline" type="submit">Sign out</button>
+
+      {/* Sign out button with shibui color (subtle elegance) */}
+      <form action={signOut} className="mt-8">
+        <button className="text-sm text-shibui hover:text-shibui/80 underline underline-offset-4" type="submit">
+          Sign out
+        </button>
       </form>
     </main>
   );

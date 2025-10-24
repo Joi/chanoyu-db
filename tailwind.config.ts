@@ -10,26 +10,21 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
-  			paper: 'hsl(var(--background))',
-  			ink: 'hsl(var(--foreground))',
-  			inkMuted: 'hsl(var(--muted-foreground))',
-  			inkSubtle: 'hsl(var(--muted-foreground))',
-  			line: 'hsl(var(--border))',
-  			link: '#0645AD',
+  			/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  			 * Chanoyu Design System - Tea Ceremony Colors
+  			 * All colors now sourced from CSS custom properties in globals.css
+  			 * Legacy color names removed to eliminate fragmentation
+  			 * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+  			// Tea ceremony aesthetic colors (direct CSS custom properties)
+  			shibui: 'hsl(var(--shibui))',      // 渋い - Subtle elegance
+  			wabi: 'hsl(var(--wabi))',          // 侘び - Aged beauty
+  			yugen: 'hsl(var(--yugen))',        // 幽玄 - Profound grace
+  			matcha: 'hsl(var(--matcha))',      // 抹茶 - Tea green
+
+  			// Semantic color mappings (Shadcn compatible)
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
-  			// joi.ito.com design system colors
-  			primaryBlue: '#1A80B4',
-  			secondaryBlue: '#0299ce',
-  			hoverBlue: '#146087',
-  			sectionBg: '#f5f5f5',
-  			borderGray: '#e5e5e5',
-  			// joi brand color palette
-  			joi: {
-  				blue: '#1A80B4',
-  				lightBlue: '#0299ce',
-  				background: '#fafafa',
-  			},
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
