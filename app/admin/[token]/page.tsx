@@ -11,6 +11,8 @@ import PriceInput from '@/app/components/PriceInput';
 import SubmitButton from '@/app/components/SubmitButton';
 import PendingProgress from '@/app/components/PendingProgress';
 import SearchSelect from '@/app/components/SearchSelect';
+import FormCard from '@/app/components/FormCard';
+import BilingualLabel from '@/app/components/BilingualLabel';
 import type { LocalClass, SelectOption } from '@/lib/types/admin';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -499,49 +501,103 @@ export default async function AdminObjectPage({ params, searchParams }: { params
   }
 
   return (
-    <main className="max-w-4xl mx-auto p-6">
-      {saved ? <div className="card" style={{ background: '#f0fff4', borderColor: '#bbf7d0', marginBottom: 12 }}>Saved {saved}</div> : null}
+    <main className="container mx-auto pa-lg">
+      {saved ? <div className="card" style={{ background: '#f0fff4', borderColor: '#bbf7d0', marginBottom: 'var(--ma-sm)' }}>Saved {saved}</div> : null}
       {error ? (
-        <div className="card" style={{ background: '#fff1f2', borderColor: '#fecdd3', marginBottom: 12 }}>
+        <div className="card" style={{ background: '#fff1f2', borderColor: '#fecdd3', marginBottom: 'var(--ma-sm)' }}>
           <div>Error: {error}</div>
           {detail ? <div className="text-xs text-gray-700 mt-1">{detail}</div> : null}
         </div>
       ) : null}
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-xl font-semibold">Admin: {object.title}</h1>
+      <div className="flex items-center justify-between" style={{ marginBottom: 'var(--ma-md)' }}>
+        <div>
+          <h1 className="text-xl font-semibold">Admin: {object.title}</h1>
+          {object.title_ja ? <p className="text-sm" lang="ja">{object.title_ja}</p> : null}
+        </div>
         <a href="/admin/items" className="text-sm underline">← Back to Items</a>
       </div>
-      {object.title_ja ? <p className="text-sm" lang="ja">{object.title_ja}</p> : null}
-      {/* Compact classification summary at top */}
-      <section className="card mb-3">
-        <h2 className="text-sm font-semibold mb-1">Classification</h2>
-        <div className="grid gap-2">
-          {localClassTitle ? (
-            <div className="text-sm">
-              Current: {localClassBreadcrumb.length ? (
-                <span className="text-xs text-gray-600">{localClassBreadcrumb.join(' → ')} → </span>
-              ) : null}
-              <a className="underline font-medium" href={`/admin/local-classes/${String(object.primary_local_class_id)}`}>{localClassTitle}</a>
-            </div>
-          ) : (
-            <div className="text-xs text-gray-600">No local class selected</div>
-          )}
-          {localClassExternal.length ? (
-            <div className="flex flex-wrap gap-2 text-xs">
-              {localClassExternal.map((c: any) => (
-                <a key={String(c.id)} href={c.uri} target="_blank" rel="noreferrer" className="underline">
-                  {c.scheme}: {String(c.label_ja || c.label || c.uri)}
-                </a>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </section>
+      {/* Grid Layout: Main Column (2/3) and Side Column (1/3) */}
+      <div className="grid lg:grid-cols-3" style={{ gap: 'var(--ma-md)' }}>
+        {/* Main Column (2/3) */}
+        <div className="lg:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ma-md)' }}>
+          {/* Identity Card */}
+          <FormCard title={<BilingualLabel en="Identity" ja="基本情報" />}>
+            <form action={updateObjectAction} className="space-y-4">
+              <input type="hidden" name="object_token" value={token} />
 
-      <div className="grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-        <section>
-          <h2 className="text-lg font-semibold mb-2">Images</h2>
-          <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+              {/* Local Number */}
+              <div className="grid gap-2">
+                <Label htmlFor="local_number">
+                  <BilingualLabel en="Local number" ja="管理番号" />
+                </Label>
+                <Input id="local_number" name="local_number" defaultValue={object.local_number || ''} />
+              </div>
+
+              {/* Title (Bilingual) */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="title">Title (EN)</Label>
+                  <Input id="title" name="title" defaultValue={object.title || ''} />
+                  {object.title && !object.title_ja ? (
+                    <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'title')} type="submit">EN → JA</Button>
+                  ) : null}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="title_ja">Title (JA)</Label>
+                  <Input id="title_ja" name="title_ja" defaultValue={object.title_ja || ''} />
+                  {object.title_ja && !object.title ? (
+                    <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'title_ja')} type="submit">JA → EN</Button>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* URL */}
+              <div className="grid gap-2">
+                <Label htmlFor="url">
+                  <BilingualLabel en="URL" ja="URL" />
+                </Label>
+                <Input id="url" name="url" defaultValue={object.url || ''} />
+              </div>
+
+              <div className="pt-2">
+                <SubmitButton label="Save Identity" pendingLabel="Saving..." />
+              </div>
+            </form>
+          </FormCard>
+
+          {/* Description Card */}
+          <FormCard title={<BilingualLabel en="Description" ja="説明" />}>
+            <form action={updateObjectAction} className="space-y-4">
+              <input type="hidden" name="object_token" value={token} />
+
+              {/* Notes (Bilingual) */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="notes">Notes (EN)</Label>
+                  <Textarea id="notes" name="notes" defaultValue={object.notes || ''} rows={6} />
+                  {object.notes && !object.notes_ja ? (
+                    <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'notes')} type="submit">EN → JA</Button>
+                  ) : null}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="notes_ja">Notes (JA)</Label>
+                  <Textarea id="notes_ja" name="notes_ja" defaultValue={object.notes_ja || ''} rows={6} />
+                  {object.notes_ja && !object.notes ? (
+                    <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'notes_ja')} type="submit">JA → EN</Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <SubmitButton label="Save Description" pendingLabel="Saving..." />
+              </div>
+            </form>
+          </FormCard>
+
+          {/* Media Card */}
+          <FormCard title={<BilingualLabel en="Media" ja="画像" />}>
+            <div className="space-y-4">
+              <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
             {media.map((m: any, idx: number) => (
               <div key={m.id} className="card">
                 <div className="relative w-full" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', background: '#f8f8f8', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee' }}>
@@ -584,146 +640,148 @@ export default async function AdminObjectPage({ params, searchParams }: { params
               <SubmitButton label="Upload" pendingLabel="Uploading..." />
             </form>
           </div>
-        </section>
+            </div>
+          </FormCard>
+        </div>
 
-        <section>
-          <h2 className="text-lg font-semibold mb-2">Metadata</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Edit fields</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form action={updateObjectAction} className="grid gap-4">
+        {/* Side Column (1/3) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ma-md)' }}>
+          {/* Classification Card */}
+          <FormCard title={<BilingualLabel en="Classification" ja="分類" />}>
+            <div className="space-y-3">
+              {/* Current classification display */}
+              {localClassTitle ? (
+                <div className="text-sm">
+                  {localClassBreadcrumb.length ? (
+                    <div className="text-xs text-gray-600 mb-1">{localClassBreadcrumb.join(' → ')} →</div>
+                  ) : null}
+                  <a className="underline font-medium" href={`/admin/local-classes/${String(object.primary_local_class_id)}`}>{localClassTitle}</a>
+                </div>
+              ) : (
+                <div className="text-xs text-gray-600">No local class selected</div>
+              )}
+
+              {/* External links */}
+              {localClassExternal.length ? (
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {localClassExternal.map((c: any) => (
+                    <a key={String(c.id)} href={c.uri} target="_blank" rel="noreferrer" className="underline">
+                      {c.scheme}: {String(c.label_ja || c.label || c.uri)}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Local Class selector form */}
+              <form action={savePrimaryLocalClassAction} className="space-y-3">
                 <input type="hidden" name="object_token" value={token} />
-
-                <div className="grid gap-2">
-                  <Label htmlFor="local_number">Local number</Label>
-                  <Input id="local_number" name="local_number" defaultValue={object.local_number || ''} />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="title">Title (EN)</Label>
-                    <Input id="title" name="title" defaultValue={object.title || ''} />
-                    {object.title && !object.title_ja ? (
-                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'title')} type="submit">E → JA</Button>
-                    ) : null}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="title_ja">Title (JA)</Label>
-                    <Input id="title_ja" name="title_ja" defaultValue={object.title_ja || ''} />
-                    {object.title_ja && !object.title ? (
-                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'title_ja')} type="submit">JA → EN</Button>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="craftsman">Craftsman (EN)</Label>
-                    <Input id="craftsman" name="craftsman" defaultValue={object.craftsman || ''} />
-                    {object.craftsman && !object.craftsman_ja ? (
-                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'craftsman')} type="submit">E → JA</Button>
-                    ) : null}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="craftsman_ja">Craftsman (JA)</Label>
-                    <Input id="craftsman_ja" name="craftsman_ja" defaultValue={object.craftsman_ja || ''} />
-                    {object.craftsman_ja && !object.craftsman ? (
-                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'craftsman_ja')} type="submit">JA → EN</Button>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="event_date">Date</Label>
-                  <Input id="event_date" name="event_date" defaultValue={object.event_date || ''} />
-                </div>
-
-                {/* TEMPORARILY HIDDEN: Tag field not fully implemented yet (Issue #94)
-                    TODO: Re-enable when proper tagging functionality is complete
-                <div className="grid gap-2">
-                  <Label htmlFor="tags">Tags (comma separated)</Label>
-                  <Input id="tags" name="tags" defaultValue={(object.tags || []).join(', ')} />
-                </div>
-                */}
-
-                {isOwner ? (
-                  <div className="grid gap-2">
-                    <Label htmlFor="price">Price</Label>
-                    <PriceInput defaultValue={object.price ?? ''} canEdit={true} />
-                  </div>
-                ) : null}
-
-                {isAdmin ? (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="grid gap-2">
-                      <Label htmlFor="store">Store (EN)</Label>
-                      <Input id="store" name="store" defaultValue={object.store || ''} />
-                      {object.store && !object.store_ja ? (
-                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'store')} type="submit">E → JA</Button>
-                      ) : null}
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="store_ja">Store (JA)</Label>
-                      <Input id="store_ja" name="store_ja" defaultValue={object.store_ja || ''} />
-                      {object.store_ja && !object.store ? (
-                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'store_ja')} type="submit">JA → EN</Button>
-                      ) : null}
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="location">Location (EN)</Label>
-                      <Input id="location" name="location" defaultValue={object.location || ''} />
-                      {object.location && !object.location_ja ? (
-                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'location')} type="submit">E → JA</Button>
-                      ) : null}
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="location_ja">Location (JA)</Label>
-                      <Input id="location_ja" name="location_ja" defaultValue={object.location_ja || ''} />
-                      {object.location_ja && !object.location ? (
-                        <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'location_ja')} type="submit">JA → EN</Button>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="grid gap-2">
-                  <Label htmlFor="url">URL</Label>
-                  <Input id="url" name="url" defaultValue={object.url || ''} />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="notes">Notes (EN)</Label>
-                    <Textarea id="notes" name="notes" defaultValue={object.notes || ''} />
-                    {object.notes && !object.notes_ja ? (
-                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'notes')} type="submit">E → JA</Button>
-                    ) : null}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="notes_ja">Notes (JA)</Label>
-                    <Textarea id="notes_ja" name="notes_ja" defaultValue={object.notes_ja || ''} />
-                    {object.notes_ja && !object.notes ? (
-                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'notes_ja')} type="submit">JA → EN</Button>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <SubmitButton label="Save metadata" pendingLabel="Saving..." />
+                <select name="local_class_id" className="input w-full" defaultValue={object.primary_local_class_id || ''}>
+                  <option value="">(none)</option>
+                  {(allLocalClasses || []).map((c: any) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label_ja || c.label_en || c.local_number || c.id}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex justify-end">
+                  <SubmitButton label="Save" pendingLabel="Saving..." />
                 </div>
               </form>
-            </CardContent>
-          </Card>
-        </section>
+            </div>
+          </FormCard>
 
-        {/* Removed direct per-object classification UI; prefer Local Class links */}
+          {/* Provenance Card */}
+          <FormCard title={<BilingualLabel en="Provenance" ja="来歴" />}>
+            <form action={updateObjectAction} className="space-y-4">
+              <input type="hidden" name="object_token" value={token} />
 
-        <div>
-          <section>
-            <h3 className="text-md font-semibold mt-4">Chakai</h3>
-            <form action={updateObjectChakaiLinks} className="card">
+              {/* Craftsman (Bilingual) */}
+              <div className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="craftsman">Craftsman (EN)</Label>
+                  <Input id="craftsman" name="craftsman" defaultValue={object.craftsman || ''} />
+                  {object.craftsman && !object.craftsman_ja ? (
+                    <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'craftsman')} type="submit">EN → JA</Button>
+                  ) : null}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="craftsman_ja">Craftsman (JA)</Label>
+                  <Input id="craftsman_ja" name="craftsman_ja" defaultValue={object.craftsman_ja || ''} />
+                  {object.craftsman_ja && !object.craftsman ? (
+                    <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'craftsman_ja')} type="submit">JA → EN</Button>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="grid gap-2">
+                <Label htmlFor="event_date">
+                  <BilingualLabel en="Date" ja="年代" />
+                </Label>
+                <Input id="event_date" name="event_date" defaultValue={object.event_date || ''} />
+              </div>
+
+              {/* Store/Location (Admin only) */}
+              {isAdmin ? (
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="store">Store (EN)</Label>
+                    <Input id="store" name="store" defaultValue={object.store || ''} />
+                    {object.store && !object.store_ja ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'store')} type="submit">EN → JA</Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="store_ja">Store (JA)</Label>
+                    <Input id="store_ja" name="store_ja" defaultValue={object.store_ja || ''} />
+                    {object.store_ja && !object.store ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'store_ja')} type="submit">JA → EN</Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="location">Location (EN)</Label>
+                    <Input id="location" name="location" defaultValue={object.location || ''} />
+                    {object.location && !object.location_ja ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'location')} type="submit">EN → JA</Button>
+                    ) : null}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="location_ja">Location (JA)</Label>
+                    <Input id="location_ja" name="location_ja" defaultValue={object.location_ja || ''} />
+                    {object.location_ja && !object.location ? (
+                      <Button variant="secondary" size="sm" formAction={autoTranslate.bind(null, 'location_ja')} type="submit">JA → EN</Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="pt-2">
+                <SubmitButton label="Save Provenance" pendingLabel="Saving..." />
+              </div>
+            </form>
+          </FormCard>
+
+          {/* Valuation Card (Owner only) */}
+          {isOwner ? (
+            <FormCard title={<BilingualLabel en="Valuation" ja="評価" />}>
+              <form action={updateObjectAction} className="space-y-4">
+                <input type="hidden" name="object_token" value={token} />
+                <div className="grid gap-2">
+                  <Label htmlFor="price">
+                    <BilingualLabel en="Price" ja="価格" />
+                  </Label>
+                  <PriceInput defaultValue={object.price ?? ''} canEdit={true} />
+                </div>
+                <div className="pt-2">
+                  <SubmitButton label="Save Valuation" pendingLabel="Saving..." />
+                </div>
+              </form>
+            </FormCard>
+          ) : null}
+
+          {/* Chakai Card */}
+          <FormCard title={<BilingualLabel en="Chakai Events" ja="茶会" />}>
+            <form action={updateObjectChakaiLinks} className="space-y-3">
               <input type="hidden" name="object_token" value={token} />
               <div className="grid gap-2">
                 <SearchSelect
@@ -740,37 +798,21 @@ export default async function AdminObjectPage({ params, searchParams }: { params
               </div>
             </form>
             {chakaiList.length ? (
-              <div className="mt-2 grid" style={{ gap: 8 }}>
+              <div className="mt-4 space-y-2">
                 {chakaiList.map((c: any) => {
                   const title = c.name_ja || c.name_en || '(untitled)';
                   return (
-                    <div key={c.id} className="text-sm">
-                      <a className="underline" href={`/chakai/${(c as any).token || c.id}`}>{title}{c.local_number ? ` (${c.local_number})` : ''}</a>
-                      <a className="underline ml-2 text-xs" href={`/admin/chakai/${c.id}`}>Edit</a>
+                    <div key={c.id} className="text-sm flex items-center justify-between">
+                      <a className="underline" href={`/chakai/${(c as any).token || c.id}`}>
+                        {title}{c.local_number ? ` (${c.local_number})` : ''}
+                      </a>
+                      <a className="underline text-xs" href={`/admin/chakai/${c.id}`}>Edit</a>
                     </div>
                   );
                 })}
               </div>
             ) : null}
-          </section>
-
-          <section className="card mt-4">
-            <h3 className="text-md font-semibold mb-3">Primary Local Class</h3>
-            <form action={savePrimaryLocalClassAction} className="grid gap-3">
-              <input type="hidden" name="object_token" value={token} />
-              <select name="local_class_id" className="input" defaultValue={object.primary_local_class_id || ''}>
-                <option value="">(none)</option>
-                {(allLocalClasses || []).map((c: any) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label_ja || c.label_en || c.local_number || c.id}
-                  </option>
-                ))}
-              </select>
-              <div className="flex justify-end">
-                <SubmitButton label="Save" pendingLabel="Saving..." />
-              </div>
-            </form>
-          </section>
+          </FormCard>
         </div>
       </div>
     </main>
