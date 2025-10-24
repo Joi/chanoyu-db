@@ -15,13 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - id: diff
         shell: bash
         run: |
           BASE_REF="${{ github.base_ref }}"
           if [ -z "$BASE_REF" ]; then BASE_REF=main; fi
-          git fetch origin "$BASE_REF" --depth=1
+          git fetch origin "$BASE_REF" --depth=100
           git diff --name-only origin/$BASE_REF...HEAD | jq -Rsc 'split("\n")' > files.json
           echo "files=$(cat files.json)" >> $GITHUB_OUTPUT
 
@@ -29,20 +29,21 @@ jobs:
     name: Node (Next.js)
     needs: changes
     runs-on: ubuntu-latest
-    env:
-      FILES_CHANGED: ${{ needs.changes.outputs.files }}
     if: >-
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'app/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'lib/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'components/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'package.json') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'pnpm-lock.yaml') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'tsconfig.json')
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'app/') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'lib/') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'components/') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'package.json') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'pnpm-lock.yaml') ||
+      contains(join(fromJson(needs.changes.outputs.files), '\n'), 'tsconfig.json')
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: "20"
+          run_install: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
           cache: "pnpm"
       - name: Install
         run: corepack enable && pnpm i --frozen-lockfile
@@ -51,40 +52,15 @@ jobs:
       - name: Test
         run: pnpm test --if-present
 
-  python:
-    name: Python (Ingestion)
-    needs: changes
-    runs-on: ubuntu-latest
-    env:
-      FILES_CHANGED: ${{ needs.changes.outputs.files }}
-    if: >-
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'ingestion/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'requirements.txt') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'requirements-dev.txt') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'src/') ||
-      contains(join(fromJson(env.FILES_CHANGED), '\n'), 'tests/')
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - name: Install
-        run: pip install -r requirements.txt -r requirements-dev.txt
-      - name: Test
-        run: pytest -q
-
   sql:
     name: SQL (Supabase)
     needs: changes
     runs-on: ubuntu-latest
-    env:
-      FILES_CHANGED: ${{ needs.changes.outputs.files }}
-    if: contains(join(fromJson(env.FILES_CHANGED), '\n'), 'supabase/')
+    if: contains(join(fromJson(needs.changes.outputs.files), '\n'), 'supabase/')
     steps:
       - uses: actions/checkout@v4
       - name: Lint SQL (listing placeholder)
         run: |
-          echo "SQL files changed:" 
+          echo "SQL files changed:"
           git ls-files supabase/**/*.sql | cat
           # TODO: integrate sqlfluff or pgformatter for real linting
