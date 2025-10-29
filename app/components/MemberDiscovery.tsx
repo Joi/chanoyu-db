@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, UserPlus, CheckCircle, XCircle, Clock } from 'lucide-react';
@@ -39,30 +39,26 @@ export default function MemberDiscovery({
   // Filter out current user
   const otherMembers = members.filter(m => m.email !== currentUserEmail);
 
-  useEffect(() => {
-    loadFriendStatuses();
-  }, [currentUserEmail]);
-
-  const loadFriendStatuses = async () => {
+  const loadFriendStatuses = useCallback(async () => {
     if (!currentUserEmail) return;
-    
+
     setLoading(true);
     try {
       const response = await fetch('/api/friends');
       const result = await response.json();
-      
+
       if (result.ok) {
         const statuses: FriendStatus = {};
         result.data.forEach((friendship: any) => {
-          const otherUserId = friendship.requester_id === result.currentUserId 
-            ? friendship.recipient_id 
+          const otherUserId = friendship.requester_id === result.currentUserId
+            ? friendship.recipient_id
             : friendship.requester_id;
-          
+
           if (friendship.status === 'accepted') {
             statuses[otherUserId] = 'friends';
           } else if (friendship.status === 'pending') {
-            statuses[otherUserId] = friendship.requester_id === result.currentUserId 
-              ? 'pending_sent' 
+            statuses[otherUserId] = friendship.requester_id === result.currentUserId
+              ? 'pending_sent'
               : 'pending_received';
           }
         });
@@ -73,7 +69,11 @@ export default function MemberDiscovery({
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUserEmail]);
+
+  useEffect(() => {
+    loadFriendStatuses();
+  }, [loadFriendStatuses]);
 
   const sendFriendRequest = async (recipientId: string) => {
     setActionLoading(recipientId);
